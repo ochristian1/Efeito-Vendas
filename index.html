@@ -453,7 +453,7 @@ function fmtDateShort(s){if(!s)return'';const[y,m,d]=s.split('-');return`${d}/${
 function statusChip(item){
   if(item.done)return'<span class="chip chip-ok">concluída</span>';
   if(isPast(item))return'<span class="chip chip-late">atrasada</span>';
-  return'<span class="chip chip-fut">agendada</span>';
+  return'';
 }
 function switchTab(name,el){
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
@@ -911,11 +911,16 @@ function renderPagos(){
     const leadInfo2=c.lead&&LEAD_BADGE2[c.lead]
       ?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:${LEAD_BADGE2[c.lead].bg};color:${LEAD_BADGE2[c.lead].cor};border:1px solid ${LEAD_BADGE2[c.lead].cor}40">${LEAD_BADGE2[c.lead].label}</span>`
       :`<span onclick="editarLead('${c.id}')" style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--bg3);color:var(--text3);border:1px solid var(--border);cursor:pointer">+ lead</span>`;
+    const VEND_BADGE={PAULA:{label:'Paula',cor:'#f472b6'},EDUARDA:{label:'Eduarda',cor:'#fb923c'}};
+    const FECH_BADGE={PAULA:{label:'Paula fechou',cor:'#f472b6'},EDUARDA:{label:'Eduarda fechou',cor:'#fb923c'},DONO:{label:'Você fechou',cor:'var(--green)'}};
+    const vendInfo=c.vendedora&&VEND_BADGE[c.vendedora]?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--bg3);color:${VEND_BADGE[c.vendedora].cor};border:1px solid ${VEND_BADGE[c.vendedora].cor}40">📋 ${VEND_BADGE[c.vendedora].label}</span>`:'';
+    const fechInfo=c.fechamento&&FECH_BADGE[c.fechamento]?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--bg3);color:${FECH_BADGE[c.fechamento].cor};border:1px solid ${FECH_BADGE[c.fechamento].cor}40">🤝 ${FECH_BADGE[c.fechamento].label}</span>`:'';
     return`<div class="pago-card">
       <div class="pago-av">${initials(c.nome)}</div>
       <div class="pago-info">
         <div class="pago-name">${c.nome}</div>
         <div class="pago-sub">${c.fone||'Sem telefone'}${planoInfo?' · '+planoInfo:''} · <span id="pago-lead-${c.id}">${leadInfo2}</span></div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${vendInfo}${fechInfo}</div>
         ${c.obs?`<div style="font-size:11px;color:var(--text2);margin-top:3px">📝 ${c.obs}</div>`:''}
       </div>
       <div class="pago-right" id="pago-right-${c.id}">
