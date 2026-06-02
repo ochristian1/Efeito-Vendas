@@ -895,10 +895,10 @@ function renderPagos(){
         ${c.obs?`<div style="font-size:11px;color:var(--text2);margin-top:3px">📝 ${c.obs}</div>`:''}
       </div>
       <div class="pago-right" id="pago-right-${c.id}">
-        <div class="pago-valor" style="cursor:pointer" onclick="editarValor('${c.id}')" title="Clique para editar">R$ ${(c.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} ✏️</div>
+        <div class="pago-valor">R$ ${(c.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
         <div class="pago-data">${c.data?fmtDateBR(c.data):''}</div>
       </div>
-      <button class="btn-edit" onclick="abrirEditPago('${c.id}')" title="Editar" style="padding:5px 10px;font-size:12px">✏️</button>
+      <button class="btn-edit" onclick="abrirEditPago('${c.id}')" style="padding:5px 12px;font-size:12px">Editar</button>
       <button class="pago-del" onclick="delPago('${c.id}')" title="Remover">✕</button>
     </div>
     <div id="edit-pago-${c.id}" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-top:4px;margin-bottom:4px">
