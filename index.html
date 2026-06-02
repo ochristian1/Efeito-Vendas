@@ -582,13 +582,14 @@ function saveForm(){
 }
 function renderDetail(id){
   const item=calls.find(x=>x.id===String(id));if(!item)return;
-  const LEAD_CORES={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)'};
-  const LEAD_LABELS={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico'};
-  const leadBadge=item.lead&&LEAD_CORES[item.lead]?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--bg3);color:${LEAD_CORES[item.lead]};border:1px solid ${LEAD_CORES[item.lead]}50;margin-left:6px">${LEAD_LABELS[item.lead]}</span>`:'';
+  const VEND_CORES2={PAULA:'#f472b6',EDUARDA:'#fb923c'};
+  const VEND_LABELS2={PAULA:'Paula',EDUARDA:'Eduarda'};
+  const vendBadge2=item.vendedora&&VEND_CORES2[item.vendedora]?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--bg3);color:${VEND_CORES2[item.vendedora]};border:1px solid ${VEND_CORES2[item.vendedora]}50;margin-left:6px">${VEND_LABELS2[item.vendedora]}</span>`:'';
+  const leadBadge2=item.lead&&LEAD_CORES[item.lead]?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--bg3);color:${LEAD_CORES[item.lead]};border:1px solid ${LEAD_CORES[item.lead]}50;margin-left:6px">${LEAD_LABELS[item.lead]}</span>`:'';
   document.getElementById('form-area').innerHTML='';
   document.getElementById('detail-area').innerHTML=`
     <div class="detail-panel"><div class="detail-header" style="cursor:pointer" onclick="closeDetail()">
-    <div style="display:flex;align-items:center;gap:11px" onclick="event.stopPropagation()"><div class="detail-av">${initials(item.nome)}</div><div><div class="detail-name">${item.nome} ${statusChip(item)}${leadBadge}</div><div class="detail-sub">${item.fone||'Sem telefone'}</div></div></div>
+    <div style="display:flex;align-items:center;gap:11px" onclick="event.stopPropagation()"><div class="detail-av">${initials(item.nome)}</div><div><div class="detail-name">${item.nome} ${statusChip(item)}${leadBadge2}${vendBadge2}</div><div class="detail-sub">${item.fone||'Sem telefone'}</div></div></div>
     <span style="font-size:12px;color:var(--text3)">▲ fechar</span></div>
     <div class="detail-fields"><div class="dfield"><div class="dfield-label">Data</div><div class="dfield-val">${fmtDateBR(item.data)}</div></div><div class="dfield"><div class="dfield-label">Horário</div><div class="dfield-val">${item.hora}</div></div></div>
     ${item.obs?`<div class="detail-notes"><div class="dfield-label">Anotações</div><div class="dfield-val">${item.obs.replace(/\n/g,'<br>')}</div></div>`:''}
@@ -635,8 +636,11 @@ function listItem(i){
   const isActive=detailId===i.id;
   const LEAD_CORES={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)'};
   const LEAD_LABELS={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico'};
+  const VEND_CORES={PAULA:'#f472b6',EDUARDA:'#fb923c'};
+  const VEND_LABELS={PAULA:'Paula',EDUARDA:'Eduarda'};
   const leadBadge=i.lead&&LEAD_CORES[i.lead]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${LEAD_CORES[i.lead]};border:1px solid ${LEAD_CORES[i.lead]}50;margin-left:4px">${LEAD_LABELS[i.lead]}</span>`:'';
-  return`<div class="list-item${i.done?' done':''}${isActive?' active':''}" onclick="openDetail('${i.id}')"><div class="li-av">${initials(i.nome)}</div><div class="li-info"><div class="li-name">${i.nome} ${statusChip(i)}${leadBadge}</div><div class="li-sub">${i.fone||''}${i.obs?' · '+i.obs:''}</div></div><div class="li-time"><div class="li-date">${fmtDateShort(i.data)}</div><div class="li-hour">${i.hora}</div></div></div>`;
+  const vendBadge=i.vendedora&&VEND_CORES[i.vendedora]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${VEND_CORES[i.vendedora]};border:1px solid ${VEND_CORES[i.vendedora]}50;margin-left:4px">${VEND_LABELS[i.vendedora]}</span>`:'';
+  return`<div class="list-item${i.done?' done':''}${isActive?' active':''}" onclick="openDetail('${i.id}')"><div class="li-av">${initials(i.nome)}</div><div class="li-info"><div class="li-name">${i.nome} ${statusChip(i)}${leadBadge}${vendBadge}</div><div class="li-sub">${i.fone||''}${i.obs?' · '+i.obs:''}</div></div><div class="li-time"><div class="li-date">${fmtDateShort(i.data)}</div><div class="li-hour">${i.hora}</div></div></div>`;
 }
 function toggleConcluidas(){mostrarConcluidas=!mostrarConcluidas;renderList();}
 function moveWeek(d){weekOffset+=d;renderAgenda();}
