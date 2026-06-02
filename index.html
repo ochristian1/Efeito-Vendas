@@ -1025,74 +1025,79 @@ function renderVendas(){
   const VEND_COR={PAULA:'#f472b6',EDUARDA:'#fb923c',DONO:'var(--green)'};
   const VEND_LABEL={PAULA:'Paula',EDUARDA:'Eduarda',DONO:'Você'};
 
-  // RANKING VENDEDORAS
-  const VENDEDORAS=[{key:'PAULA',label:'Paula',cor:'#f472b6',bg:'#2a0d1e'},{key:'EDUARDA',label:'Eduarda',cor:'#fb923c',bg:'#2a1500'}];
-  const rankingOrdenado=[...VENDEDORAS].sort((a,b)=>{
-    const comA=listaMes.filter(p=>p.fechamento===a.key).reduce((s,p)=>s+(p.valor||0),0)*0.08+listaMes.filter(p=>p.vendedora===a.key&&p.fechamento==='DONO').reduce((s,p)=>s+(p.valor||0),0)*0.02;
-    const comB=listaMes.filter(p=>p.fechamento===b.key).reduce((s,p)=>s+(p.valor||0),0)*0.08+listaMes.filter(p=>p.vendedora===b.key&&p.fechamento==='DONO').reduce((s,p)=>s+(p.valor||0),0)*0.02;
-    return comB-comA;
-  });
-  document.getElementById('vendas-ranking').innerHTML=rankingOrdenado.map((v,i)=>{
-    const fechouSozinha=listaMes.filter(p=>p.fechamento===v.key);
-    const recFechou=fechouSozinha.reduce((s,p)=>s+(p.valor||0),0);
-    const comFechou=recFechou*0.08;
-    const agendouDono=listaMes.filter(p=>p.vendedora===v.key&&p.fechamento==='DONO');
-    const recAgendou=agendouDono.reduce((s,p)=>s+(p.valor||0),0);
-    const comAgendou=recAgendou*0.02;
-    const totalVendas=fechouSozinha.length+agendouDono.length;
-    const totalCom=comFechou+comAgendou;
-    const totalBruto=recFechou; // só conta quando ela fechou (8%)
-    return`<div style="background:${v.bg};border:1px solid ${v.cor}30;border-radius:10px;padding:1rem;margin-bottom:8px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:18px">${i===0?'🥇':'🥈'}</span>
-          <span style="font-size:15px;font-weight:700;color:${v.cor}">${v.label}</span>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:18px;font-weight:700;color:${v.cor}">R$ ${totalBruto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-          <div style="font-size:11px;color:${v.cor};opacity:.7">vendido no mês</div>
-          <div style="font-size:15px;font-weight:700;color:${v.cor};margin-top:2px">R$ ${totalCom.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-          <div style="font-size:11px;color:${v.cor};opacity:.7">comissão</div>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
-          <div style="font-size:16px;font-weight:700;color:${v.cor}">${totalVendas}</div>
-          <div style="font-size:10px;color:var(--text2)">vendas</div>
-        </div>
-        <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
-          <div style="font-size:12px;font-weight:700;color:${v.cor}">${fechouSozinha.length} × 8%</div>
-          <div style="font-size:10px;color:var(--text2)">fechou</div>
-          <div style="font-size:11px;color:${v.cor}">R$ ${comFechou.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-        </div>
-        <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
-          <div style="font-size:12px;font-weight:700;color:${v.cor}">${agendouDono.length} × 2%</div>
-          <div style="font-size:10px;color:var(--text2)">agendou</div>
-          <div style="font-size:11px;color:${v.cor}">R$ ${comAgendou.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-        </div>
-      </div>
-    </div>`;
-  }).join('')||'<div class="empty-day">Nenhuma venda registrada este mês.</div>';
+  // RANKING UNIFICADO
+  const TODOS=[
+    {key:'CHRISTIAN',label:'Christian',cor:'var(--green)',bg:'#0d2a1a',emoji:'👑',isChristian:true},
+    {key:'PAULA',label:'Paula',cor:'#f472b6',bg:'#2a0d1e',emoji:'🏆',isChristian:false},
+    {key:'EDUARDA',label:'Eduarda',cor:'#fb923c',bg:'#2a1500',emoji:'🏆',isChristian:false},
+  ];
+  const rankingComDados=TODOS.map(v=>{
+    if(v.isChristian){
+      const vendas=listaMes.filter(p=>p.fechamento==='DONO');
+      const bruto=vendas.reduce((s,p)=>s+(p.valor||0),0);
+      return{...v,bruto,comissao:null,totalVendas:vendas.length,detalhe:''};
+    } else {
+      const fechou=listaMes.filter(p=>p.fechamento===v.key);
+      const recFechou=fechou.reduce((s,p)=>s+(p.valor||0),0);
+      const comFechou=recFechou*0.08;
+      const agendou=listaMes.filter(p=>p.vendedora===v.key&&p.fechamento==='DONO');
+      const recAgendou=agendou.reduce((s,p)=>s+(p.valor||0),0);
+      const comAgendou=recAgendou*0.02;
+      return{...v,bruto:recFechou,comissao:comFechou+comAgendou,totalVendas:fechou.length+agendou.length,
+        fechouCount:fechou.length,comFechou,agendouCount:agendou.length,comAgendou};
+    }
+  }).sort((a,b)=>b.bruto-a.bruto);
 
-  // CARD DO CHRISTIAN
-  const vendaChristian=listaMes.filter(p=>p.fechamento==='DONO');
-  const recChristian=vendaChristian.reduce((s,p)=>s+(p.valor||0),0);
-  const elC=document.getElementById('vendas-ranking');
-  if(vendaChristian.length>0||recChristian>0){
-    elC.innerHTML+=`<div style="background:#0d2a1a;border:1px solid var(--green-border);border-radius:10px;padding:1rem;margin-top:4px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:18px">👑</span>
-          <span style="font-size:15px;font-weight:700;color:var(--green)">Christian</span>
+  const medals=['🥇','🥈','🥉'];
+  document.getElementById('vendas-ranking').innerHTML=rankingComDados.map((v,i)=>{
+    if(v.isChristian){
+      return`<div style="background:${v.bg};border:1px solid ${v.cor}40;border-radius:10px;padding:1rem;margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:20px">${medals[i]||'🏅'}</span>
+            <div>
+              <div style="font-size:15px;font-weight:700;color:${v.cor}">${v.label}</div>
+              <div style="font-size:11px;color:${v.cor};opacity:.7">${v.totalVendas} fechamento${v.totalVendas!==1?'s':''} diretos</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:22px;font-weight:700;color:${v.cor}">R$ ${v.bruto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+            <div style="font-size:11px;color:${v.cor};opacity:.7">faturado</div>
+          </div>
         </div>
-        <div style="text-align:right">
-          <div style="font-size:18px;font-weight:700;color:var(--green)">R$ ${recChristian.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-          <div style="font-size:11px;color:var(--green);opacity:.7">fechamentos diretos</div>
-          <div style="font-size:13px;font-weight:600;color:var(--green);margin-top:2px">${vendaChristian.length} venda${vendaChristian.length!==1?'s':''}</div>
+      </div>`;
+    } else {
+      return`<div style="background:${v.bg};border:1px solid ${v.cor}30;border-radius:10px;padding:1rem;margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:20px">${medals[i]||'🏅'}</span>
+            <div>
+              <div style="font-size:15px;font-weight:700;color:${v.cor}">${v.label}</div>
+              <div style="font-size:11px;color:${v.cor};opacity:.7">${v.totalVendas} venda${v.totalVendas!==1?'s':''}</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:18px;font-weight:700;color:${v.cor}">R$ ${v.bruto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+            <div style="font-size:11px;color:${v.cor};opacity:.7">vendido</div>
+            <div style="font-size:14px;font-weight:700;color:${v.cor}">R$ ${v.comissao.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+            <div style="font-size:11px;color:${v.cor};opacity:.7">comissão</div>
+          </div>
         </div>
-      </div>
-    </div>`;
-  }
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
+            <div style="font-size:12px;font-weight:700;color:${v.cor}">${v.fechouCount} × 8%</div>
+            <div style="font-size:10px;color:var(--text2)">fechou</div>
+            <div style="font-size:11px;color:${v.cor}">R$ ${v.comFechou.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
+            <div style="font-size:12px;font-weight:700;color:${v.cor}">${v.agendouCount} × 2%</div>
+            <div style="font-size:10px;color:var(--text2)">agendou</div>
+            <div style="font-size:11px;color:${v.cor}">R$ ${v.comAgendou.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+          </div>
+        </div>
+      </div>`;
+    }
+  }).join('')||'<div class="empty-day">Nenhuma venda registrada este mês.</div>';
 
   document.getElementById('vendas-lista').innerHTML=recentes.length
     ?recentes.map(c=>{
