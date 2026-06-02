@@ -856,6 +856,20 @@ function salvarValor(id){
   sbUpsert('pagos',{id:c.id,nome:c.nome,fone:c.fone||'',plano:c.plano||'',data:c.data,valor:c.valor,obs:c.obs||'',lead:c.lead||''});
   renderPagos();
 }
+function abrirEditPago(id){
+  const el=document.getElementById('edit-pago-'+id);
+  if(el) el.style.display=el.style.display==='none'?'block':'none';
+}
+function salvarEditPago(id){
+  const c=pagos.find(x=>x.id===String(id));if(!c)return;
+  c.nome=document.getElementById('ep-nome-'+id).value.trim()||c.nome;
+  c.fone=document.getElementById('ep-fone-'+id).value.trim();
+  c.data=document.getElementById('ep-data-'+id).value||c.data;
+  c.valor=parseFloat(document.getElementById('ep-valor-'+id).value)||0;
+  c.obs=document.getElementById('ep-obs-'+id).value.trim();
+  sbUpsert('pagos',{id:c.id,nome:c.nome,fone:c.fone||'',plano:c.plano||'',data:c.data,valor:c.valor,obs:c.obs||'',lead:c.lead||'',vendedora:c.vendedora||'',fechamento:c.fechamento||''});
+  renderPagos();renderVendas();
+}
 function delPago(id){
   pagos=pagos.filter(x=>x.id!==String(id));
   sbDelete('pagos',id);renderPagos();renderVendas();
@@ -884,7 +898,25 @@ function renderPagos(){
         <div class="pago-valor" style="cursor:pointer" onclick="editarValor('${c.id}')" title="Clique para editar">R$ ${(c.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} ✏️</div>
         <div class="pago-data">${c.data?fmtDateBR(c.data):''}</div>
       </div>
+      <button class="btn-edit" onclick="abrirEditPago('${c.id}')" title="Editar" style="padding:5px 10px;font-size:12px">✏️</button>
       <button class="pago-del" onclick="delPago('${c.id}')" title="Remover">✕</button>
+    </div>
+    <div id="edit-pago-${c.id}" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-top:4px;margin-bottom:4px">
+      <div class="form-row">
+        <div class="field"><label>Nome</label><input id="ep-nome-${c.id}" type="text" value="${c.nome}"></div>
+        <div class="field"><label>Telefone</label><input id="ep-fone-${c.id}" type="tel" value="${c.fone||''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Data</label><input id="ep-data-${c.id}" type="date" value="${c.data||''}"></div>
+        <div class="field"><label>Valor (R$)</label><input id="ep-valor-${c.id}" type="number" value="${c.valor||0}" min="0" step="0.01"></div>
+      </div>
+      <div class="form-row form-full">
+        <div class="field"><label>Observação</label><input id="ep-obs-${c.id}" type="text" value="${c.obs||''}"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-save" onclick="salvarEditPago('${c.id}')">Salvar</button>
+        <button class="btn-cancel" onclick="document.getElementById('edit-pago-${c.id}').style.display='none'">Cancelar</button>
+      </div>
     </div>`;
   }).join('');
 }
