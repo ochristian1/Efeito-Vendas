@@ -593,7 +593,7 @@ function renderDetail(id){
     <span style="font-size:12px;color:var(--text3)">▲ fechar</span></div>
     <div class="detail-fields"><div class="dfield"><div class="dfield-label">Data</div><div class="dfield-val">${fmtDateBR(item.data)}</div></div><div class="dfield"><div class="dfield-label">Horário</div><div class="dfield-val">${item.hora}</div></div></div>
     ${item.obs?`<div class="detail-notes"><div class="dfield-label">Anotações</div><div class="dfield-val">${item.obs.replace(/\n/g,'<br>')}</div></div>`:''}
-    <div class="detail-btns"><button class="btn-done" onclick="toggleDone('${item.id}')">${item.done?'Desmarcar':'Marcar como concluída'}</button><button class="btn-edit" onclick="openForm('${item.data}','${item.id}')">Editar</button><button class="btn-del" onclick="delCall('${item.id}')">Excluir</button></div></div>`;
+    <div class="detail-btns" onclick="event.stopPropagation()"><button class="btn-done" onclick="toggleDone('${item.id}')">${item.done?'Desmarcar':'Marcar como concluída'}</button><button class="btn-edit" onclick="openForm('${item.data}','${item.id}')">Editar</button><button class="btn-del" onclick="delCall('${item.id}')">Excluir</button></div></div>`;
 }
 function openDetail(id){
   id=String(id);
@@ -603,7 +603,10 @@ function openDetail(id){
 function closeDetail(){document.getElementById('detail-area').innerHTML='';detailId=null;renderList();}
 function toggleDone(id){
   const idx=calls.findIndex(x=>x.id===String(id));
-  if(idx>=0){calls[idx].done=!calls[idx].done;sbUpsert('calls',{id:calls[idx].id,nome:calls[idx].nome,fone:calls[idx].fone||'',data:calls[idx].data,hora:calls[idx].hora,obs:calls[idx].obs||'',done:calls[idx].done});}
+  if(idx>=0){
+    calls[idx].done=!calls[idx].done;
+    sbUpsert('calls',{id:calls[idx].id,nome:calls[idx].nome,fone:calls[idx].fone||'',data:calls[idx].data,hora:calls[idx].hora,obs:calls[idx].obs||'',done:calls[idx].done,lead:calls[idx].lead||'',vendedora:calls[idx].vendedora||''});
+  }
   renderDetail(id);renderList();renderStats();renderWeek();
 }
 function delCall(id){
