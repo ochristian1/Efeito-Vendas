@@ -584,8 +584,10 @@ function renderDetail(id){
   const item=calls.find(x=>x.id===String(id));if(!item)return;
   const VEND_CORES2={PAULA:'#f472b6',EDUARDA:'#fb923c'};
   const VEND_LABELS2={PAULA:'Paula',EDUARDA:'Eduarda'};
+  const LEAD_CORES2={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)'};
+  const LEAD_LABELS2={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico'};
   const vendBadge2=item.vendedora&&VEND_CORES2[item.vendedora]?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--bg3);color:${VEND_CORES2[item.vendedora]};border:1px solid ${VEND_CORES2[item.vendedora]}50;margin-left:6px">${VEND_LABELS2[item.vendedora]}</span>`:'';
-  const leadBadge2=item.lead&&LEAD_CORES[item.lead]?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--bg3);color:${LEAD_CORES[item.lead]};border:1px solid ${LEAD_CORES[item.lead]}50;margin-left:6px">${LEAD_LABELS[item.lead]}</span>`:'';
+  const leadBadge2=item.lead&&LEAD_CORES2[item.lead]?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--bg3);color:${LEAD_CORES2[item.lead]};border:1px solid ${LEAD_CORES2[item.lead]}50;margin-left:6px">${LEAD_LABELS2[item.lead]}</span>`:'';
   document.getElementById('form-area').innerHTML='';
   document.getElementById('detail-area').innerHTML=`
     <div class="detail-panel"><div class="detail-header" style="cursor:pointer" onclick="closeDetail()">
