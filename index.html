@@ -1041,7 +1041,7 @@ function renderVendas(){
     const comAgendou=recAgendou*0.02;
     const totalVendas=fechouSozinha.length+agendouDono.length;
     const totalCom=comFechou+comAgendou;
-    const totalBruto=recFechou+recAgendou;
+    const totalBruto=recFechou; // só conta quando ela fechou (8%)
     return`<div style="background:${v.bg};border:1px solid ${v.cor}30;border-radius:10px;padding:1rem;margin-bottom:8px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:8px">
