@@ -856,6 +856,28 @@ function salvarValor(id){
   sbUpsert('pagos',{id:c.id,nome:c.nome,fone:c.fone||'',plano:c.plano||'',data:c.data,valor:c.valor,obs:c.obs||'',lead:c.lead||''});
   renderPagos();
 }
+function setEditVend(id,v){
+  const c=pagos.find(x=>x.id===String(id));if(!c)return;
+  c._editVend=v;
+  ['PAULA','EDUARDA','NENHUMA'].forEach(k=>{
+    const el=document.getElementById(`ev-${id}-${k}`);
+    if(!el)return;
+    const cor=k==='PAULA'?'#f472b6':k==='EDUARDA'?'#fb923c':'var(--border2)';
+    el.style.borderColor=k===v?cor:'var(--border)';
+    el.style.background=k===v?'var(--bg2)':'var(--bg3)';
+  });
+}
+function setEditFech(id,f){
+  const c=pagos.find(x=>x.id===String(id));if(!c)return;
+  c._editFech=f;
+  ['PAULA','EDUARDA','DONO'].forEach(k=>{
+    const el=document.getElementById(`ef-${id}-${k}`);
+    if(!el)return;
+    const cor=k==='PAULA'?'#f472b6':k==='EDUARDA'?'#fb923c':'var(--green-border)';
+    el.style.borderColor=k===f?cor:'var(--border)';
+    el.style.background=k===f?'var(--bg2)':'var(--bg3)';
+  });
+}
 function abrirEditPago(id){
   const el=document.getElementById('edit-pago-'+id);
   if(el) el.style.display=el.style.display==='none'?'block':'none';
@@ -867,6 +889,8 @@ function salvarEditPago(id){
   c.data=document.getElementById('ep-data-'+id).value||c.data;
   c.valor=parseFloat(document.getElementById('ep-valor-'+id).value)||0;
   c.obs=document.getElementById('ep-obs-'+id).value.trim();
+  if(c._editVend) c.vendedora=c._editVend==='NENHUMA'?'':c._editVend;
+  if(c._editFech) c.fechamento=c._editFech;
   sbUpsert('pagos',{id:c.id,nome:c.nome,fone:c.fone||'',plano:c.plano||'',data:c.data,valor:c.valor,obs:c.obs||'',lead:c.lead||'',vendedora:c.vendedora||'',fechamento:c.fechamento||''});
   renderPagos();renderVendas();
 }
@@ -912,6 +936,21 @@ function renderPagos(){
       </div>
       <div class="form-row form-full">
         <div class="field"><label>Observação</label><input id="ep-obs-${c.id}" type="text" value="${c.obs||''}"></div>
+      </div>
+      <div class="field" style="margin-bottom:8px"><label>Vendedora que agendou</label>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          ${['PAULA','EDUARDA','NENHUMA'].map(v=>`<div onclick="setEditVend('${c.id}','${v}')" id="ev-${c.id}-${v}" style="flex:1;padding:7px;border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;background:${c.vendedora===v?'var(--bg2)':'var(--bg3)'};border-color:${c.vendedora===v?(v==='PAULA'?'#f472b6':v==='EDUARDA'?'#fb923c':'var(--border2)'):'var(--border)'}">
+            <div style="font-size:12px;font-weight:700;color:${v==='PAULA'?'#f472b6':v==='EDUARDA'?'#fb923c':'var(--text2)'}">${v==='NENHUMA'?'Nenhuma':v.charAt(0)+v.slice(1).toLowerCase()}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:10px"><label>Quem fechou a venda</label>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          ${['PAULA','EDUARDA','DONO'].map(f=>`<div onclick="setEditFech('${c.id}','${f}')" id="ef-${c.id}-${f}" style="flex:1;padding:7px;border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;background:${c.fechamento===f?'var(--bg2)':'var(--bg3)'};border-color:${c.fechamento===f?(f==='PAULA'?'#f472b6':f==='EDUARDA'?'#fb923c':'var(--green-border)'):'var(--border)'}">
+            <div style="font-size:12px;font-weight:700;color:${f==='PAULA'?'#f472b6':f==='EDUARDA'?'#fb923c':'var(--green)'}">${f==='DONO'?'Você fechou':f.charAt(0)+f.slice(1).toLowerCase()}</div>
+            <div style="font-size:10px;color:var(--text2)">${f==='DONO'?'2% p/ quem agendou':'8% comissão'}</div>
+          </div>`).join('')}
+        </div>
       </div>
       <div class="btn-row">
         <button class="btn-save" onclick="salvarEditPago('${c.id}')">Salvar</button>
