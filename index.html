@@ -839,7 +839,7 @@ function renderPagos(){
   let list=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesSelecionado);
   if(['E2','E3','E4','E5'].includes(pagoFiltro)) list=list.filter(p=>p.plano===pagoFiltro);
   else if(pagoFiltro==='AVISO_APP'||pagoFiltro==='PN'||pagoFiltro==='ORGANICO') list=list.filter(p=>p.lead===pagoFiltro);
-  list=[...list].sort((a,b)=>a.data>b.data?-1:1);
+  list=[...list].sort((a,b)=>Number(b.id)-Number(a.id));
   const el=document.getElementById('pagos-list');
   if(!list.length){el.innerHTML=`<div class="empty-day">${pagos.length?'Nenhum cliente nesse mês.':'Nenhum cliente pago ainda — clique em "+ Adicionar cliente".'}</div>`;return;}
   const LEAD_BADGE={AVISO_APP:{label:'AVISO APP',cor:'#60a5fa',bg:'#0d1f3a'},PN:{label:'PN',cor:'#c084fc',bg:'#1a0d2e'},ORGANICO:{label:'Orgânico',cor:'var(--green)',bg:'var(--green-bg)'}};
@@ -926,7 +926,7 @@ function renderPagos(){
   let list=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesSelecionado);
   if(['E2','E3','E4','E5'].includes(pagoFiltro)) list=list.filter(p=>p.plano===pagoFiltro);
   else if(pagoFiltro==='AVISO_APP'||pagoFiltro==='PN'||pagoFiltro==='ORGANICO') list=list.filter(p=>p.lead===pagoFiltro);
-  list=[...list].sort((a,b)=>a.data>b.data?-1:1);
+  list=[...list].sort((a,b)=>Number(b.id)-Number(a.id));
   const el=document.getElementById('pagos-list');
   if(!list.length){el.innerHTML=`<div class="empty-day">${pagos.length?'Nenhum cliente nesse mês.':'Nenhum cliente pago ainda — clique em "+ Adicionar cliente".'}</div>`;return;}
   el.innerHTML=list.map(c=>{
