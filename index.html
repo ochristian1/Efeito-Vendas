@@ -533,6 +533,7 @@ function openForm(dateStr,id){
   document.getElementById('f-nome').focus();renderList();
 }
 function setFormVend(v){
+  if(window._formVend===v){window._formVend='';document.getElementById('fv-'+v).style.borderColor='var(--border)';document.getElementById('fv-'+v).style.background='var(--bg3)';return;}
   window._formVend=v;
   const cores={PAULA:'#f472b6',EDUARDA:'#fb923c'};
   ['PAULA','EDUARDA'].forEach(k=>{
@@ -541,6 +542,7 @@ function setFormVend(v){
   });
 }
 function setFormLead(l){
+  if(window._formLead===l){window._formLead='';document.getElementById('fl-'+l).style.borderColor='var(--border)';document.getElementById('fl-'+l).style.background='var(--bg3)';return;}
   window._formLead=l;
   const cores={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)'};
   ['AVISO_APP','PN','ORGANICO'].forEach(k=>{
@@ -761,14 +763,28 @@ function toggleNovoPago(){
   }
 }
 function setPagoPlano(p){
+  if(novoPagoPlano===p){novoPagoPlano=null;document.getElementById('pp-opt-'+p).classList.remove('selected');return;}
   novoPagoPlano=p;
   document.querySelectorAll('[id^="pp-opt-"]').forEach(o=>o.classList.remove('selected'));
   document.getElementById('pp-opt-'+p).classList.add('selected');
 }
 function setPagoLead(l){
+  if(novoPagoLead===l){novoPagoLead=null;document.getElementById('pp-lead-'+l).classList.remove('selected');return;}
   novoPagoLead=l;
   document.querySelectorAll('[id^="pp-lead-"]').forEach(o=>o.classList.remove('selected'));
   document.getElementById('pp-lead-'+l).classList.add('selected');
+}
+function setPagoVendedora(v){
+  if(novoPagoVendedora===v){novoPagoVendedora=null;document.getElementById('pp-vend-'+v).classList.remove('selected');return;}
+  novoPagoVendedora=v;
+  document.querySelectorAll('[id^="pp-vend-"]').forEach(o=>o.classList.remove('selected'));
+  document.getElementById('pp-vend-'+v).classList.add('selected');
+}
+function setPagoFechamento(f){
+  if(novoPagoFechamento===f){novoPagoFechamento=null;document.getElementById('pp-fech-'+f).classList.remove('selected');return;}
+  novoPagoFechamento=f;
+  document.querySelectorAll('[id^="pp-fech-"]').forEach(o=>o.classList.remove('selected'));
+  document.getElementById('pp-fech-'+f).classList.add('selected');
 }
 function salvarPago(){
   const nome=document.getElementById('pp-nome').value.trim();
