@@ -319,9 +319,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="plano-opt" id="pp-vend-NENHUMA" onclick="setPagoVendedora('NENHUMA')"><div class="plano-opt-name" style="color:var(--text2)">Nenhuma</div><div class="plano-opt-desc">Lead direto</div></div>
       </div>
       <div class="field" style="margin-bottom:10px;margin-top:12px"><label>Quem fechou a venda</label></div>
-      <div class="plano-options" style="grid-template-columns:repeat(3,1fr)">
+      <div class="plano-options" style="grid-template-columns:repeat(4,1fr)">
         <div class="plano-opt" id="pp-fech-PAULA" onclick="setPagoFechamento('PAULA')"><div class="plano-opt-name" style="color:#f472b6">Paula fechou</div><div class="plano-opt-desc">8% comissão</div></div>
         <div class="plano-opt" id="pp-fech-EDUARDA" onclick="setPagoFechamento('EDUARDA')"><div class="plano-opt-name" style="color:#fb923c">Eduarda fechou</div><div class="plano-opt-desc">8% comissão</div></div>
+        <div class="plano-opt" id="pp-fech-RECOMPRA_PAULA" onclick="setPagoFechamento('RECOMPRA_PAULA')"><div class="plano-opt-name" style="color:#f472b6">Paula - Recompra</div><div class="plano-opt-desc">4% comissão</div></div>
+        <div class="plano-opt" id="pp-fech-RECOMPRA_EDUARDA" onclick="setPagoFechamento('RECOMPRA_EDUARDA')"><div class="plano-opt-name" style="color:#fb923c">Eduarda - Recompra</div><div class="plano-opt-desc">4% comissão</div></div>
         <div class="plano-opt" id="pp-fech-DONO" onclick="setPagoFechamento('DONO')"><div class="plano-opt-name" style="color:var(--green)">Você fechou</div><div class="plano-opt-desc">2% p/ quem agendou</div></div>
       </div>
       <div class="form-row form-full" style="margin-top:10px">
@@ -870,10 +872,10 @@ function setEditVend(id,v){
 function setEditFech(id,f){
   const c=pagos.find(x=>x.id===String(id));if(!c)return;
   c._editFech=f;
-  ['PAULA','EDUARDA','DONO'].forEach(k=>{
+  ['PAULA','EDUARDA','RECOMPRA_PAULA','RECOMPRA_EDUARDA','DONO'].forEach(k=>{
     const el=document.getElementById(`ef-${id}-${k}`);
     if(!el)return;
-    const cor=k==='PAULA'?'#f472b6':k==='EDUARDA'?'#fb923c':'var(--green-border)';
+    const cor=k.includes('PAULA')?'#f472b6':k.includes('EDUARDA')?'#fb923c':'var(--green-border)';
     el.style.borderColor=k===f?cor:'var(--border)';
     el.style.background=k===f?'var(--bg2)':'var(--bg3)';
   });
@@ -912,7 +914,7 @@ function renderPagos(){
       ?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:${LEAD_BADGE2[c.lead].bg};color:${LEAD_BADGE2[c.lead].cor};border:1px solid ${LEAD_BADGE2[c.lead].cor}40">${LEAD_BADGE2[c.lead].label}</span>`
       :`<span onclick="editarLead('${c.id}')" style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--bg3);color:var(--text3);border:1px solid var(--border);cursor:pointer">+ lead</span>`;
     const VEND_BADGE={PAULA:{label:'Paula',cor:'#f472b6'},EDUARDA:{label:'Eduarda',cor:'#fb923c'}};
-    const FECH_BADGE={PAULA:{label:'Paula fechou',cor:'#f472b6'},EDUARDA:{label:'Eduarda fechou',cor:'#fb923c'},DONO:{label:'Você fechou',cor:'var(--green)'}};
+    const FECH_BADGE={PAULA:{label:'Paula fechou',cor:'#f472b6'},EDUARDA:{label:'Eduarda fechou',cor:'#fb923c'},RECOMPRA_PAULA:{label:'Paula - Recompra 4%',cor:'#f472b6'},RECOMPRA_EDUARDA:{label:'Eduarda - Recompra 4%',cor:'#fb923c'},DONO:{label:'Você fechou',cor:'var(--green)'}};
     const vendInfo=c.vendedora&&VEND_BADGE[c.vendedora]?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--bg3);color:${VEND_BADGE[c.vendedora].cor};border:1px solid ${VEND_BADGE[c.vendedora].cor}40">📋 ${VEND_BADGE[c.vendedora].label}</span>`:'';
     const fechInfo=c.fechamento&&FECH_BADGE[c.fechamento]?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--bg3);color:${FECH_BADGE[c.fechamento].cor};border:1px solid ${FECH_BADGE[c.fechamento].cor}40">🤝 ${FECH_BADGE[c.fechamento].label}</span>`:'';
     return`<div class="pago-card">
@@ -951,10 +953,16 @@ function renderPagos(){
       </div>
       <div class="field" style="margin-bottom:10px"><label>Quem fechou a venda</label>
         <div style="display:flex;gap:8px;margin-top:6px">
-          ${['PAULA','EDUARDA','DONO'].map(f=>`<div onclick="setEditFech('${c.id}','${f}')" id="ef-${c.id}-${f}" style="flex:1;padding:7px;border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;background:${c.fechamento===f?'var(--bg2)':'var(--bg3)'};border-color:${c.fechamento===f?(f==='PAULA'?'#f472b6':f==='EDUARDA'?'#fb923c':'var(--green-border)'):'var(--border)'}">
-            <div style="font-size:12px;font-weight:700;color:${f==='PAULA'?'#f472b6':f==='EDUARDA'?'#fb923c':'var(--green)'}">${f==='DONO'?'Você fechou':f.charAt(0)+f.slice(1).toLowerCase()}</div>
-            <div style="font-size:10px;color:var(--text2)">${f==='DONO'?'2% p/ quem agendou':'8% comissão'}</div>
-          </div>`).join('')}
+          ${['PAULA','EDUARDA','RECOMPRA_PAULA','RECOMPRA_EDUARDA','DONO'].map(f=>{
+        const label={PAULA:'Paula fechou',EDUARDA:'Eduarda fechou',RECOMPRA_PAULA:'Paula - Recompra',RECOMPRA_EDUARDA:'Eduarda - Recompra',DONO:'Você fechou'}[f];
+        const desc={PAULA:'8%',EDUARDA:'8%',RECOMPRA_PAULA:'4%',RECOMPRA_EDUARDA:'4%',DONO:'2%'}[f];
+        const cor=f.includes('PAULA')?'#f472b6':f.includes('EDUARDA')?'#fb923c':'var(--green)';
+        const sel=c.fechamento===f;
+        return`<div onclick="setEditFech('${c.id}','${f}')" id="ef-${c.id}-${f}" style="flex:1;padding:7px;border:1px solid ${sel?cor:'var(--border)'};border-radius:8px;text-align:center;cursor:pointer;background:${sel?'var(--bg2)':'var(--bg3)'}">
+          <div style="font-size:11px;font-weight:700;color:${cor}">${label}</div>
+          <div style="font-size:10px;color:var(--text2)">${desc}</div>
+        </div>`;
+      }).join('')}
         </div>
       </div>
       <div class="btn-row">
@@ -1040,11 +1048,14 @@ function renderVendas(){
       const fechou=listaMes.filter(p=>p.fechamento===v.key);
       const recFechou=fechou.reduce((s,p)=>s+(p.valor||0),0);
       const comFechou=recFechou*0.08;
+      const recompra=listaMes.filter(p=>p.fechamento==='RECOMPRA_'+v.key);
+      const recRecompra=recompra.reduce((s,p)=>s+(p.valor||0),0);
+      const comRecompra=recRecompra*0.04;
       const agendou=listaMes.filter(p=>p.vendedora===v.key&&p.fechamento==='DONO');
       const recAgendou=agendou.reduce((s,p)=>s+(p.valor||0),0);
       const comAgendou=recAgendou*0.02;
-      return{...v,bruto:recFechou,comissao:comFechou+comAgendou,totalVendas:fechou.length+agendou.length,
-        fechouCount:fechou.length,comFechou,agendouCount:agendou.length,comAgendou};
+      return{...v,bruto:recFechou+recRecompra,comissao:comFechou+comRecompra+comAgendou,totalVendas:fechou.length+recompra.length+agendou.length,
+        fechouCount:fechou.length,comFechou,recompraCount:recompra.length,comRecompra,agendouCount:agendou.length,comAgendou};
     }
   }).sort((a,b)=>b.bruto-a.bruto);
 
@@ -1083,11 +1094,16 @@ function renderVendas(){
             <div style="font-size:11px;color:${v.cor};opacity:.7">comissão</div>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
           <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
             <div style="font-size:12px;font-weight:700;color:${v.cor}">${v.fechouCount} × 8%</div>
             <div style="font-size:10px;color:var(--text2)">fechou</div>
             <div style="font-size:11px;color:${v.cor}">R$ ${v.comFechou.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
+            <div style="font-size:12px;font-weight:700;color:${v.cor}">${v.recompraCount} × 4%</div>
+            <div style="font-size:10px;color:var(--text2)">recompra</div>
+            <div style="font-size:11px;color:${v.cor}">R$ ${v.comRecompra.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
           </div>
           <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
             <div style="font-size:12px;font-weight:700;color:${v.cor}">${v.agendouCount} × 2%</div>
