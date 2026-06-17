@@ -445,8 +445,8 @@ function aplicarPermissoes(){
   // Esconde botão de adicionar cliente para SDRs
   const btnAdd=document.querySelector('#tab-pagos .btn-novo-cliente');
   if(btnAdd) btnAdd.style.display='none';
-  // Esconde meta do mês, faturamento global e origem de leads (visão de admin) no painel ao vivo
-  const idsEsconder=['vendas-meta-pct','vendas-receita','vendas-leads'];
+  // Esconde só origem de leads (visão estratégica, só pra você)
+  const idsEsconder=['vendas-leads'];
   idsEsconder.forEach(id=>{
     const el=document.getElementById(id);
     if(!el)return;
