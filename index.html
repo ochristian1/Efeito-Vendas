@@ -402,10 +402,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">🏆 Ranking de vendedoras</div>
     <div id="vendas-ranking"></div>
   </div>
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem">
-    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">Últimos fechamentos</div>
-    <div id="vendas-lista"></div>
-  </div>
 </div>
 
 </div>
@@ -1125,20 +1121,6 @@ function renderVendas(){
       </div>`;
     }
   }).join('')||'<div class="empty-day">Nenhuma venda registrada este mês.</div>';
-
-  document.getElementById('vendas-lista').innerHTML=recentes.length
-    ?recentes.map(c=>{
-      const vendBadge=c.vendedora&&VEND_COR[c.vendedora]?`<span style="color:${VEND_COR[c.vendedora]};font-weight:600">${VEND_LABEL[c.vendedora]}</span>`:'';
-      const fechBadge=c.fechamento&&VEND_COR[c.fechamento]?`<span style="color:${VEND_COR[c.fechamento]};font-size:10px">fechou: ${VEND_LABEL[c.fechamento]}</span>`:'';
-      return`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
-      <div style="width:32px;height:32px;border-radius:50%;background:var(--green-bg);border:1px solid var(--green-border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--green);flex-shrink:0">${initials(c.nome)}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:500;color:var(--text)">${c.nome}</div>
-        <div style="font-size:11px;color:var(--text2);display:flex;gap:6px;flex-wrap:wrap">${fmtDateBR(c.data)}${c.lead&&LEAD_LABEL[c.lead]?` · <span style="color:${LEAD_COR[c.lead]}">${LEAD_LABEL[c.lead]}</span>`:''}${vendBadge?' · '+vendBadge:''}${fechBadge?' · '+fechBadge:''}</div>
-      </div>
-      <div style="font-size:14px;font-weight:700;color:var(--green)">R$ ${(c.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-    </div>`;}).join('')
-    :`<div class="empty-day">Nenhum fechamento neste mês.</div>`;
 }
 </script>
 </body>
