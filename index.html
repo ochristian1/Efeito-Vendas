@@ -409,8 +409,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">Origem dos leads</div>
     <div id="vendas-leads" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
   </div>
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">🏆 Ranking de vendedoras</div>
+  <div style="background:linear-gradient(180deg,var(--bg2) 0%,var(--bg) 100%);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:1rem;position:relative;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <span style="font-size:20px">🏆</span>
+      <span style="font-size:15px;font-weight:800;color:var(--text);letter-spacing:.02em">RANKING DO MÊS</span>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:18px">Quem vende mais sobe no pódio</div>
+    <div id="vendas-podio" style="display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-bottom:20px;min-height:140px"></div>
     <div id="vendas-ranking"></div>
   </div>
 </div>
@@ -1072,15 +1077,15 @@ function renderVendas(){
 
   // RANKING UNIFICADO
   let TODOS=[
-    {key:'CHRISTIAN',label:'Christian',cor:'var(--green)',bg:'#0d2a1a',emoji:'👑',isChristian:true},
-    {key:'PAULA',label:'Paula',cor:'#f472b6',bg:'#2a0d1e',emoji:'🏆',isChristian:false},
-    {key:'EDUARDA',label:'Eduarda',cor:'#fb923c',bg:'#2a1500',emoji:'🏆',isChristian:false},
+    {key:'CHRISTIAN',label:'Christian',cor:'#22c55e',corClara:'#4ade80',bg:'#0d2a1a',avatar:'👑',isChristian:true},
+    {key:'PAULA',label:'Paula',cor:'#f472b6',corClara:'#fbb6ce',bg:'#2a0d1e',avatar:'P',isChristian:false},
+    {key:'EDUARDA',label:'Eduarda',cor:'#fb923c',corClara:'#fdba74',bg:'#2a1500',avatar:'E',isChristian:false},
   ];
   const rankingComDados=TODOS.map(v=>{
     if(v.isChristian){
       const vendas=listaMes.filter(p=>p.fechamento==='DONO');
       const bruto=vendas.reduce((s,p)=>s+(p.valor||0),0);
-      return{...v,bruto,comissao:null,totalVendas:vendas.length,detalhe:''};
+      return{...v,bruto,comissao:null,totalVendas:vendas.length};
     } else {
       const fechou=listaMes.filter(p=>p.fechamento===v.key);
       const recFechou=fechou.reduce((s,p)=>s+(p.valor||0),0);
@@ -1097,56 +1102,85 @@ function renderVendas(){
     }
   }).sort((a,b)=>b.bruto-a.bruto);
 
+  const maxBruto=Math.max(...rankingComDados.map(v=>v.bruto),1);
   const medals=['🥇','🥈','🥉'];
+  const podioAlturas=['86px','64px','46px'];
+  const podioOrdem=rankingComDados.length===3?[1,0,2]:rankingComDados.map((_,i)=>i); // 2º-1º-3º visualmente
+
+  // PÓDIO
+  document.getElementById('vendas-podio').innerHTML=podioOrdem.map(idx=>{
+    const v=rankingComDados[idx];
+    if(!v)return'';
+    const altura=podioAlturas[idx]||'40px';
+    const isLider=idx===0;
+    return`<div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;max-width:110px">
+      <div style="font-size:${isLider?'26px':'20px'}">${medals[idx]}</div>
+      <div style="width:${isLider?'52px':'44px'};height:${isLider?'52px':'44px'};border-radius:50%;background:${v.bg};border:2px solid ${v.cor};display:flex;align-items:center;justify-content:center;font-size:${isLider?'22px':'18px'};font-weight:800;color:${v.cor};box-shadow:0 0 ${isLider?'20px':'10px'} ${v.cor}50">${v.avatar}</div>
+      <div style="font-size:12px;font-weight:700;color:${v.cor};text-align:center;line-height:1.2">${v.label}</div>
+      <div style="font-size:11px;font-weight:800;color:${v.cor};opacity:.9">R$ ${v.bruto>=1000?(v.bruto/1000).toFixed(1)+'k':v.bruto.toFixed(0)}</div>
+      <div style="width:100%;height:${altura};background:linear-gradient(180deg,${v.cor}40 0%,${v.cor}15 100%);border:1px solid ${v.cor}50;border-radius:8px 8px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:6px">
+        <span style="font-size:13px;font-weight:800;color:${v.cor}">${idx+1}º</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // CARDS DETALHADOS
   document.getElementById('vendas-ranking').innerHTML=rankingComDados.map((v,i)=>{
+    const pctBarra=Math.max(Math.round((v.bruto/maxBruto)*100),v.bruto>0?4:0);
+    const setaSubindo=i===0&&v.bruto>0;
     if(v.isChristian){
-      return`<div style="background:${v.bg};border:1px solid ${v.cor}40;border-radius:10px;padding:1rem;margin-bottom:8px">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:20px">${medals[i]||'🏅'}</span>
+      return`<div style="background:${v.bg};border:1px solid ${v.cor}40;border-radius:12px;padding:14px 16px;margin-bottom:10px;position:relative">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:34px;height:34px;border-radius:50%;background:${v.cor}20;border:1.5px solid ${v.cor};display:flex;align-items:center;justify-content:center;font-size:16px">${v.avatar}</div>
             <div>
-              <div style="font-size:15px;font-weight:700;color:${v.cor}">${v.label}</div>
-              <div style="font-size:11px;color:${v.cor};opacity:.7">${v.totalVendas} fechamento${v.totalVendas!==1?'s':''} diretos</div>
+              <div style="font-size:14px;font-weight:800;color:${v.cor};display:flex;align-items:center;gap:5px">${medals[i]||''} ${v.label}</div>
+              <div style="font-size:11px;color:${v.cor};opacity:.65">${v.totalVendas} fechamento${v.totalVendas!==1?'s':''} diretos</div>
             </div>
           </div>
           <div style="text-align:right">
-            <div style="font-size:22px;font-weight:700;color:${v.cor}">R$ ${v.bruto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-            <div style="font-size:11px;color:${v.cor};opacity:.7">faturado</div>
+            <div style="font-size:19px;font-weight:800;color:${v.cor}">R$ ${v.bruto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+            <div style="font-size:10px;color:${v.cor};opacity:.65;text-transform:uppercase;letter-spacing:.03em">faturado</div>
           </div>
+        </div>
+        <div style="height:8px;background:var(--bg3);border-radius:5px;overflow:hidden">
+          <div style="height:100%;width:${pctBarra}%;background:linear-gradient(90deg,${v.cor}80,${v.cor});border-radius:5px;transition:width .6s ease"></div>
         </div>
       </div>`;
     } else {
-      return`<div style="background:${v.bg};border:1px solid ${v.cor}30;border-radius:10px;padding:1rem;margin-bottom:8px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:20px">${medals[i]||'🏅'}</span>
+      return`<div style="background:${v.bg};border:1px solid ${v.cor}30;border-radius:12px;padding:14px 16px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:34px;height:34px;border-radius:50%;background:${v.cor}20;border:1.5px solid ${v.cor};display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:${v.cor}">${v.avatar}</div>
             <div>
-              <div style="font-size:15px;font-weight:700;color:${v.cor}">${v.label}</div>
-              <div style="font-size:11px;color:${v.cor};opacity:.7">${v.totalVendas} venda${v.totalVendas!==1?'s':''}</div>
+              <div style="font-size:14px;font-weight:800;color:${v.cor};display:flex;align-items:center;gap:5px">${medals[i]||''} ${v.label}${setaSubindo?' <span style="font-size:11px">🔥</span>':''}</div>
+              <div style="font-size:11px;color:${v.cor};opacity:.65">${v.totalVendas} venda${v.totalVendas!==1?'s':''} no mês</div>
             </div>
           </div>
           <div style="text-align:right">
-            <div style="font-size:18px;font-weight:700;color:${v.cor}">R$ ${v.bruto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-            <div style="font-size:11px;color:${v.cor};opacity:.7">vendido</div>
-            <div style="font-size:14px;font-weight:700;color:${v.cor}">R$ ${v.comissao.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-            <div style="font-size:11px;color:${v.cor};opacity:.7">comissão</div>
+            <div style="font-size:17px;font-weight:800;color:${v.cor}">R$ ${v.bruto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+            <div style="font-size:10px;color:${v.cor};opacity:.65;text-transform:uppercase;letter-spacing:.03em">vendido</div>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-          <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
-            <div style="font-size:12px;font-weight:700;color:${v.cor}">${v.fechouCount} × 8%</div>
-            <div style="font-size:10px;color:var(--text2)">fechou</div>
-            <div style="font-size:11px;color:${v.cor}">R$ ${v.comFechou.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+        <div style="height:8px;background:var(--bg3);border-radius:5px;overflow:hidden;margin-bottom:10px">
+          <div style="height:100%;width:${pctBarra}%;background:linear-gradient(90deg,${v.cor}80,${v.cor});border-radius:5px;transition:width .6s ease"></div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border-radius:8px;padding:8px 10px;margin-bottom:8px">
+          <span style="font-size:11px;color:var(--text2)">💰 Comissão acumulada</span>
+          <span style="font-size:15px;font-weight:800;color:${v.cor}">R$ ${v.comissao.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+          <div style="background:var(--bg3);border-radius:8px;padding:7px;text-align:center">
+            <div style="font-size:12px;font-weight:800;color:${v.cor}">${v.fechouCount}<span style="font-size:9px;opacity:.7">×8%</span></div>
+            <div style="font-size:9px;color:var(--text2);text-transform:uppercase">fechou</div>
           </div>
-          <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
-            <div style="font-size:12px;font-weight:700;color:${v.cor}">${v.recompraCount} × 4%</div>
-            <div style="font-size:10px;color:var(--text2)">recompra</div>
-            <div style="font-size:11px;color:${v.cor}">R$ ${v.comRecompra.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+          <div style="background:var(--bg3);border-radius:8px;padding:7px;text-align:center">
+            <div style="font-size:12px;font-weight:800;color:${v.cor}">${v.recompraCount}<span style="font-size:9px;opacity:.7">×4%</span></div>
+            <div style="font-size:9px;color:var(--text2);text-transform:uppercase">recompra</div>
           </div>
-          <div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center">
-            <div style="font-size:12px;font-weight:700;color:${v.cor}">${v.agendouCount} × 2%</div>
-            <div style="font-size:10px;color:var(--text2)">agendou</div>
-            <div style="font-size:11px;color:${v.cor}">R$ ${v.comAgendou.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+          <div style="background:var(--bg3);border-radius:8px;padding:7px;text-align:center">
+            <div style="font-size:12px;font-weight:800;color:${v.cor}">${v.agendouCount}<span style="font-size:9px;opacity:.7">×2%</span></div>
+            <div style="font-size:9px;color:var(--text2);text-transform:uppercase">agendou</div>
           </div>
         </div>
       </div>`;
