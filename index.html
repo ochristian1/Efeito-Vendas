@@ -1068,7 +1068,6 @@ function renderVendas(){
     {key:'PAULA',label:'Paula',cor:'#f472b6',bg:'#2a0d1e',emoji:'🏆',isChristian:false},
     {key:'EDUARDA',label:'Eduarda',cor:'#fb923c',bg:'#2a1500',emoji:'🏆',isChristian:false},
   ];
-  if(currentUser==='PAULA'||currentUser==='EDUARDA') TODOS=TODOS.filter(v=>v.key===currentUser);
   const rankingComDados=TODOS.map(v=>{
     if(v.isChristian){
       const vendas=listaMes.filter(p=>p.fechamento==='DONO');
