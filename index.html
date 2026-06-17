@@ -551,18 +551,6 @@ function setFormLead(l){
   });
 }
 let novoPagoVendedora=null, novoPagoFechamento=null;
-function setPagoVendedora(v){
-  novoPagoVendedora=v;
-  document.querySelectorAll('[id^="pp-vend-"]').forEach(o=>o.classList.remove('selected'));
-  const el=document.getElementById('pp-vend-'+v);
-  if(el) el.classList.add('selected');
-}
-function setPagoFechamento(f){
-  novoPagoFechamento=f;
-  document.querySelectorAll('[id^="pp-fech-"]').forEach(o=>o.classList.remove('selected'));
-  const el=document.getElementById('pp-fech-'+f);
-  if(el) el.classList.add('selected');
-}
 function closeForm(){document.getElementById('form-area').innerHTML='';editId=null;window._formLead='';}
 function saveForm(){
   const nome=document.getElementById('f-nome').value.trim();
