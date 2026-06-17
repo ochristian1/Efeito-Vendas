@@ -223,9 +223,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </style>
 </head>
 <body>
-<div class="root">
 
-<div class="brand"><div class="brand-dot"></div><span class="brand-name">Efeito Vendas</span></div>
+<div id="login-screen" style="max-width:380px;margin:4rem auto;text-align:center">
+  <div class="brand" style="justify-content:center;border-bottom:none;margin-bottom:2rem"><div class="brand-dot"></div><span class="brand-name">Efeito Vendas</span></div>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.5rem">
+    <div style="font-size:14px;color:var(--text2);margin-bottom:1rem">Digite sua senha de acesso</div>
+    <input id="login-senha" type="password" placeholder="Senha" style="width:100%;font-size:15px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);outline:none;margin-bottom:10px;text-align:center" onkeydown="if(event.key==='Enter')fazerLogin()">
+    <button onclick="fazerLogin()" style="width:100%;background:var(--green);border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:700;color:#000;cursor:pointer;font-family:inherit">Entrar</button>
+    <div id="login-erro" style="display:none;color:var(--red);font-size:12px;margin-top:10px">Senha incorreta</div>
+  </div>
+</div>
+
+<div class="root" id="app-root" style="display:none">
+
+<div class="brand"><div class="brand-dot"></div><span class="brand-name">Efeito Vendas</span><button onclick="logout()" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:12px;color:var(--text2);cursor:pointer;font-family:inherit">Sair</button></div>
 <div id="loading-bar" style="display:none;background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);font-size:13px;padding:10px 16px;border-radius:8px;margin-bottom:1rem;text-align:center">Carregando dados...</div>
 <div class="tabs-nav">
   <button class="tab-btn active" onclick="switchTab('agenda',this)">Agenda</button>
@@ -406,6 +417,45 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 </div>
 <script>
+// LOGIN E PERMISSÕES
+const SENHAS={'admin2026':'ADMIN','paula123':'PAULA','eduarda123':'EDUARDA'};
+let currentUser=sessionStorage.getItem('ev_user')||null;
+function logout(){
+  sessionStorage.removeItem('ev_user');
+  location.reload();
+}
+function fazerLogin(){
+  const senha=document.getElementById('login-senha').value.trim();
+  if(SENHAS[senha]){
+    currentUser=SENHAS[senha];
+    sessionStorage.setItem('ev_user',currentUser);
+    iniciarApp();
+  } else {
+    document.getElementById('login-erro').style.display='block';
+  }
+}
+function iniciarApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-root').style.display='block';
+  aplicarPermissoes();
+  loadAll();
+}
+function aplicarPermissoes(){
+  if(currentUser==='ADMIN')return;
+  // Esconde botão de adicionar cliente para SDRs
+  const btnAdd=document.querySelector('#tab-pagos .btn-novo-cliente');
+  if(btnAdd) btnAdd.style.display='none';
+  // Esconde meta do mês, faturamento global e origem de leads (visão de admin) no painel ao vivo
+  const idsEsconder=['vendas-meta-pct','vendas-receita','vendas-leads'];
+  idsEsconder.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    let box=el;
+    while(box.parentElement && box.parentElement.id!=='tab-vendas') box=box.parentElement;
+    if(box.parentElement && box.parentElement.id==='tab-vendas') box.style.display='none';
+  });
+}
+
 const DAYS_PT=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MONTHS_PT=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 const PLANOS={E1:{nome:'E1 · Inteligência Estratégica',short:'E1 · IA',cls:'p1'},E2:{nome:'E2 · Gestão Shopee Ads',short:'E2 · Shopee Ads',cls:'p2'},E3:{nome:'E3 · Gestão Completa',short:'E3 · Completo',cls:'p3'},E4:{nome:'E4 · Gestão Mercado Livre',short:'E4 · ML',cls:'p4'},E5:{nome:'E5 · Gestão TikTok Shop',short:'E5 · TikTok',cls:'p5'}};
@@ -816,37 +866,6 @@ function renderLeadStats(listaMes){
     </div>`;
   }).join('');
 }
-function renderPagos(){
-  const [ano,mes]=mesSelecionado.split('-').map(Number);
-  const labelEl=document.getElementById('pagos-mes-label');
-  if(labelEl) labelEl.textContent=`${MONTHS_PT[mes-1].charAt(0).toUpperCase()+MONTHS_PT[mes-1].slice(1)} ${ano}`;
-  let list=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesSelecionado);
-  if(['E2','E3','E4','E5'].includes(pagoFiltro)) list=list.filter(p=>p.plano===pagoFiltro);
-  else if(pagoFiltro==='AVISO_APP'||pagoFiltro==='PN'||pagoFiltro==='ORGANICO') list=list.filter(p=>p.lead===pagoFiltro);
-  list=[...list].sort((a,b)=>Number(b.id)-Number(a.id));
-  const el=document.getElementById('pagos-list');
-  if(!list.length){el.innerHTML=`<div class="empty-day">${pagos.length?'Nenhum cliente nesse mês.':'Nenhum cliente pago ainda — clique em "+ Adicionar cliente".'}</div>`;return;}
-  const LEAD_BADGE={AVISO_APP:{label:'AVISO APP',cor:'#60a5fa',bg:'#0d1f3a'},PN:{label:'PN',cor:'#c084fc',bg:'#1a0d2e'},ORGANICO:{label:'Orgânico',cor:'var(--green)',bg:'var(--green-bg)'}};
-  el.innerHTML=list.map(c=>{
-    const planoInfo=c.plano&&PLANOS[c.plano]?`<span class="plano-badge ${PLANOS[c.plano].cls}">${PLANOS[c.plano].short}</span>`:'';
-    const leadInfo=c.lead&&LEAD_BADGE[c.lead]
-      ?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:${LEAD_BADGE[c.lead].bg};color:${LEAD_BADGE[c.lead].cor};border:1px solid ${LEAD_BADGE[c.lead].cor}40">${LEAD_BADGE[c.lead].label}</span>`
-      :`<span onclick="editarLead('${c.id}')" style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--bg3);color:var(--text3);border:1px solid var(--border);cursor:pointer">+ lead</span>`;
-    return`<div class="pago-card">
-      <div class="pago-av">${initials(c.nome)}</div>
-      <div class="pago-info">
-        <div class="pago-name">${c.nome}</div>
-        <div class="pago-sub" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">${c.fone||'Sem telefone'}${planoInfo?' · '+planoInfo:''} · <span id="pago-lead-${c.id}">${leadInfo}</span></div>
-        ${c.obs?`<div style="font-size:11px;color:var(--text2);margin-top:3px">📝 ${c.obs}</div>`:''}
-      </div>
-      <div class="pago-right" id="pago-right-${c.id}">
-        <div class="pago-valor" style="cursor:pointer" onclick="editarValor('${c.id}')" title="Clique para editar">R$ ${(c.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} ✏️</div>
-        <div class="pago-data">${c.data?fmtDateBR(c.data):''}</div>
-      </div>
-      <button class="pago-del" onclick="delPago('${c.id}')" title="Remover">✕</button>
-    </div>`;
-  }).join('');
-}
 function editarValor(id){
   const c=pagos.find(x=>x.id===String(id));if(!c)return;
   const el=document.getElementById('pago-right-'+id);
@@ -907,7 +926,11 @@ function delPago(id){
   sbDelete('pagos',id);renderPagos();renderVendas();
 }
 function renderPagos(){
+  const [ano,mes]=mesSelecionado.split('-').map(Number);
+  const labelEl=document.getElementById('pagos-mes-label');
+  if(labelEl) labelEl.textContent=`${MONTHS_PT[mes-1].charAt(0).toUpperCase()+MONTHS_PT[mes-1].slice(1)} ${ano}`;
   let list=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesSelecionado);
+  if(currentUser==='PAULA'||currentUser==='EDUARDA') list=list.filter(p=>p.vendedora===currentUser||p.fechamento===currentUser||p.fechamento==='RECOMPRA_'+currentUser);
   if(['E2','E3','E4','E5'].includes(pagoFiltro)) list=list.filter(p=>p.plano===pagoFiltro);
   else if(pagoFiltro==='AVISO_APP'||pagoFiltro==='PN'||pagoFiltro==='ORGANICO') list=list.filter(p=>p.lead===pagoFiltro);
   list=[...list].sort((a,b)=>Number(b.id)-Number(a.id));
@@ -935,8 +958,8 @@ function renderPagos(){
         <div class="pago-valor">R$ ${(c.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
         <div class="pago-data">${c.data?fmtDateBR(c.data):''}</div>
       </div>
-      <button class="btn-edit" onclick="abrirEditPago('${c.id}')" style="padding:5px 12px;font-size:12px">Editar</button>
-      <button class="pago-del" onclick="delPago('${c.id}')" title="Remover">✕</button>
+      <button class="btn-edit" onclick="abrirEditPago('${c.id}')" style="padding:5px 12px;font-size:12px${currentUser!=='ADMIN'?';display:none':''}">Editar</button>
+      <button class="pago-del" onclick="delPago('${c.id}')" title="Remover" style="${currentUser!=='ADMIN'?'display:none':''}">✕</button>
     </div>
     <div id="edit-pago-${c.id}" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-top:4px;margin-bottom:4px">
       <div class="form-row">
@@ -979,7 +1002,7 @@ function renderPagos(){
   }).join('');
 }
 
-loadAll();
+if(currentUser) iniciarApp();
 
 // ============ VENDAS ============
 let mesVendas=mesSelecionado;
@@ -1040,11 +1063,12 @@ function renderVendas(){
   const VEND_LABEL={PAULA:'Paula',EDUARDA:'Eduarda',DONO:'Você'};
 
   // RANKING UNIFICADO
-  const TODOS=[
+  let TODOS=[
     {key:'CHRISTIAN',label:'Christian',cor:'var(--green)',bg:'#0d2a1a',emoji:'👑',isChristian:true},
     {key:'PAULA',label:'Paula',cor:'#f472b6',bg:'#2a0d1e',emoji:'🏆',isChristian:false},
     {key:'EDUARDA',label:'Eduarda',cor:'#fb923c',bg:'#2a1500',emoji:'🏆',isChristian:false},
   ];
+  if(currentUser==='PAULA'||currentUser==='EDUARDA') TODOS=TODOS.filter(v=>v.key===currentUser);
   const rankingComDados=TODOS.map(v=>{
     if(v.isChristian){
       const vendas=listaMes.filter(p=>p.fechamento==='DONO');
