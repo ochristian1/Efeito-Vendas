@@ -1061,7 +1061,8 @@ function renderVendas(){
       const recompra=listaMes.filter(p=>p.fechamento==='RECOMPRA_'+v.key);
       const recRecompra=recompra.reduce((s,p)=>s+(p.valor||0),0);
       const comRecompra=recRecompra*0.04;
-      const agendou=listaMes.filter(p=>p.vendedora===v.key&&p.fechamento==='DONO');
+      const outraSDR=v.key==='PAULA'?'EDUARDA':'PAULA';
+      const agendou=listaMes.filter(p=>p.vendedora===v.key&&(p.fechamento==='DONO'||p.fechamento===outraSDR));
       const recAgendou=agendou.reduce((s,p)=>s+(p.valor||0),0);
       const comAgendou=recAgendou*0.02;
       return{...v,bruto:recFechou+recRecompra,comissao:comFechou+comRecompra+comAgendou,totalVendas:fechou.length+recompra.length+agendou.length,
