@@ -466,7 +466,7 @@ let weekOffset=0, editId=null, detailId=null, mostrarConcluidas=false;
 let novoPagoOpen=false, novoPagoPlano=null, novoPagoLead=null, pagoFiltro='todos';
 let novaNotaOpen=false, notaFiltro='todas';
 let fluxoDetailId=null;
-let metaMes=parseFloat(localStorage.getItem('meta_mes')||'0');
+let metaMes=0;
 const _hoje=new Date();
 let mesSelecionado=`${_hoje.getFullYear()}-${String(_hoje.getMonth()+1).padStart(2,'0')}`;
 
@@ -490,7 +490,15 @@ function loadAll(){
     calls.sort((a,b)=>a.data+a.hora>b.data+b.hora?1:-1);
     clientes=(rct||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',plano:r.plano||'',steps:r.steps||{},createdAt:r.created_at_custom||''}));
     pagos=(rp||[]).map(r=>({id:String(r.id||''),nome:r.nome||'',fone:r.fone||'',plano:r.plano||'',data:r.data||'',valor:parseFloat(r.valor)||0,obs:r.obs||'',lead:r.lead||'',vendedora:r.vendedora||'',fechamento:r.fechamento||''}));
-    notas=(rn||[]).map(r=>({id:String(r.id),titulo:r.titulo||'',texto:r.texto||'',data:r.data||'',feita:!!r.feita}));
+    const metaRow=(rn||[]).find(r=>r.titulo==='__meta_mes__');
+    if(metaRow){
+      metaMes=parseFloat(metaRow.texto)||0;
+    } else {
+      const metaLocal=parseFloat(localStorage.getItem('meta_mes')||'0');
+      metaMes=metaLocal;
+      if(metaLocal>0) sbUpsert('notas',{id:'meta_mes_config',titulo:'__meta_mes__',texto:String(metaLocal),data:'',feita:false});
+    }
+    notas=(rn||[]).filter(r=>r.titulo!=='__meta_mes__').map(r=>({id:String(r.id),titulo:r.titulo||'',texto:r.texto||'',data:r.data||'',feita:!!r.feita}));
     hideLoading();
     renderAgenda();renderPagos();renderNotas();renderVendas();
   }).catch(e=>{console.error(e);hideLoading();renderAgenda();renderPagos();renderNotas();renderVendas();});
@@ -1019,7 +1027,7 @@ function editarMetaVendas(){
 }
 function salvarMetaVendas(){
   metaMes=parseFloat(document.getElementById('meta-input-vendas').value)||0;
-  localStorage.setItem('meta_mes',metaMes);
+  sbUpsert('notas',{id:'meta_mes_config',titulo:'__meta_mes__',texto:String(metaMes),data:'',feita:false});
   document.getElementById('meta-edit-vendas').style.display='none';
   renderVendas();renderPagos();
 }
