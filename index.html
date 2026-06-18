@@ -673,22 +673,41 @@ function delCall(id){
   sbDelete('calls',id);
   detailId=null;document.getElementById('detail-area').innerHTML='';renderAgenda();
 }
+let mesConcluidas=todayStr().slice(0,7);
+function navegarMesConcluidas(dir){
+  const [ano,mes]=mesConcluidas.split('-').map(Number);
+  const d=new Date(ano,mes-1+dir,1);
+  mesConcluidas=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  renderList();
+}
 function renderList(){
   const hoje=todayStr();
   const today_items=calls.filter(i=>i.data===hoje);
   const late=calls.filter(i=>!i.done&&isPast(i));
   const proximos=calls.filter(i=>!i.done&&!isPast(i));
-  const concluidas=calls.filter(i=>i.done).sort((a,b)=>a.data+a.hora>b.data+b.hora?-1:1);
+  const concluidasTodas=calls.filter(i=>i.done).sort((a,b)=>a.data+a.hora>b.data+b.hora?-1:1);
+  const concluidas=concluidasTodas.filter(i=>i.data&&i.data.slice(0,7)===mesConcluidas);
   let html='';
   if(today_items.length){html+=`<div class="list-section"><div class="list-section-title">Hoje — ${fmtDateBR(hoje)}</div>`;today_items.forEach(i=>html+=listItem(i));html+=`</div>`;}
   if(late.length){html+=`<div class="list-section"><div class="list-section-title">Atrasadas</div>`;late.forEach(i=>html+=listItem(i));html+=`</div>`;}
   if(proximos.length){html+=`<div class="list-section"><div class="list-section-title">Próximas calls</div>`;proximos.forEach(i=>{if(!isToday(i))html+=listItem(i);});html+=`</div>`;}
-  if(concluidas.length){
+  if(concluidasTodas.length){
+    const [anoC,mesC]=mesConcluidas.split('-').map(Number);
+    const labelMes=`${MONTHS_PT[mesC-1].charAt(0).toUpperCase()+MONTHS_PT[mesC-1].slice(1)} ${anoC}`;
     html+=`<div class="list-section"><div class="list-section-title" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleConcluidas()">
       <span>Calls concluídas <span style="background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);border-radius:6px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px">${concluidas.length}</span></span>
       <span style="font-size:10px;color:var(--text3)">${mostrarConcluidas?'▲ ocultar':'▼ mostrar'}</span></div>
-      <div style="display:${mostrarConcluidas?'block':'none'}">`;
-    concluidas.forEach(i=>html+=listItem(i));
+      <div style="display:${mostrarConcluidas?'block':'none'}">
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 0 12px" onclick="event.stopPropagation()">
+        <button onclick="navegarMesConcluidas(-1)" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:13px;color:var(--text2);cursor:pointer">&#8592;</button>
+        <span style="font-size:13px;font-weight:600;color:var(--text);min-width:110px;text-align:center">${labelMes}</span>
+        <button onclick="navegarMesConcluidas(1)" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:13px;color:var(--text2);cursor:pointer">&#8594;</button>
+      </div>`;
+    if(concluidas.length){
+      concluidas.forEach(i=>html+=listItem(i));
+    } else {
+      html+=`<div class="empty-day">Nenhuma call concluída em ${labelMes}.</div>`;
+    }
     html+=`</div></div>`;
   }
   if(!calls.length)html=`<div class="empty-day">Nenhum agendamento — clique em "+ Nova call" para começar.</div>`;
