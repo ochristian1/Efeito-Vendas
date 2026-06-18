@@ -254,6 +254,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="today-btn" onclick="goToday()">Hoje</button>
     </div>
     <button class="add-btn" onclick="openForm(null)">+ Nova call</button>
+    <button id="btn-followup" onclick="toggleFiltroFollowup()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--text2);font-family:inherit;font-weight:600;letter-spacing:.02em;transition:all .12s">❌ Follow-up</button>
   </div>
   <div class="stats-row" id="stats-row"></div>
   <div class="week-grid" id="week-grid"></div>
@@ -467,7 +468,7 @@ const PLANOS={E1:{nome:'E1 · Inteligência Estratégica',short:'E1 · IA',cls:'
 
 // VARIÁVEIS GLOBAIS
 let calls=[], clientes=[], pagos=[], notas=[];
-let weekOffset=0, editId=null, detailId=null, mostrarConcluidas=false;
+let weekOffset=0, editId=null, detailId=null, mostrarConcluidas=false, filtroFollowup=false;
 let novoPagoOpen=false, novoPagoPlano=null, novoPagoLead=null, pagoFiltro='todos';
 let novaNotaOpen=false, notaFiltro='todas';
 let fluxoDetailId=null;
@@ -739,8 +740,32 @@ function navegarMesConcluidas(dir){
   mesConcluidas=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
   renderList();
 }
+function toggleFiltroFollowup(){
+  filtroFollowup=!filtroFollowup;
+  const btn=document.getElementById('btn-followup');
+  if(btn){
+    btn.style.background=filtroFollowup?'var(--red-bg)':'none';
+    btn.style.borderColor=filtroFollowup?'var(--red-border)':'var(--border)';
+    btn.style.color=filtroFollowup?'var(--red)':'var(--text2)';
+  }
+  renderList();
+}
 function renderList(){
   const hoje=todayStr();
+  // se filtro follow-up ativo, mostra só calls com statusFech=nao_fechou
+  if(filtroFollowup){
+    const followups=calls.filter(i=>i.statusFech==='nao_fechou').sort((a,b)=>a.data+a.hora>b.data+b.hora?-1:1);
+    let html='';
+    if(followups.length){
+      html+=`<div class="list-section"><div class="list-section-title" style="display:flex;align-items:center;gap:8px">❌ Follow-up <span style="background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);border-radius:6px;padding:1px 7px;font-size:10px;font-weight:700">${followups.length}</span></div>`;
+      followups.forEach(i=>html+=listItem(i));
+      html+=`</div>`;
+    } else {
+      html=`<div class="empty-day">Nenhum follow-up pendente.</div>`;
+    }
+    document.getElementById('list-area').innerHTML=html;
+    return;
+  }
   const today_items=calls.filter(i=>i.data===hoje);
   const late=calls.filter(i=>!i.done&&isPast(i));
   const proximos=calls.filter(i=>!i.done&&!isPast(i));
