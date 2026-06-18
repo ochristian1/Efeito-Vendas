@@ -23,7 +23,8 @@
   --red-border:#4a2020;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);padding:1.5rem}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);padding:0;margin:0}
+html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
 .root{width:100%}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border)}
 .brand-name{font-size:18px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text)}
@@ -228,7 +229,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </head>
 <body>
 
-<div id="login-screen" style="max-width:380px;margin:4rem auto;text-align:center">
+<div id="login-screen" style="max-width:380px;margin:4rem auto;text-align:center;padding:0 1rem">
   <div class="brand" style="justify-content:center;border-bottom:none;margin-bottom:2rem"><div class="brand-dot"></div><span class="brand-name">Efeito Vendas</span></div>
   <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.5rem">
     <div style="font-size:14px;color:var(--text2);margin-bottom:1rem">Digite sua senha de acesso</div>
