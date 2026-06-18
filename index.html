@@ -683,6 +683,10 @@ function openDetail(id){
   id=String(id);
   if(detailId===id){closeDetail();return;}
   detailId=id;renderDetail(id);renderList();
+  setTimeout(()=>{
+    const el=document.getElementById('detail-area');
+    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  },50);
 }
 function setStatusFech(id,status){
   const idx=calls.findIndex(x=>x.id===String(id));
@@ -698,7 +702,8 @@ function salvarObsFech(id){
   const obs=document.getElementById('obs-fech-'+id)?.value.trim()||'';
   calls[idx].obsFech=obs;
   sbUpsert('calls',{id:calls[idx].id,nome:calls[idx].nome,fone:calls[idx].fone||'',data:calls[idx].data,hora:calls[idx].hora,obs:calls[idx].obs||'',done:calls[idx].done,lead:calls[idx].lead||'',vendedora:calls[idx].vendedora||'',status_fech:calls[idx].statusFech||'',obs_fech:obs});
-  renderDetail(id);
+  const btn=document.querySelector(`#obs-fech-${id} + button`);
+  if(btn){btn.textContent='✓ Salvo!';btn.style.background='#15803d';setTimeout(()=>{btn.textContent='Salvar observação';btn.style.background='var(--green)';},2000);}
 }
 function closeDetail(){document.getElementById('detail-area').innerHTML='';detailId=null;renderList();}
 function toggleDone(id){
