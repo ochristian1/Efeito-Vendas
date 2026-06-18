@@ -815,8 +815,8 @@ function listItem(i){
         </div>
       </div>
       ${statusFech==='nao_fechou'?`<div id="fech-obs-area-${i.id}" style="margin-top:4px">
-        <textarea id="obs-fech-${i.id}" placeholder="Motivo: achou caro, vai pensar, sem interesse..." style="width:100%;min-height:60px;font-size:12px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);resize:none;font-family:inherit">${obsFech}</textarea>
-        <button onclick="salvarObsFech('${i.id}')" style="margin-top:5px;width:100%;background:var(--green);border:none;border-radius:7px;padding:7px;font-size:12px;font-weight:700;color:#000;cursor:pointer">Salvar observação</button>
+        <textarea id="obs-fech-${i.id}" placeholder="Motivo (opcional): achou caro, vai pensar..." onblur="salvarObsFech('${i.id}')" style="width:100%;min-height:56px;font-size:12px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);resize:none;font-family:inherit;outline:none">${obsFech}</textarea>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Salva automaticamente ao sair do campo</div>
       </div>`:''}
     </div>
   </div>`;
