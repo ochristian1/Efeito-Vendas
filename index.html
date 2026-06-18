@@ -790,6 +790,7 @@ function setStatusFech(id,status){
   sbUpsert('calls',{id:calls[idx].id,nome:calls[idx].nome,fone:calls[idx].fone||'',data:calls[idx].data,hora:calls[idx].hora,obs:calls[idx].obs||'',done:calls[idx].done,lead:calls[idx].lead||'',vendedora:calls[idx].vendedora||'',status_fech:calls[idx].statusFech,obs_fech:calls[idx].obsFech||''});
   renderDetail(id);
   renderList();
+  atualizarSBBadges();
 }
 function salvarObsFech(id){
   const idx=calls.findIndex(x=>x.id===String(id));
