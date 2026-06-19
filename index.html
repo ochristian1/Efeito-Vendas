@@ -803,13 +803,21 @@ function salvarObsFech(id){
 }
 function copiarFone(fone,e){
   e.stopPropagation();
-  navigator.clipboard.writeText(fone).then(()=>{
+  try{
+    if(navigator.clipboard){
+      navigator.clipboard.writeText(fone);
+    } else {
+      const ta=document.createElement('textarea');
+      ta.value=fone;ta.style.position='fixed';ta.style.opacity='0';
+      document.body.appendChild(ta);ta.select();document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
     const el=e.target;
     const orig=el.textContent;
     el.textContent='✓ Copiado!';
     el.style.color='var(--green)';
     setTimeout(()=>{el.textContent=orig;el.style.color='';},1500);
-  }).catch(()=>{});
+  }catch(err){}
 }
 function toggleDone(id){
   const idx=calls.findIndex(x=>x.id===String(id));
