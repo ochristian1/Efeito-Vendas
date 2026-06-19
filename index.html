@@ -261,7 +261,8 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
     </div>
   </div>
 </div>
-  <div style="background:var(--bg2);border:1px solid var(--green-border);border-radius:16px;padding:2rem;max-width:420px;width:90%;text-align:center;position:relative;box-shadow:0 0 40px rgba(34,197,94,.15)">
+  <div id="aviso-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--green-border);border-radius:16px;padding:2rem;max-width:420px;width:90%;text-align:center;position:relative">
     <div style="font-size:36px;margin-bottom:12px">🚀</div>
     <div id="aviso-texto" style="font-size:18px;font-weight:700;color:var(--text);line-height:1.5;margin-bottom:20px"></div>
     <button onclick="fecharAviso()" style="background:var(--green);border:none;border-radius:8px;padding:10px 28px;font-size:14px;font-weight:700;color:#000;cursor:pointer;font-family:inherit">Li! Bora vender! 💪</button>
@@ -609,12 +610,11 @@ function fecharAviso(){
   sessionStorage.setItem('aviso_lido','1');
 }
 function verificarAvisos(avisos){
-  const aviso=avisos.find(a=>a.id==='aviso_atual'&&a.ativo);
+  const aviso=(avisos||[]).find(a=>a.id==='aviso_atual'&&a.ativo&&a.mensagem);
   if(!aviso)return;
   if(sessionStorage.getItem('aviso_lido')==='1')return;
-  const overlay=document.getElementById('aviso-overlay');
   document.getElementById('aviso-texto').textContent=aviso.mensagem;
-  overlay.style.display='flex';
+  document.getElementById('aviso-overlay').style.display='flex';
 }
 function aplicarPermissoes(){
   if(currentUser==='ADMIN'){
