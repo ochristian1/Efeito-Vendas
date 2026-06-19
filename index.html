@@ -501,6 +501,11 @@ function switchTabSB(name,el){
   filtroFollowup=false;
   const btn=document.getElementById('nav-followup');
   if(btn) btn.classList.remove('active');
+  // re-renderizar a aba ao entrar nela
+  if(name==='agenda') renderAgenda();
+  else if(name==='notas') renderNotas();
+  else if(name==='pagos') renderPagos();
+  else if(name==='vendas') renderVendas();
 }
 function ativarFollowupSB(el){
   switchTabSB('agenda',document.getElementById('nav-agenda'));
