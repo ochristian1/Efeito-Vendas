@@ -318,6 +318,24 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
         <span style="color:#fbbf24">Enviar aviso</span>
       </div>
     </div>
+    <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px">Análises</div>
+    <div class="sb-nav-item" id="nav-conversao" onclick="switchTabSB('conversao',this)">
+      <i class="ti ti-chart-line" style="font-size:16px" aria-hidden="true"></i>
+      <span>Conversão</span>
+    </div>
+    <div class="sb-nav-item" id="nav-meta-ind" onclick="switchTabSB('meta-ind',this)">
+      <i class="ti ti-target" style="font-size:16px" aria-hidden="true"></i>
+      <span>Meta individual</span>
+    </div>
+    <div class="sb-nav-item" id="nav-motivos" onclick="switchTabSB('motivos',this)">
+      <i class="ti ti-mood-sad" style="font-size:16px" aria-hidden="true"></i>
+      <span>Motivos de perda</span>
+    </div>
+    <div class="sb-nav-item" id="nav-followups-sb" onclick="switchTabSB('followups',this)">
+      <i class="ti ti-bell" style="font-size:16px" aria-hidden="true"></i>
+      <span>Follow-up</span>
+      <span class="sb-badge" id="sb-badge-fu2"></span>
+    </div>
   </div>
   <div style="padding:8px;border-top:1px solid var(--border)">
     <div class="sb-nav-item" onclick="logout()" style="color:var(--text3)">
@@ -505,27 +523,27 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
   </div>
 
   <!-- TAXA DE CONVERSÃO -->
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">📈 Taxa de conversão de venda</div>
-    <div id="vendas-conversao"></div>
+  <div id="tab-conversao" class="tab-pane">
+    <div class="fluxo-top"><span class="fluxo-title">📈 Taxa de conversão de venda</span></div>
+    <div id="pg-conversao"></div>
   </div>
 
   <!-- META INDIVIDUAL -->
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">🎯 Meta individual</div>
-    <div id="vendas-meta-individual"></div>
+  <div id="tab-meta-ind" class="tab-pane">
+    <div class="fluxo-top"><span class="fluxo-title">🎯 Meta individual</span></div>
+    <div id="pg-meta-ind"></div>
   </div>
 
   <!-- MOTIVOS DE PERDA -->
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">❌ Motivos de não fechamento</div>
-    <div id="vendas-motivos"></div>
+  <div id="tab-motivos" class="tab-pane">
+    <div class="fluxo-top"><span class="fluxo-title">❌ Motivos de não fechamento</span></div>
+    <div id="pg-motivos"></div>
   </div>
 
-  <!-- LEMBRETES FOLLOW-UP -->
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">🔔 Lembretes de follow-up</div>
-    <div id="vendas-followups"></div>
+  <!-- FOLLOW-UP -->
+  <div id="tab-followups" class="tab-pane">
+    <div class="fluxo-top"><span class="fluxo-title">🔔 Lembretes de follow-up</span></div>
+    <div id="pg-followups"></div>
   </div>
 </div>
 
@@ -560,11 +578,15 @@ function switchTabSB(name,el){
   filtroFollowup=false;
   const btn=document.getElementById('nav-followup');
   if(btn) btn.classList.remove('active');
-  // re-renderizar a aba ao entrar nela
+  // re-renderizar ao entrar
   if(name==='agenda') renderAgenda();
   else if(name==='notas') renderNotas();
   else if(name==='pagos') renderPagos();
   else if(name==='vendas') renderVendas();
+  else if(name==='conversao'){const m=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesVendas);renderConversaoPage(m);}
+  else if(name==='meta-ind'){const m=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesVendas);renderMetaIndPage(m);}
+  else if(name==='motivos') renderMotivosPage();
+  else if(name==='followups') renderFollowupsPage();
 }
 function ativarFollowupSB(el){
   switchTabSB('agenda',document.getElementById('nav-agenda'));
@@ -1347,6 +1369,115 @@ function renderPagos(){
 }
 
 if(currentUser) iniciarApp();
+
+// ============ PÁGINAS DE ANÁLISE ============
+function renderConversaoPage(listaMes){
+  const el=document.getElementById('pg-conversao');if(!el)return;
+  const mesStr=mesVendas;
+  const callsMes=calls.filter(c=>c.done&&c.data&&c.data.slice(0,7)===mesStr).length;
+  const fechadosMes=listaMes.length;
+  const txGeral=callsMes>0?Math.round((fechadosMes/callsMes)*100):0;
+  const LEADS={AVISO_APP:{label:'AVISO APP',cor:'#60a5fa'},PN:{label:'PN',cor:'#c084fc'},ORGANICO:{label:'Orgânico',cor:'var(--green)'}};
+  const barras=Object.entries(LEADS).map(([k,v])=>{
+    const cl=calls.filter(c=>c.done&&c.lead===k&&c.data&&c.data.slice(0,7)===mesStr).length;
+    const fl=listaMes.filter(p=>p.lead===k).length;
+    const tx=cl>0?Math.round((fl/cl)*100):0;
+    return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <span style="font-size:13px;color:var(--text2);width:90px;flex-shrink:0">${v.label}</span>
+      <div style="flex:1;height:10px;background:var(--bg3);border-radius:5px;overflow:hidden">
+        <div style="height:100%;width:${tx}%;background:${v.cor};border-radius:5px;transition:width .6s"></div>
+      </div>
+      <span style="font-size:13px;font-weight:700;color:${v.cor};width:80px;text-align:right">${tx}% (${fl}/${cl})</span>
+    </div>`;
+  }).join('');
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div style="background:var(--bg2);border:1px solid var(--green-border);border-radius:12px;padding:20px;text-align:center">
+        <div style="font-size:40px;font-weight:800;color:var(--green)">${txGeral}%</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:4px">taxa de conversão geral</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:8px;font-weight:600">${fechadosMes} fechados / ${callsMes} calls concluídas</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px">Por origem do lead</div>
+        ${barras||'<div style="font-size:12px;color:var(--text3)">Nenhuma call com origem definida ainda</div>'}
+      </div>
+    </div>`;
+}
+function renderMetaIndPage(listaMes){
+  const el=document.getElementById('pg-meta-ind');if(!el)return;
+  if(!metaMes){el.innerHTML=`<div style="text-align:center;padding:30px;color:var(--text3)">Defina a meta do mês no Painel ao vivo primeiro.</div>`;return;}
+  const metaIndiv=Math.round(metaMes/2);
+  const SDRS=[{key:'PAULA',label:'Paula',cor:'#f472b6'},{key:'EDUARDA',label:'Eduarda',cor:'#fb923c'}];
+  el.innerHTML=`<div style="font-size:12px;color:var(--text3);margin-bottom:14px">Meta de R$ ${metaIndiv.toLocaleString('pt-BR',{minimumFractionDigits:2})} por vendedora</div>`+
+  SDRS.map(s=>{
+    const vendido=listaMes.filter(p=>p.fechamento===s.key||p.fechamento==='RECOMPRA_'+s.key).reduce((sum,p)=>sum+(p.valor||0),0);
+    const pct=Math.min(Math.round((vendido/metaIndiv)*100),100);
+    const cor=pct>=100?'var(--green)':pct>=70?'#f59e0b':s.cor;
+    return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:15px;font-weight:700;color:${s.cor}">${s.label}</span>
+        <span style="font-size:22px;font-weight:800;color:${cor}">${pct}%</span>
+      </div>
+      <div style="height:12px;background:var(--bg3);border-radius:7px;overflow:hidden;margin-bottom:8px">
+        <div style="height:100%;width:${pct}%;background:${cor};border-radius:7px;transition:width .6s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px">
+        <span style="color:var(--text2)">R$ ${vendido.toLocaleString('pt-BR',{minimumFractionDigits:2})} vendido</span>
+        <span style="color:var(--text3)">meta: R$ ${metaIndiv.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+      </div>
+      <div style="margin-top:8px;font-size:12px;font-weight:600;color:${cor}">${pct>=100?'🏆 Meta batida!':pct>=70?`⚡ Falta R$ ${(metaIndiv-vendido).toLocaleString('pt-BR',{minimumFractionDigits:2})} para bater!`:vendido>0?`Falta R$ ${(metaIndiv-vendido).toLocaleString('pt-BR',{minimumFractionDigits:2})}`:'Nenhuma venda ainda'}</div>
+    </div>`;
+  }).join('');
+}
+function renderMotivosPage(){
+  const el=document.getElementById('pg-motivos');if(!el)return;
+  const naoFecharam=calls.filter(c=>c.statusFech==='nao_fechou');
+  if(!naoFecharam.length){el.innerHTML=`<div style="text-align:center;padding:30px;color:var(--text3)">Nenhuma call marcada como "não fechou" ainda.</div>`;return;}
+  const comObs=naoFecharam.filter(c=>c.obsFech);
+  const semObs=naoFecharam.length-comObs.length;
+  const contagem={};
+  comObs.forEach(c=>{const obs=c.obsFech.trim();contagem[obs]=(contagem[obs]||0)+1;});
+  const sorted=Object.entries(contagem).sort((a,b)=>b[1]-a[1]);
+  const total=naoFecharam.length;
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+      <div style="background:var(--bg2);border:1px solid var(--red-border);border-radius:10px;padding:12px;text-align:center"><div style="font-size:28px;font-weight:800;color:var(--red)">${total}</div><div style="font-size:11px;color:var(--text3)">não fecharam</div></div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center"><div style="font-size:28px;font-weight:800;color:#fb923c">${comObs.length}</div><div style="font-size:11px;color:var(--text3)">com motivo</div></div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center"><div style="font-size:28px;font-weight:800;color:var(--text3)">${semObs}</div><div style="font-size:11px;color:var(--text3)">sem motivo</div></div>
+    </div>
+    ${sorted.length?`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px">
+      ${sorted.map(([mot,n])=>{const pct=Math.round((n/total)*100);return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:12px;color:var(--text2);flex:1">${mot}</span>
+        <div style="width:100px;height:7px;background:var(--bg3);border-radius:4px;overflow:hidden;flex-shrink:0"><div style="height:100%;width:${pct}%;background:var(--red);border-radius:4px"></div></div>
+        <span style="font-size:12px;font-weight:700;color:var(--red);width:30px;text-align:right">${n}x</span>
+      </div>`;}).join('')}
+    </div>`:'<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Adicione observações ao marcar "não fechou" para ver os motivos aqui.</div>'}`;
+}
+function renderFollowupsPage(){
+  const el=document.getElementById('pg-followups');if(!el)return;
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const followups=calls.filter(c=>c.statusFech==='nao_fechou').map(c=>{
+    const dt=new Date(c.data+'T12:00:00');
+    return{...c,dias:Math.max(0,Math.round((hoje-dt)/(1000*60*60*24)))};
+  }).sort((a,b)=>b.dias-a.dias);
+  const badge=document.getElementById('sb-badge-fu2');
+  if(badge) badge.textContent=followups.length>0?followups.length:'';
+  if(!followups.length){el.innerHTML=`<div style="text-align:center;padding:40px;color:var(--text3)">🎉 Nenhum follow-up pendente!</div>`;return;}
+  el.innerHTML=followups.map(c=>{
+    const emoji=c.dias>=7?'🔴':c.dias>=3?'🟡':'🟢';
+    const cor=c.dias>=7?'var(--red)':c.dias>=3?'#fb923c':'var(--green)';
+    const fone=(c.fone||'').replace(/\D/g,'');
+    return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px">${emoji}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${c.nome}</div>
+        <div style="font-size:11px;color:${cor};margin-top:2px">${c.dias} dia${c.dias!==1?'s':''} atrás · ${fmtDateBR(c.data)}</div>
+        ${c.obsFech?`<div style="font-size:11px;color:var(--text3);margin-top:2px">"${c.obsFech}"</div>`:''}
+      </div>
+      ${fone.length>=8?`<a href="https://wa.me/55${fone}" target="_blank" style="background:var(--green);border:none;border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;color:#000;cursor:pointer;text-decoration:none;flex-shrink:0">WhatsApp</a>`:''}
+    </div>`;
+  }).join('');
+}
 
 // ============ NOTIFICAÇÃO DE CALL ============
 let notifTimer=null,notifCallId=null;
