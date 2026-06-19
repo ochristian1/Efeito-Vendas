@@ -1383,31 +1383,37 @@ function fecharNotifCall(){document.getElementById('notif-call-overlay').style.d
 // ============ TAXA DE CONVERSÃO ============
 function renderConversao(listaMes){
   const el=document.getElementById('vendas-conversao');if(!el)return;
-  const totalCalls=calls.filter(c=>c.done).length;
-  const totalFechados=listaMes.length;
-  const txGeral=totalCalls>0?Math.round((totalFechados/totalCalls)*100):0;
+  const mesStr=mesVendas;
+  // calls concluídas no mês
+  const callsMes=calls.filter(c=>c.done&&c.data&&c.data.slice(0,7)===mesStr).length;
+  // clientes pagos no mês
+  const fechadosMes=listaMes.length;
+  const txGeral=callsMes>0?Math.round((fechadosMes/callsMes)*100):0;
   const LEADS={AVISO_APP:{label:'AVISO APP',cor:'#60a5fa'},PN:{label:'PN',cor:'#c084fc'},ORGANICO:{label:'Orgânico',cor:'var(--green)'}};
   const barras=Object.entries(LEADS).map(([k,v])=>{
-    const callsLead=calls.filter(c=>c.done&&c.lead===k).length;
+    const callsLead=calls.filter(c=>c.done&&c.lead===k&&c.data&&c.data.slice(0,7)===mesStr).length;
     const fechLead=listaMes.filter(p=>p.lead===k).length;
     const tx=callsLead>0?Math.round((fechLead/callsLead)*100):0;
-    return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-      <span style="font-size:12px;color:var(--text2);width:80px">${v.label}</span>
-      <div style="flex:1;height:7px;background:var(--bg3);border-radius:4px;overflow:hidden"><div style="height:100%;width:${tx}%;background:${v.cor};border-radius:4px;transition:width .6s"></div></div>
-      <span style="font-size:12px;font-weight:700;color:${v.cor};width:32px;text-align:right">${tx}%</span>
+    return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+      <span style="font-size:12px;color:var(--text2);width:80px;flex-shrink:0">${v.label}</span>
+      <div style="flex:1;height:7px;background:var(--bg3);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${tx}%;background:${v.cor};border-radius:4px;transition:width .6s"></div>
+      </div>
+      <span style="font-size:12px;font-weight:700;color:${v.cor};width:50px;text-align:right">${tx}% (${fechLead})</span>
     </div>`;
   }).join('');
-  el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-    <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">
-      <div style="font-size:22px;font-weight:800;color:var(--green)">${txGeral}%</div>
-      <div style="font-size:11px;color:var(--text3)">conversão geral</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:2px">${totalFechados} fechados de ${totalCalls} calls</div>
-    </div>
-    <div style="background:var(--bg3);border-radius:8px;padding:10px">
-      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Por origem</div>
-      ${barras}
-    </div>
-  </div>`;
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="background:var(--bg3);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:28px;font-weight:800;color:var(--green)">${txGeral}%</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">taxa de conversão</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">${fechadosMes} fechados / ${callsMes} calls</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:10px;padding:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">Por origem</div>
+        ${barras||'<div style="font-size:11px;color:var(--text3)">Nenhuma call com origem definida</div>'}
+      </div>
+    </div>`;
 }
 
 // ============ META INDIVIDUAL ============
