@@ -1413,22 +1413,30 @@ function renderConversao(listaMes){
 // ============ META INDIVIDUAL ============
 function renderMetaIndividual(listaMes){
   const el=document.getElementById('vendas-meta-individual');if(!el)return;
-  const mesStr=mesVendas;
+  const metaTotal=metaMes||0;
+  const metaIndiv=metaTotal>0?Math.round(metaTotal/2):0;
   const SDRS=[{key:'PAULA',label:'Paula',cor:'#f472b6'},{key:'EDUARDA',label:'Eduarda',cor:'#fb923c'}];
-  const metaPadrao=20;
-  el.innerHTML=SDRS.map(s=>{
-    const agendamentos=calls.filter(c=>c.vendedora===s.key&&c.data&&c.data.slice(0,7)===mesStr).length;
-    const pct=Math.min(Math.round((agendamentos/metaPadrao)*100),100);
+  if(metaTotal===0){
+    el.innerHTML=`<div style="text-align:center;padding:12px;color:var(--text3);font-size:12px">Defina a meta do mês no topo para ver a meta individual.</div>`;
+    return;
+  }
+  el.innerHTML=`<div style="font-size:11px;color:var(--text3);margin-bottom:10px">Meta de R$ ${metaIndiv.toLocaleString('pt-BR',{minimumFractionDigits:2})} por vendedora (metade da meta geral)</div>`+SDRS.map(s=>{
+    const vendido=listaMes.filter(p=>p.fechamento===s.key||p.fechamento==='RECOMPRA_'+s.key).reduce((sum,p)=>sum+(p.valor||0),0);
+    const pct=metaIndiv>0?Math.min(Math.round((vendido/metaIndiv)*100),100):0;
     const cor=pct>=100?'var(--green)':pct>=70?'#f59e0b':s.cor;
-    return`<div style="margin-bottom:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+    return`<div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <span style="font-size:13px;font-weight:600;color:${s.cor}">${s.label}</span>
-        <span style="font-size:13px;font-weight:800;color:${cor}">${pct}% · ${agendamentos}/${metaPadrao} agendamentos</span>
+        <span style="font-size:13px;font-weight:800;color:${cor}">${pct}%</span>
       </div>
-      <div style="height:10px;background:var(--bg3);border-radius:6px;overflow:hidden">
+      <div style="height:10px;background:var(--bg2);border-radius:6px;overflow:hidden;margin-bottom:6px">
         <div style="height:100%;width:${pct}%;background:${cor};border-radius:6px;transition:width .6s"></div>
       </div>
-      ${pct>=100?`<div style="font-size:11px;color:var(--green);margin-top:4px">🏆 Meta batida!</div>`:pct>=70?`<div style="font-size:11px;color:#f59e0b;margin-top:4px">⚡ Faltam ${metaPadrao-agendamentos} para bater a meta!</div>`:''}
+      <div style="display:flex;justify-content:space-between;font-size:11px">
+        <span style="color:var(--text2)">R$ ${vendido.toLocaleString('pt-BR',{minimumFractionDigits:2})} vendido</span>
+        <span style="color:var(--text3)">meta: R$ ${metaIndiv.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+      </div>
+      ${pct>=100?`<div style="font-size:11px;color:var(--green);margin-top:4px;font-weight:600">🏆 Meta batida!</div>`:pct>=70?`<div style="font-size:11px;color:#f59e0b;margin-top:4px;font-weight:600">⚡ Falta R$ ${(metaIndiv-vendido).toLocaleString('pt-BR',{minimumFractionDigits:2})} para bater!</div>`:pct>0?`<div style="font-size:11px;color:${s.cor};margin-top:4px;opacity:.7">Falta R$ ${(metaIndiv-vendido).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>`:''}
     </div>`;
   }).join('');
 }
@@ -1462,23 +1470,27 @@ function renderFollowups(){
   const hoje=new Date();hoje.setHours(0,0,0,0);
   const followups=calls.filter(c=>c.statusFech==='nao_fechou').map(c=>{
     const dt=new Date(c.data+'T12:00:00');
-    const dias=Math.round((hoje-dt)/(1000*60*60*24));
+    const dias=Math.max(0,Math.round((hoje-dt)/(1000*60*60*24)));
     return{...c,dias};
   }).sort((a,b)=>b.dias-a.dias);
-  if(!followups.length){el.innerHTML=`<div class="empty-day">Nenhum follow-up pendente. 🎉</div>`;return;}
-  el.innerHTML=followups.slice(0,5).map(c=>{
+  if(!followups.length){
+    el.innerHTML=`<div style="text-align:center;padding:12px;color:var(--text3);font-size:12px">🎉 Nenhum follow-up pendente! Todos fecharam ou foram resgatados.</div>`;
+    return;
+  }
+  el.innerHTML=followups.slice(0,8).map(c=>{
     const cor=c.dias>=7?'var(--red)':c.dias>=3?'#fb923c':'var(--green)';
     const emoji=c.dias>=7?'🔴':c.dias>=3?'🟡':'🟢';
     const fone=(c.fone||'').replace(/\D/g,'');
-    return`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg3);border-radius:8px;margin-bottom:6px">
-      <span style="font-size:16px">${emoji}</span>
+    const motivo=c.obsFech?` · ${c.obsFech.slice(0,35)}`:' · sem motivo registrado';
+    return`<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg3);border-radius:8px;margin-bottom:6px">
+      <span style="font-size:14px">${emoji}</span>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:500;color:var(--text)">${c.nome}</div>
-        <div style="font-size:11px;color:var(--text3)">${c.dias} dia${c.dias!==1?'s':''} sem retorno${c.obsFech?' · '+c.obsFech.slice(0,30):''}</div>
+        <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.nome}</div>
+        <div style="font-size:11px;color:var(--text3)">${c.dias} dia${c.dias!==1?'s':''} atrás${motivo}</div>
       </div>
-      <a href="https://wa.me/55${fone}" target="_blank" style="background:var(--green);border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;color:#000;cursor:pointer;text-decoration:none;white-space:nowrap">Resgatar</a>
+      ${fone.length>=8?`<a href="https://wa.me/55${fone}" target="_blank" style="background:var(--green);border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;color:#000;cursor:pointer;text-decoration:none;white-space:nowrap;flex-shrink:0">Resgatar</a>`:''}
     </div>`;
-  }).join('');
+  }).join('')+(followups.length>8?`<div style="text-align:center;font-size:11px;color:var(--text3);padding:8px">+${followups.length-8} mais</div>`:'');
 }
 
 // ============ HISTÓRICO DO CLIENTE ============
