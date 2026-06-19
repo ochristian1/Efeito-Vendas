@@ -242,8 +242,25 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
 <div class="root" id="app-root" style="display:none">
 <div id="loading-bar" style="display:none;position:fixed;top:0;left:0;right:0;z-index:999;background:var(--green-bg);border-bottom:1px solid var(--green-border);color:var(--green);font-size:13px;padding:8px 16px;text-align:center">Carregando dados...</div>
 
-<!-- POPUP AVISO -->
-<div id="aviso-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:none;align-items:center;justify-content:center">
+<!-- POPUP NOTIFICAÇÃO DE CALL -->
+<div id="notif-call-overlay" style="display:none;position:fixed;bottom:20px;right:20px;z-index:9998;max-width:320px;width:90%">
+  <div style="background:var(--bg2);border:1px solid var(--green-border);border-radius:12px;padding:14px 16px;box-shadow:0 4px 24px rgba(0,0,0,.5)">
+    <div id="notif-bar" style="position:absolute;top:0;left:0;height:3px;background:var(--green);border-radius:12px 12px 0 0;transition:width linear"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div id="notif-av" style="width:38px;height:38px;border-radius:50%;background:var(--green-bg);border:1px solid var(--green-border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--green);flex-shrink:0"></div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--green)">⏰ Call em 5 minutos!</div>
+        <div id="notif-nome" style="font-size:13px;font-weight:500;color:var(--text)"></div>
+        <div id="notif-sub" style="font-size:11px;color:var(--text3)"></div>
+      </div>
+      <button onclick="fecharNotifCall()" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;flex-shrink:0">✕</button>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button id="notif-wpp" style="flex:1;background:var(--green);border:none;border-radius:7px;padding:7px;font-size:12px;font-weight:700;color:#000;cursor:pointer">Abrir WhatsApp</button>
+      <button onclick="fecharNotifCall()" style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:7px 12px;font-size:12px;color:var(--text2);cursor:pointer">Dispensar</button>
+    </div>
+  </div>
+</div>
   <div style="background:var(--bg2);border:1px solid var(--green-border);border-radius:16px;padding:2rem;max-width:420px;width:90%;text-align:center;position:relative;box-shadow:0 0 40px rgba(34,197,94,.15)">
     <div style="font-size:36px;margin-bottom:12px">🚀</div>
     <div id="aviso-texto" style="font-size:18px;font-weight:700;color:var(--text);line-height:1.5;margin-bottom:20px"></div>
@@ -484,6 +501,30 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
     <div id="vendas-podio" style="display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-bottom:20px;min-height:140px"></div>
     <div id="vendas-ranking"></div>
   </div>
+
+  <!-- TAXA DE CONVERSÃO -->
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">📈 Taxa de conversão de venda</div>
+    <div id="vendas-conversao"></div>
+  </div>
+
+  <!-- META INDIVIDUAL -->
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">🎯 Meta individual</div>
+    <div id="vendas-meta-individual"></div>
+  </div>
+
+  <!-- MOTIVOS DE PERDA -->
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">❌ Motivos de não fechamento</div>
+    <div id="vendas-motivos"></div>
+  </div>
+
+  <!-- LEMBRETES FOLLOW-UP -->
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">🔔 Lembretes de follow-up</div>
+    <div id="vendas-followups"></div>
+  </div>
 </div>
 
 </div><!-- fim conteúdo principal -->
@@ -552,6 +593,7 @@ function iniciarApp(){
   if(role) role.textContent=info.role;
   aplicarPermissoes();
   loadAll();
+  setTimeout(verificarProximaCall, 5000);
 }
 function abrirEnviarAviso(){
   const msg=prompt('✍️ Digite a mensagem para o time:');
@@ -969,7 +1011,7 @@ function listItem(i){
     </div>
     <div class="detail-fields"><div class="dfield"><div class="dfield-label">Data</div><div class="dfield-val">${fmtDateBR(i.data)}</div></div><div class="dfield"><div class="dfield-label">Horário</div><div class="dfield-val">${i.hora}</div></div></div>
     ${i.obs?`<div class="detail-notes"><div class="dfield-label">Anotações</div><div class="dfield-val">${i.obs.replace(/\n/g,'<br>')}</div></div>`:''}
-    <div class="detail-btns" onclick="event.stopPropagation()">
+    ${renderHistoricoCall(i)}
       <button class="btn-done" onclick="toggleDone('${i.id}')">${i.done?'Desmarcar':'Marcar como concluída'}</button>
       <button class="btn-edit" onclick="openForm('${i.data}','${i.id}')">Editar</button>
       <button class="btn-del" onclick="delCall('${i.id}')">Excluir</button>
@@ -1305,7 +1347,159 @@ function renderPagos(){
 
 if(currentUser) iniciarApp();
 
-// ============ VENDAS ============
+// ============ NOTIFICAÇÃO DE CALL ============
+let notifTimer=null,notifCallId=null;
+function verificarProximaCall(){
+  if(notifTimer) clearTimeout(notifTimer);
+  const agora=new Date();
+  const em5=new Date(agora.getTime()+5*60*1000);
+  const proxima=calls.filter(c=>!c.done).find(c=>{
+    const dt=new Date(c.data+'T'+c.hora+':00');
+    return dt>agora&&dt<=em5&&c.id!==notifCallId;
+  });
+  if(proxima){
+    notifCallId=proxima.id;
+    const dt=new Date(proxima.data+'T'+proxima.hora+':00');
+    const segs=Math.max(0,Math.round((dt-agora)/1000));
+    mostrarNotifCall(proxima,segs);
+  }
+  notifTimer=setTimeout(verificarProximaCall,30000);
+}
+function mostrarNotifCall(call,segsRestantes){
+  document.getElementById('notif-av').textContent=initials(call.nome);
+  document.getElementById('notif-nome').textContent=call.nome+' — '+call.hora;
+  document.getElementById('notif-sub').textContent=(call.fone||'')+(call.lead?' · '+call.lead:'');
+  const fone=(call.fone||'').replace(/\D/g,'');
+  document.getElementById('notif-wpp').onclick=()=>window.open('https://wa.me/55'+fone,'_blank');
+  const overlay=document.getElementById('notif-call-overlay');
+  overlay.style.display='block';
+  const bar=document.getElementById('notif-bar');
+  bar.style.width='100%';bar.style.transition='none';
+  setTimeout(()=>{bar.style.transition='width '+segsRestantes+'s linear';bar.style.width='0%';},100);
+}
+function fecharNotifCall(){document.getElementById('notif-call-overlay').style.display='none';}
+
+// ============ TAXA DE CONVERSÃO ============
+function renderConversao(listaMes){
+  const el=document.getElementById('vendas-conversao');if(!el)return;
+  const totalCalls=calls.filter(c=>c.done).length;
+  const totalFechados=listaMes.length;
+  const txGeral=totalCalls>0?Math.round((totalFechados/totalCalls)*100):0;
+  const LEADS={AVISO_APP:{label:'AVISO APP',cor:'#60a5fa'},PN:{label:'PN',cor:'#c084fc'},ORGANICO:{label:'Orgânico',cor:'var(--green)'}};
+  const barras=Object.entries(LEADS).map(([k,v])=>{
+    const callsLead=calls.filter(c=>c.done&&c.lead===k).length;
+    const fechLead=listaMes.filter(p=>p.lead===k).length;
+    const tx=callsLead>0?Math.round((fechLead/callsLead)*100):0;
+    return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="font-size:12px;color:var(--text2);width:80px">${v.label}</span>
+      <div style="flex:1;height:7px;background:var(--bg3);border-radius:4px;overflow:hidden"><div style="height:100%;width:${tx}%;background:${v.cor};border-radius:4px;transition:width .6s"></div></div>
+      <span style="font-size:12px;font-weight:700;color:${v.cor};width:32px;text-align:right">${tx}%</span>
+    </div>`;
+  }).join('');
+  el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+    <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">
+      <div style="font-size:22px;font-weight:800;color:var(--green)">${txGeral}%</div>
+      <div style="font-size:11px;color:var(--text3)">conversão geral</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">${totalFechados} fechados de ${totalCalls} calls</div>
+    </div>
+    <div style="background:var(--bg3);border-radius:8px;padding:10px">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Por origem</div>
+      ${barras}
+    </div>
+  </div>`;
+}
+
+// ============ META INDIVIDUAL ============
+function renderMetaIndividual(listaMes){
+  const el=document.getElementById('vendas-meta-individual');if(!el)return;
+  const mesStr=mesVendas;
+  const SDRS=[{key:'PAULA',label:'Paula',cor:'#f472b6'},{key:'EDUARDA',label:'Eduarda',cor:'#fb923c'}];
+  const metaPadrao=20;
+  el.innerHTML=SDRS.map(s=>{
+    const agendamentos=calls.filter(c=>c.vendedora===s.key&&c.data&&c.data.slice(0,7)===mesStr).length;
+    const pct=Math.min(Math.round((agendamentos/metaPadrao)*100),100);
+    const cor=pct>=100?'var(--green)':pct>=70?'#f59e0b':s.cor;
+    return`<div style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+        <span style="font-size:13px;font-weight:600;color:${s.cor}">${s.label}</span>
+        <span style="font-size:13px;font-weight:800;color:${cor}">${pct}% · ${agendamentos}/${metaPadrao} agendamentos</span>
+      </div>
+      <div style="height:10px;background:var(--bg3);border-radius:6px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${cor};border-radius:6px;transition:width .6s"></div>
+      </div>
+      ${pct>=100?`<div style="font-size:11px;color:var(--green);margin-top:4px">🏆 Meta batida!</div>`:pct>=70?`<div style="font-size:11px;color:#f59e0b;margin-top:4px">⚡ Faltam ${metaPadrao-agendamentos} para bater a meta!</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ============ MOTIVOS DE PERDA ============
+function renderMotivos(){
+  const el=document.getElementById('vendas-motivos');if(!el)return;
+  const naoFecharam=calls.filter(c=>c.statusFech==='nao_fechou'&&c.obsFech);
+  if(!naoFecharam.length){el.innerHTML=`<div class="empty-day">Nenhum motivo registrado ainda.</div>`;return;}
+  const contagem={};
+  naoFecharam.forEach(c=>{
+    const obs=c.obsFech.toLowerCase().trim();
+    const chave=obs.length>40?obs.slice(0,40)+'...':obs;
+    contagem[chave]=(contagem[chave]||0)+1;
+  });
+  const sorted=Object.entries(contagem).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const total=naoFecharam.length;
+  el.innerHTML=`<div style="display:grid;gap:6px">`+sorted.map(([mot,n])=>{
+    const pct=Math.round((n/total)*100);
+    return`<div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:12px;color:var(--text2);flex:1">${mot}</span>
+      <div style="width:80px;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--red);border-radius:3px"></div></div>
+      <span style="font-size:11px;font-weight:700;color:var(--red);width:28px;text-align:right">${n}x</span>
+    </div>`;
+  }).join('')+`</div>`;
+}
+
+// ============ LEMBRETES FOLLOW-UP ============
+function renderFollowups(){
+  const el=document.getElementById('vendas-followups');if(!el)return;
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const followups=calls.filter(c=>c.statusFech==='nao_fechou').map(c=>{
+    const dt=new Date(c.data+'T12:00:00');
+    const dias=Math.round((hoje-dt)/(1000*60*60*24));
+    return{...c,dias};
+  }).sort((a,b)=>b.dias-a.dias);
+  if(!followups.length){el.innerHTML=`<div class="empty-day">Nenhum follow-up pendente. 🎉</div>`;return;}
+  el.innerHTML=followups.slice(0,5).map(c=>{
+    const cor=c.dias>=7?'var(--red)':c.dias>=3?'#fb923c':'var(--green)';
+    const emoji=c.dias>=7?'🔴':c.dias>=3?'🟡':'🟢';
+    const fone=(c.fone||'').replace(/\D/g,'');
+    return`<div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg3);border-radius:8px;margin-bottom:6px">
+      <span style="font-size:16px">${emoji}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;color:var(--text)">${c.nome}</div>
+        <div style="font-size:11px;color:var(--text3)">${c.dias} dia${c.dias!==1?'s':''} sem retorno${c.obsFech?' · '+c.obsFech.slice(0,30):''}</div>
+      </div>
+      <a href="https://wa.me/55${fone}" target="_blank" style="background:var(--green);border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;color:#000;cursor:pointer;text-decoration:none;white-space:nowrap">Resgatar</a>
+    </div>`;
+  }).join('');
+}
+
+// ============ HISTÓRICO DO CLIENTE ============
+function renderHistoricoCall(item){
+  const fone=(item.fone||'').replace(/\D/g,'');
+  const historico=calls.filter(c=>c.id!==item.id&&c.fone&&c.fone.replace(/\D/g,'')===fone&&fone.length>5);
+  const pagosHist=pagos.filter(p=>p.fone&&p.fone.replace(/\D/g,'')===fone&&fone.length>5);
+  if(!historico.length&&!pagosHist.length)return'';
+  return`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">📋 Histórico do cliente (${historico.length+pagosHist.length} contatos)</div>
+    ${pagosHist.map(p=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:12px">✅</span>
+      <div style="flex:1;font-size:11px;color:var(--text2)">Cliente pago · ${p.plano||''} · R$ ${(p.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+      <span style="font-size:10px;color:var(--text3)">${fmtDateBR(p.data)}</span>
+    </div>`).join('')}
+    ${historico.map(c=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:12px">${c.statusFech==='fechou'?'✅':c.statusFech==='nao_fechou'?'❌':'📞'}</span>
+      <div style="flex:1;font-size:11px;color:var(--text2)">${c.statusFech==='fechou'?'Fechou':c.statusFech==='nao_fechou'?'Não fechou · '+(c.obsFech||''):'Call realizada'}</div>
+      <span style="font-size:10px;color:var(--text3)">${fmtDateBR(c.data)}</span>
+    </div>`).join('')}
+  </div>`;
+}
 let mesVendas=mesSelecionado;
 function navegarMesVendas(dir){
   const [ano,mes]=mesVendas.split('-').map(Number);
@@ -1418,7 +1612,6 @@ function renderVendas(){
 
   // CARDS DETALHADOS
   document.getElementById('vendas-ranking').innerHTML=rankingComDados.map((v,i)=>{
-    const pctBarra=Math.max(Math.round((v.bruto/maxBruto)*100),v.bruto>0?4:0);
     const setaSubindo=i===0&&v.bruto>0;
     const isPropia=currentUser==='ADMIN'||v.key===currentUser;
     if(v.isChristian){
@@ -1479,6 +1672,11 @@ function renderVendas(){
       </div>`;
     }
   }).join('')||'<div class="empty-day">Nenhuma venda registrada este mês.</div>';
+
+  renderConversao(listaMes);
+  renderMetaIndividual(listaMes);
+  renderMotivos();
+  renderFollowups();
 }
 </script>
 </body>
