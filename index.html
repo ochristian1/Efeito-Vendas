@@ -801,7 +801,16 @@ function salvarObsFech(id){
   closeDetail();
   renderList();
 }
-function closeDetail(){document.getElementById('detail-area').innerHTML='';detailId=null;renderList();}
+function copiarFone(fone,e){
+  e.stopPropagation();
+  navigator.clipboard.writeText(fone).then(()=>{
+    const el=e.target;
+    const orig=el.textContent;
+    el.textContent='✓ Copiado!';
+    el.style.color='var(--green)';
+    setTimeout(()=>{el.textContent=orig;el.style.color='';},1500);
+  }).catch(()=>{});
+}
 function toggleDone(id){
   const idx=calls.findIndex(x=>x.id===String(id));
   if(idx>=0){
@@ -888,7 +897,8 @@ function listItem(i){
   const leadBadge=i.lead&&LEAD_CORES[i.lead]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${LEAD_CORES[i.lead]};border:1px solid ${LEAD_CORES[i.lead]}50;margin-left:4px">${LEAD_LABELS[i.lead]}</span>`:'';
   const vendBadge=i.vendedora&&VEND_CORES[i.vendedora]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${VEND_CORES[i.vendedora]};border:1px solid ${VEND_CORES[i.vendedora]}50;margin-left:4px">${VEND_LABELS[i.vendedora]}</span>`:'';
   const fechBadge=i.statusFech==='fechou'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);margin-left:4px">✅ Fechou</span>`:i.statusFech==='nao_fechou'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);margin-left:4px">❌ Follow-up</span>`:'';
-  const card=`<div class="list-item${i.done?' done':''}${isActive?' active':''}" data-call-id="${i.id}" onclick="openDetail('${i.id}')"><div class="li-av">${initials(i.nome)}</div><div class="li-info"><div class="li-name">${i.nome} ${statusChip(i)}${leadBadge}${vendBadge}${fechBadge}</div><div class="li-sub">${i.fone||''}${i.obs?' · '+i.obs:''}</div></div><div class="li-time"><div class="li-date">${fmtDateShort(i.data)}</div><div class="li-hour">${i.hora}</div></div></div>`;
+  const foneEl=i.fone?`<span onclick="copiarFone('${i.fone}',event)" style="cursor:pointer" title="Clique para copiar">${i.fone}</span>`:'';
+  const card=`<div class="list-item${i.done?' done':''}${isActive?' active':''}" data-call-id="${i.id}" onclick="openDetail('${i.id}')"><div class="li-av">${initials(i.nome)}</div><div class="li-info"><div class="li-name">${i.nome} ${statusChip(i)}${leadBadge}${vendBadge}${fechBadge}</div><div class="li-sub">${foneEl}${i.obs?' · '+i.obs:''}</div></div><div class="li-time"><div class="li-date">${fmtDateShort(i.data)}</div><div class="li-hour">${i.hora}</div></div></div>`;
   if(!isActive) return card;
   // renderizar detalhe inline
   const statusFech=i.statusFech||'';
