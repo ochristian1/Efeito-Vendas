@@ -707,7 +707,12 @@ function loadAll(){
       metaMes=metaLocal;
       if(metaLocal>0) sbUpsert('notas',{id:'meta_mes_config',titulo:'__meta_mes__',texto:String(metaLocal),data:'',feita:false});
     }
-    notas=(rn||[]).filter(r=>r.titulo!=='__meta_mes__').map(r=>({id:String(r.id),titulo:r.titulo||'',texto:r.texto||'',data:r.data||'',feita:!!r.feita}));
+    // carregar metas individuais das SDRs
+    const metaPaula=(rn||[]).find(r=>r.titulo==='__meta_sdr_PAULA__');
+    const metaEduarda=(rn||[]).find(r=>r.titulo==='__meta_sdr_EDUARDA__');
+    metasPorSDR.PAULA=metaPaula?parseFloat(metaPaula.texto)||0:0;
+    metasPorSDR.EDUARDA=metaEduarda?parseFloat(metaEduarda.texto)||0:0;
+    notas=(rn||[]).filter(r=>r.titulo!=='__meta_mes__'&&!String(r.titulo).startsWith('__meta_sdr_')).map(r=>({id:String(r.id),titulo:r.titulo||'',texto:r.texto||'',data:r.data||'',feita:!!r.feita}));
     hideLoading();
     renderAgenda();renderPagos();renderNotas();renderVendas();atualizarSBBadges();
     if(currentUser!=='ADMIN') verificarAvisos(ra||[]);
@@ -1390,6 +1395,8 @@ function navegarMesConversao(dir){
 function salvarMetaSDR(key){
   const val=parseFloat(document.getElementById('meta-input-'+key)?.value)||0;
   metasPorSDR[key]=val;
+  // salva no Supabase (tabela notas) para persistir entre dispositivos
+  sbUpsert('notas',{id:'meta_sdr_'+key,titulo:'__meta_sdr_'+key+'__',texto:String(val),data:'',feita:false});
   const m=pagos.filter(p=>p.data&&p.data.slice(0,7)===(mesVendas||mesSelecionado));
   renderMetaIndPage(m);
 }
@@ -1807,7 +1814,9 @@ function renderVendas(){
   }).join('');
 
   // CARDS DETALHADOS
+  const maxBrutoRank=Math.max(...rankingComDados.map(v=>v.bruto),1);
   document.getElementById('vendas-ranking').innerHTML=rankingComDados.map((v,i)=>{
+    const pctBarra=Math.max(Math.round((v.bruto/maxBrutoRank)*100),v.bruto>0?4:0);
     const setaSubindo=i===0&&v.bruto>0;
     const isPropia=currentUser==='ADMIN'||v.key===currentUser;
     if(v.isChristian){
