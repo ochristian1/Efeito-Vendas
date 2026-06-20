@@ -515,6 +515,12 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
     <div id="vendas-podio" style="display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-bottom:20px;min-height:140px"></div>
     <div id="vendas-ranking"></div>
   </div>
+
+  <!-- RESUMO DE COMISSÕES (admin only) -->
+  <div id="vendas-comissoes" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">💰 Resumo de comissões a pagar</div>
+    <div id="vendas-comissoes-content"></div>
+  </div>
 </div>
 
 <!-- TAXA DE CONVERSÃO -->
@@ -1867,6 +1873,45 @@ function renderVendas(){
   renderMetaIndividual(listaMes);
   renderMotivos();
   renderFollowups();
+  renderComissoes(rankingComDados);
+}
+
+function renderComissoes(ranking){
+  const box=document.getElementById('vendas-comissoes');
+  const el=document.getElementById('vendas-comissoes-content');
+  if(!box||!el)return;
+  if(currentUser!=='ADMIN'){box.style.display='none';return;}
+  box.style.display='block';
+  const sdrs=ranking.filter(v=>!v.isChristian);
+  if(!sdrs.length){el.innerHTML=`<div style="color:var(--text3);font-size:12px">Nenhuma venda registrada ainda.</div>`;return;}
+  const totalComissoes=sdrs.reduce((s,v)=>s+(v.comissao||0),0);
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(${sdrs.length},1fr);gap:10px;margin-bottom:12px">
+      ${sdrs.map(v=>`
+        <div style="background:${v.bg};border:1px solid ${v.cor}40;border-radius:10px;padding:14px;text-align:center">
+          <div style="font-size:13px;font-weight:700;color:${v.cor};margin-bottom:8px">${v.label}</div>
+          <div style="font-size:24px;font-weight:800;color:${v.cor}">R$ ${(v.comissao||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+          <div style="font-size:10px;color:${v.cor};opacity:.7;margin-bottom:10px">a pagar</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 8px;background:var(--bg3);border-radius:5px">
+              <span style="color:var(--text2)">${v.fechouCount}× fechou (8%)</span>
+              <span style="color:${v.cor};font-weight:600">R$ ${(v.comFechou||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 8px;background:var(--bg3);border-radius:5px">
+              <span style="color:var(--text2)">${v.recompraCount}× recompra (4%)</span>
+              <span style="color:${v.cor};font-weight:600">R$ ${(v.comRecompra||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 8px;background:var(--bg3);border-radius:5px">
+              <span style="color:var(--text2)">${v.agendouCount}× agendou (2%)</span>
+              <span style="color:${v.cor};font-weight:600">R$ ${(v.comAgendou||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>
+    <div style="background:var(--green-bg);border:1px solid var(--green-border);border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:13px;font-weight:600;color:var(--text)">Total a pagar no mês</span>
+      <span style="font-size:22px;font-weight:800;color:var(--green)">R$ ${totalComissoes.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+    </div>`;
 }
 </script>
 </body>
