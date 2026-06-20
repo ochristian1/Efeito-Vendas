@@ -515,30 +515,30 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
     <div id="vendas-podio" style="display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-bottom:20px;min-height:140px"></div>
     <div id="vendas-ranking"></div>
   </div>
+</div>
 
-  <!-- TAXA DE CONVERSÃO -->
-  <div id="tab-conversao" class="tab-pane">
-    <div class="fluxo-top"><span class="fluxo-title">📈 Taxa de conversão de venda</span></div>
-    <div id="pg-conversao"></div>
-  </div>
+<!-- TAXA DE CONVERSÃO -->
+<div id="tab-conversao" class="tab-pane">
+  <div class="fluxo-top"><span class="fluxo-title">📈 Taxa de conversão de venda</span></div>
+  <div id="pg-conversao"></div>
+</div>
 
-  <!-- META INDIVIDUAL -->
-  <div id="tab-meta-ind" class="tab-pane">
-    <div class="fluxo-top"><span class="fluxo-title">🎯 Meta individual</span></div>
-    <div id="pg-meta-ind"></div>
-  </div>
+<!-- META INDIVIDUAL -->
+<div id="tab-meta-ind" class="tab-pane">
+  <div class="fluxo-top"><span class="fluxo-title">🎯 Meta individual</span></div>
+  <div id="pg-meta-ind"></div>
+</div>
 
-  <!-- MOTIVOS DE PERDA -->
-  <div id="tab-motivos" class="tab-pane">
-    <div class="fluxo-top"><span class="fluxo-title">❌ Motivos de não fechamento</span></div>
-    <div id="pg-motivos"></div>
-  </div>
+<!-- MOTIVOS DE PERDA -->
+<div id="tab-motivos" class="tab-pane">
+  <div class="fluxo-top"><span class="fluxo-title">❌ Motivos de não fechamento</span></div>
+  <div id="pg-motivos"></div>
+</div>
 
-  <!-- FOLLOW-UP -->
-  <div id="tab-followups" class="tab-pane">
-    <div class="fluxo-top"><span class="fluxo-title">🔔 Lembretes de follow-up</span></div>
-    <div id="pg-followups"></div>
-  </div>
+<!-- FOLLOW-UP -->
+<div id="tab-followups" class="tab-pane">
+  <div class="fluxo-top"><span class="fluxo-title">🔔 Lembretes de follow-up</span></div>
+  <div id="pg-followups"></div>
 </div>
 
 </div><!-- fim conteúdo principal -->
@@ -578,13 +578,13 @@ function switchTabSB(name,el){
   else if(name==='pagos') renderPagos();
   else if(name==='vendas') renderVendas();
   else if(name==='conversao'){
-    const mesStr=mesVendas||mesSelecionado;
-    const m=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesStr);
+    if(!mesVendas) mesVendas=mesSelecionado;
+    const m=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesVendas);
     renderConversaoPage(m);
   }
   else if(name==='meta-ind'){
-    const mesStr=mesVendas||mesSelecionado;
-    const m=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesStr);
+    if(!mesVendas) mesVendas=mesSelecionado;
+    const m=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesVendas);
     renderMetaIndPage(m);
   }
   else if(name==='motivos') renderMotivosPage();
