@@ -1373,9 +1373,23 @@ function renderPagos(){
 if(currentUser) iniciarApp();
 
 // ============ PÁGINAS DE ANÁLISE ============
+let mesConversao=mesSelecionado;
+let metasPorSDR={PAULA:0,EDUARDA:0};
+function navegarMesConversao(dir){
+  const [ano,mes]=mesConversao.split('-').map(Number);
+  const d=new Date(ano,mes-1+dir,1);
+  mesConversao=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  renderConversaoPage([]);
+}
+function salvarMetaSDR(key){
+  const val=parseFloat(document.getElementById('meta-input-'+key)?.value)||0;
+  metasPorSDR[key]=val;
+  const m=pagos.filter(p=>p.data&&p.data.slice(0,7)===(mesVendas||mesSelecionado));
+  renderMetaIndPage(m);
+}
 function renderConversaoPage(listaMes){
   const el=document.getElementById('pg-conversao');if(!el)return;
-  const mesStr=mesVendas||mesSelecionado;
+  const mesStr=mesConversao||mesVendas||mesSelecionado;
   const [ano,mes]=mesStr.split('-').map(Number);
   const MONTHS_PT=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const labelMes=`${MONTHS_PT[mes-1]} ${ano}`;
@@ -1402,7 +1416,11 @@ function renderConversaoPage(listaMes){
   }).join('');
 
   el.innerHTML=`
-    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">${labelMes}</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <button onclick="navegarMesConversao(-1)" style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:5px 12px;color:var(--text2);cursor:pointer;font-size:14px">←</button>
+      <span style="font-size:14px;font-weight:600;color:var(--text);min-width:130px;text-align:center">${labelMes}</span>
+      <button onclick="navegarMesConversao(1)" style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:5px 12px;color:var(--text2);cursor:pointer;font-size:14px">→</button>
+    </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
       <div style="background:var(--bg2);border:1px solid var(--green-border);border-radius:12px;padding:16px;text-align:center">
         <div style="font-size:36px;font-weight:800;color:var(--green)">${txGeral}%</div>
@@ -1424,27 +1442,30 @@ function renderConversaoPage(listaMes){
 }
 function renderMetaIndPage(listaMes){
   const el=document.getElementById('pg-meta-ind');if(!el)return;
-  if(!metaMes){el.innerHTML=`<div style="text-align:center;padding:30px;color:var(--text3)">Defina a meta do mês no Painel ao vivo primeiro.</div>`;return;}
-  const metaIndiv=Math.round(metaMes/2);
   const SDRS=[{key:'PAULA',label:'Paula',cor:'#f472b6'},{key:'EDUARDA',label:'Eduarda',cor:'#fb923c'}];
-  el.innerHTML=`<div style="font-size:12px;color:var(--text3);margin-bottom:14px">Meta de R$ ${metaIndiv.toLocaleString('pt-BR',{minimumFractionDigits:2})} por vendedora</div>`+
-  SDRS.map(s=>{
+  el.innerHTML=SDRS.map(s=>{
+    const meta=metasPorSDR[s.key]||0;
     const vendido=listaMes.filter(p=>p.fechamento===s.key||p.fechamento==='RECOMPRA_'+s.key).reduce((sum,p)=>sum+(p.valor||0),0);
-    const pct=Math.min(Math.round((vendido/metaIndiv)*100),100);
+    const pct=meta>0?Math.min(Math.round((vendido/meta)*100),100):0;
     const cor=pct>=100?'var(--green)':pct>=70?'#f59e0b':s.cor;
-    return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px">
+    return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <span style="font-size:15px;font-weight:700;color:${s.cor}">${s.label}</span>
-        <span style="font-size:22px;font-weight:800;color:${cor}">${pct}%</span>
+        <span style="font-size:22px;font-weight:800;color:${cor}">${meta>0?pct+'%':'—'}</span>
       </div>
-      <div style="height:12px;background:var(--bg3);border-radius:7px;overflow:hidden;margin-bottom:8px">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:${meta>0?'10px':'4px'}">
+        <span style="font-size:12px;color:var(--text3)">Meta R$:</span>
+        <input id="meta-input-${s.key}" type="number" value="${meta||''}" placeholder="Ex: 15000" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:13px;color:var(--text);outline:none;font-family:inherit">
+        <button onclick="salvarMetaSDR('${s.key}')" style="background:var(--green);border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:700;color:#000;cursor:pointer">Salvar</button>
+      </div>
+      ${meta>0?`<div style="height:12px;background:var(--bg3);border-radius:7px;overflow:hidden;margin-bottom:8px">
         <div style="height:100%;width:${pct}%;background:${cor};border-radius:7px;transition:width .6s"></div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:12px">
         <span style="color:var(--text2)">R$ ${vendido.toLocaleString('pt-BR',{minimumFractionDigits:2})} vendido</span>
-        <span style="color:var(--text3)">meta: R$ ${metaIndiv.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+        <span style="color:var(--text3)">meta: R$ ${meta.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
       </div>
-      <div style="margin-top:8px;font-size:12px;font-weight:600;color:${cor}">${pct>=100?'🏆 Meta batida!':pct>=70?`⚡ Falta R$ ${(metaIndiv-vendido).toLocaleString('pt-BR',{minimumFractionDigits:2})} para bater!`:vendido>0?`Falta R$ ${(metaIndiv-vendido).toLocaleString('pt-BR',{minimumFractionDigits:2})}`:'Nenhuma venda ainda'}</div>
+      <div style="margin-top:8px;font-size:12px;font-weight:600;color:${cor}">${pct>=100?'🏆 Meta batida!':pct>=70?`⚡ Falta R$ ${(meta-vendido).toLocaleString('pt-BR',{minimumFractionDigits:2})} para bater!`:`Falta R$ ${(meta-vendido).toLocaleString('pt-BR',{minimumFractionDigits:2})}`}</div>`:''}
     </div>`;
   }).join('');
 }
