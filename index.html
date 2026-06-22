@@ -1455,7 +1455,10 @@ function renderConversaoPage(listaMes){
 }
 function renderMetaIndPage(listaMes){
   const el=document.getElementById('pg-meta-ind');if(!el)return;
-  const SDRS=[{key:'PAULA',label:'Paula',cor:'#f472b6'},{key:'EDUARDA',label:'Eduarda',cor:'#fb923c'}];
+  let SDRS=[{key:'PAULA',label:'Paula',cor:'#f472b6'},{key:'EDUARDA',label:'Eduarda',cor:'#fb923c'}];
+  // SDR vê só a própria meta
+  if(currentUser==='PAULA'||currentUser==='EDUARDA') SDRS=SDRS.filter(s=>s.key===currentUser);
+  const podeEditar=currentUser==='ADMIN';
   el.innerHTML=SDRS.map(s=>{
     const meta=metasPorSDR[s.key]||0;
     const vendido=listaMes.filter(p=>p.fechamento===s.key||p.fechamento==='RECOMPRA_'+s.key).reduce((sum,p)=>sum+(p.valor||0),0);
@@ -1466,11 +1469,11 @@ function renderMetaIndPage(listaMes){
         <span style="font-size:15px;font-weight:700;color:${s.cor}">${s.label}</span>
         <span style="font-size:22px;font-weight:800;color:${cor}">${meta>0?pct+'%':'—'}</span>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:${meta>0?'10px':'4px'}">
+      ${podeEditar?`<div style="display:flex;gap:8px;align-items:center;margin-bottom:${meta>0?'10px':'4px'}">
         <span style="font-size:12px;color:var(--text3)">Meta R$:</span>
         <input id="meta-input-${s.key}" type="number" value="${meta||''}" placeholder="Ex: 15000" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:13px;color:var(--text);outline:none;font-family:inherit">
         <button onclick="salvarMetaSDR('${s.key}')" style="background:var(--green);border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:700;color:#000;cursor:pointer">Salvar</button>
-      </div>
+      </div>`:''}
       ${meta>0?`<div style="height:12px;background:var(--bg3);border-radius:7px;overflow:hidden;margin-bottom:8px">
         <div style="height:100%;width:${pct}%;background:${cor};border-radius:7px;transition:width .6s"></div>
       </div>
@@ -1478,7 +1481,8 @@ function renderMetaIndPage(listaMes){
         <span style="color:var(--text2)">R$ ${vendido.toLocaleString('pt-BR',{minimumFractionDigits:2})} vendido</span>
         <span style="color:var(--text3)">meta: R$ ${meta.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
       </div>
-      <div style="margin-top:8px;font-size:12px;font-weight:600;color:${cor}">${pct>=100?'🏆 Meta batida!':pct>=70?`⚡ Falta R$ ${(meta-vendido).toLocaleString('pt-BR',{minimumFractionDigits:2})} para bater!`:`Falta R$ ${(meta-vendido).toLocaleString('pt-BR',{minimumFractionDigits:2})}`}</div>`:''}
+      <div style="margin-top:8px;font-size:12px;font-weight:600;color:${cor}">${pct>=100?'🏆 Meta batida!':pct>=70?`⚡ Falta R$ ${(meta-vendido).toLocaleString('pt-BR',{minimumFractionDigits:2})} para bater!`:`Falta R$ ${(meta-vendido).toLocaleString('pt-BR',{minimumFractionDigits:2})}`}</div>`
+      :podeEditar?'':'<div style="font-size:12px;color:var(--text3)">Sua meta ainda não foi definida.</div>'}
     </div>`;
   }).join('');
 }
