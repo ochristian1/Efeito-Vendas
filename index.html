@@ -999,10 +999,10 @@ function renderList(){
     document.getElementById('list-area').innerHTML=html;
     return;
   }
-  const today_items=calls.filter(i=>i.data===hoje);
-  const late=calls.filter(i=>!i.done&&isPast(i));
-  const proximos=calls.filter(i=>!i.done&&!isPast(i));
-  const concluidasTodas=calls.filter(i=>i.done).sort((a,b)=>a.data+a.hora>b.data+b.hora?-1:1);
+  const today_items=calls.filter(i=>i.data===hoje&&i.statusFech!=='nao_fechou');
+  const late=calls.filter(i=>!i.done&&isPast(i)&&i.statusFech!=='nao_fechou');
+  const proximos=calls.filter(i=>!i.done&&!isPast(i)&&i.statusFech!=='nao_fechou');
+  const concluidasTodas=calls.filter(i=>i.done&&i.statusFech!=='nao_fechou').sort((a,b)=>a.data+a.hora>b.data+b.hora?-1:1);
   const concluidas=concluidasTodas.filter(i=>i.data&&i.data.slice(0,7)===mesConcluidas);
   let html='';
   if(today_items.length){html+=`<div class="list-section"><div class="list-section-title">Hoje — ${fmtDateBR(hoje)}</div>`;today_items.forEach(i=>html+=listItem(i));html+=`</div>`;}
