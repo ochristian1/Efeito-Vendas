@@ -1813,10 +1813,7 @@ function renderVendas(){
     if(!v)return'';
     const altura=podioAlturas[idx]||'40px';
     const isLider=idx===0;
-    const isPropia=currentUser==='ADMIN'||v.key===currentUser;
-    const valorLabel=isPropia
-      ?`R$ ${v.bruto>=1000?(v.bruto/1000).toFixed(1)+'k':v.bruto.toFixed(0)}`
-      :`🔒`;
+    const valorLabel=`R$ ${v.bruto>=1000?(v.bruto/1000).toFixed(1)+'k':v.bruto.toFixed(0)}`;
     return`<div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;max-width:110px">
       <div style="font-size:${isLider?'26px':'20px'}">${medals[idx]}</div>
       <div style="width:${isLider?'52px':'44px'};height:${isLider?'52px':'44px'};border-radius:50%;background:${v.bg};border:2px solid ${v.cor};display:flex;align-items:center;justify-content:center;font-size:${isLider?'22px':'18px'};font-weight:800;color:${v.cor};box-shadow:0 0 ${isLider?'20px':'10px'} ${v.cor}50">${v.avatar}</div>
@@ -1846,7 +1843,7 @@ function renderVendas(){
             </div>
           </div>
           <div style="text-align:right">
-            ${showVal?`<div style="font-size:19px;font-weight:800;color:${v.cor}">R$ ${v.bruto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div style="font-size:10px;color:${v.cor};opacity:.65">faturado</div>`:`<div style="font-size:22px">🔒</div>`}
+            <div style="font-size:19px;font-weight:800;color:${v.cor}">R$ ${v.bruto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div style="font-size:10px;color:${v.cor};opacity:.65">faturado</div>
           </div>
         </div>
         <div style="height:8px;background:var(--bg3);border-radius:5px;overflow:hidden">
@@ -1864,7 +1861,7 @@ function renderVendas(){
             </div>
           </div>
           <div style="text-align:right">
-            ${isPropia?`<div style="font-size:17px;font-weight:800;color:${v.cor}">R$ ${v.bruto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div style="font-size:10px;color:${v.cor};opacity:.65">vendido</div>`:`<div style="font-size:22px">🔒</div>`}
+            <div style="font-size:17px;font-weight:800;color:${v.cor}">R$ ${v.bruto.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div style="font-size:10px;color:${v.cor};opacity:.65">vendido</div>
           </div>
         </div>
         <div style="height:8px;background:var(--bg3);border-radius:5px;overflow:hidden;margin-bottom:10px">
