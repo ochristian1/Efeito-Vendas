@@ -653,8 +653,7 @@ function aplicarPermissoes(){
     if(btn) btn.style.display='block';
     return;
   }
-  const btnAdd=document.querySelector('#tab-pagos .btn-novo-cliente');
-  if(btnAdd) btnAdd.style.display='none';
+  // SDRs agora podem adicionar/editar/excluir os próprios clientes pagos
   const idsEsconder=['vendas-leads'];
   idsEsconder.forEach(id=>{
     const el=document.getElementById(id);
@@ -1183,6 +1182,15 @@ function toggleNovoPago(){
     document.getElementById('pp-valor').value='';
     document.getElementById('pp-obs').value='';
     document.querySelectorAll('[id^="pp-opt-"],[id^="pp-lead-"],[id^="pp-vend-"],[id^="pp-fech-"]').forEach(o=>o.classList.remove('selected'));
+    // Se for SDR, pré-seleciona ela mesma como vendedora e quem fechou
+    if(currentUser==='PAULA'||currentUser==='EDUARDA'){
+      novoPagoVendedora=currentUser;
+      novoPagoFechamento=currentUser;
+      const elV=document.getElementById('pp-vend-'+currentUser);
+      const elF=document.getElementById('pp-fech-'+currentUser);
+      if(elV) elV.classList.add('selected');
+      if(elF) elF.classList.add('selected');
+    }
     document.getElementById('pp-nome').focus();
   }
 }
@@ -1348,8 +1356,8 @@ function renderPagos(){
         <div class="pago-valor">R$ ${(c.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
         <div class="pago-data">${c.data?fmtDateBR(c.data):''}</div>
       </div>
-      <button class="btn-edit" onclick="abrirEditPago('${c.id}')" style="padding:5px 12px;font-size:12px${currentUser!=='ADMIN'?';display:none':''}">Editar</button>
-      <button class="pago-del" onclick="delPago('${c.id}')" title="Remover" style="${currentUser!=='ADMIN'?'display:none':''}">✕</button>
+      <button class="btn-edit" onclick="abrirEditPago('${c.id}')" style="padding:5px 12px;font-size:12px">Editar</button>
+      <button class="pago-del" onclick="delPago('${c.id}')" title="Remover">✕</button>
     </div>
     <div id="edit-pago-${c.id}" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-top:4px;margin-bottom:4px">
       <div class="form-row">
