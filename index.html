@@ -998,10 +998,10 @@ function renderList(){
     document.getElementById('list-area').innerHTML=html;
     return;
   }
-  const today_items=calls.filter(i=>i.data===hoje&&i.statusFech!=='nao_fechou');
-  const late=calls.filter(i=>!i.done&&isPast(i)&&i.statusFech!=='nao_fechou');
-  const proximos=calls.filter(i=>!i.done&&!isPast(i)&&i.statusFech!=='nao_fechou');
-  const concluidasTodas=calls.filter(i=>i.done&&i.statusFech!=='nao_fechou').sort((a,b)=>a.data+a.hora>b.data+b.hora?-1:1);
+  const today_items=calls.filter(i=>i.data===hoje&&i.statusFech!=='nao_fechou'&&i.statusFech!=='resolvido');
+  const late=calls.filter(i=>!i.done&&isPast(i)&&i.statusFech!=='nao_fechou'&&i.statusFech!=='resolvido');
+  const proximos=calls.filter(i=>!i.done&&!isPast(i)&&i.statusFech!=='nao_fechou'&&i.statusFech!=='resolvido');
+  const concluidasTodas=calls.filter(i=>i.done&&i.statusFech!=='nao_fechou'&&i.statusFech!=='resolvido').sort((a,b)=>a.data+a.hora>b.data+b.hora?-1:1);
   const concluidas=concluidasTodas.filter(i=>i.data&&i.data.slice(0,7)===mesConcluidas);
   let html='';
   if(today_items.length){html+=`<div class="list-section"><div class="list-section-title">Hoje — ${fmtDateBR(hoje)}</div>`;today_items.forEach(i=>html+=listItem(i));html+=`</div>`;}
@@ -1568,13 +1568,36 @@ function renderFollowupsPage(){
         </div>`:''}
         ${c.obs?`<div style="font-size:12px;color:var(--text2);margin-bottom:8px;padding:8px 10px;background:var(--bg3);border-radius:8px;line-height:1.5"><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:3px">Anotações da call</span>${c.obs.replace(/\n/g,'<br>')}</div>`:''}
         ${c.obsFech?`<div style="font-size:12px;color:var(--red);margin-bottom:8px;padding:8px 10px;background:var(--red-bg);border:1px solid var(--red-border);border-radius:8px"><span style="font-size:10px;opacity:.8;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:3px">Motivo de não fechar</span>${c.obsFech}</div>`:''}
-        <div style="display:flex;gap:6px">
+        <div style="display:flex;gap:6px;margin-bottom:6px">
           ${fone.length>=8?`<a href="https://wa.me/55${fone}" target="_blank" style="flex:1;background:var(--green);border:none;border-radius:7px;padding:8px;font-size:12px;font-weight:700;color:#000;cursor:pointer;text-decoration:none;text-align:center">Abrir WhatsApp</a>`:''}
           <button onclick="openDetailFromFollowup('${c.id}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 14px;font-size:12px;color:var(--text2);cursor:pointer">Ver na agenda</button>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button onclick="concluirFollowup('${c.id}')" style="flex:1;background:var(--green-bg);border:1px solid var(--green-border);border-radius:7px;padding:8px;font-size:12px;font-weight:600;color:var(--green);cursor:pointer">✓ Marcar como concluído</button>
+          <button onclick="excluirFollowup('${c.id}')" style="background:var(--red-bg);border:1px solid var(--red-border);border-radius:7px;padding:8px 14px;font-size:12px;color:var(--red);cursor:pointer">Excluir</button>
         </div>
       </div>`:''}
     </div>`;
   }).join('');
+}
+function concluirFollowup(id){
+  const idx=calls.findIndex(x=>x.id===String(id));
+  if(idx<0)return;
+  calls[idx].statusFech='resolvido';
+  sbUpsert('calls',{id:calls[idx].id,nome:calls[idx].nome,fone:calls[idx].fone||'',data:calls[idx].data,hora:calls[idx].hora,obs:calls[idx].obs||'',done:calls[idx].done,lead:calls[idx].lead||'',vendedora:calls[idx].vendedora||'',status_fech:'resolvido',obs_fech:calls[idx].obsFech||''});
+  followupAberto=null;
+  renderFollowupsPage();
+  atualizarSBBadges();
+}
+function excluirFollowup(id){
+  if(!confirm('Excluir este follow-up permanentemente?'))return;
+  const idx=calls.findIndex(x=>x.id===String(id));
+  if(idx<0)return;
+  sbDelete('calls',calls[idx].id);
+  calls.splice(idx,1);
+  followupAberto=null;
+  renderFollowupsPage();
+  atualizarSBBadges();
 }
 function toggleFollowup(id){
   followupAberto=followupAberto===id?null:id;
