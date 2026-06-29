@@ -1533,52 +1533,78 @@ function renderMotivosPage(){
 function renderFollowupsPage(){
   const el=document.getElementById('pg-followups');if(!el)return;
   const hoje=new Date();hoje.setHours(0,0,0,0);
-  const followups=calls.filter(c=>c.statusFech==='nao_fechou').map(c=>{
+  const pendentes=calls.filter(c=>c.statusFech==='nao_fechou').map(c=>{
     const dt=new Date(c.data+'T12:00:00');
     return{...c,dias:Math.max(0,Math.round((hoje-dt)/(1000*60*60*24)))};
   }).sort((a,b)=>b.dias-a.dias);
+  const concluidos=calls.filter(c=>c.statusFech==='resolvido').map(c=>{
+    const dt=new Date(c.data+'T12:00:00');
+    return{...c,dias:Math.max(0,Math.round((hoje-dt)/(1000*60*60*24)))};
+  }).sort((a,b)=>a.dias-b.dias);
   const badge=document.getElementById('sb-badge-fu2');
-  if(badge) badge.textContent=followups.length>0?followups.length:'';
-  if(!followups.length){el.innerHTML=`<div style="text-align:center;padding:40px;color:var(--text3)">🎉 Nenhum follow-up pendente!</div>`;return;}
-  el.innerHTML=followups.map(c=>{
-    const emoji=c.dias>=7?'🔴':c.dias>=3?'🟡':'🟢';
-    const cor=c.dias>=7?'var(--red)':c.dias>=3?'#fb923c':'var(--green)';
-    const fone=(c.fone||'').replace(/\D/g,'');
-    const LEAD_LABELS={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico'};
-    const VEND_LABELS={PAULA:'Paula',EDUARDA:'Eduarda'};
-    const LEAD_CORES={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)'};
-    const VEND_CORES={PAULA:'#f472b6',EDUARDA:'#fb923c'};
-    const leadBadge=c.lead&&LEAD_LABELS[c.lead]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${LEAD_CORES[c.lead]};border:1px solid ${LEAD_CORES[c.lead]}50">${LEAD_LABELS[c.lead]}</span>`:'';
-    const vendBadge=c.vendedora&&VEND_LABELS[c.vendedora]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${VEND_CORES[c.vendedora]};border:1px solid ${VEND_CORES[c.vendedora]}50">${VEND_LABELS[c.vendedora]}</span>`:'';
-    const aberto=followupAberto===c.id;
-    return`<div style="background:var(--bg2);border:1px solid ${aberto?cor:'var(--border)'};border-radius:10px;margin-bottom:8px;overflow:hidden">
-      <div onclick="toggleFollowup('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:14px;cursor:pointer">
-        <span style="font-size:18px">${emoji}</span>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap">${c.nome} ${leadBadge} ${vendBadge}</div>
-          <div style="font-size:11px;color:${cor};margin-top:3px">${c.dias} dia${c.dias!==1?'s':''} atrás · call era ${fmtDateBR(c.data)} ${c.hora||''}</div>
-        </div>
-        <span style="font-size:11px;color:var(--text3)">${aberto?'▲':'▼'}</span>
+  if(badge) badge.textContent=pendentes.length>0?pendentes.length:'';
+  let html='';
+  if(pendentes.length){
+    html+=`<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Pendentes (${pendentes.length})</div>`;
+    html+=pendentes.map(c=>cardFollowup(c,false)).join('');
+  } else {
+    html+=`<div style="text-align:center;padding:24px;color:var(--text3)">🎉 Nenhum follow-up pendente!</div>`;
+  }
+  if(concluidos.length){
+    html+=`<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin:20px 0 10px">✓ Concluídos (${concluidos.length})</div>`;
+    html+=concluidos.map(c=>cardFollowup(c,true)).join('');
+  }
+  el.innerHTML=html;
+}
+function cardFollowup(c,resolvido){
+  const emoji=resolvido?'✅':c.dias>=7?'🔴':c.dias>=3?'🟡':'🟢';
+  const cor=resolvido?'var(--green)':c.dias>=7?'var(--red)':c.dias>=3?'#fb923c':'var(--green)';
+  const fone=(c.fone||'').replace(/\D/g,'');
+  const LEAD_LABELS={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico'};
+  const VEND_LABELS={PAULA:'Paula',EDUARDA:'Eduarda'};
+  const LEAD_CORES={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)'};
+  const VEND_CORES={PAULA:'#f472b6',EDUARDA:'#fb923c'};
+  const leadBadge=c.lead&&LEAD_LABELS[c.lead]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${LEAD_CORES[c.lead]};border:1px solid ${LEAD_CORES[c.lead]}50">${LEAD_LABELS[c.lead]}</span>`:'';
+  const vendBadge=c.vendedora&&VEND_LABELS[c.vendedora]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${VEND_CORES[c.vendedora]};border:1px solid ${VEND_CORES[c.vendedora]}50">${VEND_LABELS[c.vendedora]}</span>`:'';
+  const aberto=followupAberto===c.id;
+  return`<div style="background:var(--bg2);border:1px solid ${aberto?cor:'var(--border)'};border-radius:10px;margin-bottom:8px;overflow:hidden;${resolvido?'opacity:.75':''}">
+    <div onclick="toggleFollowup('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:14px;cursor:pointer">
+      <span style="font-size:18px">${emoji}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap">${c.nome} ${leadBadge} ${vendBadge}</div>
+        <div style="font-size:11px;color:${cor};margin-top:3px">${resolvido?'Concluído':c.dias+' dia'+(c.dias!==1?'s':'')+' atrás'} · call era ${fmtDateBR(c.data)} ${c.hora||''}</div>
       </div>
-      ${aberto?`<div style="padding:0 14px 14px">
-        ${c.fone?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:6px 10px;background:var(--bg3);border-radius:8px">
-          <span style="font-size:12px;color:var(--text2)">📱</span>
-          <span onclick="return copiarFone('${c.fone}',event)" style="font-size:13px;color:var(--text);cursor:pointer;flex:1;text-decoration:underline;text-decoration-style:dotted" title="Clique para copiar">${c.fone}</span>
-          <span style="font-size:10px;color:var(--text3)">copiar</span>
-        </div>`:''}
-        ${c.obs?`<div style="font-size:12px;color:var(--text2);margin-bottom:8px;padding:8px 10px;background:var(--bg3);border-radius:8px;line-height:1.5"><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:3px">Anotações da call</span>${c.obs.replace(/\n/g,'<br>')}</div>`:''}
-        ${c.obsFech?`<div style="font-size:12px;color:var(--red);margin-bottom:8px;padding:8px 10px;background:var(--red-bg);border:1px solid var(--red-border);border-radius:8px"><span style="font-size:10px;opacity:.8;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:3px">Motivo de não fechar</span>${c.obsFech}</div>`:''}
-        <div style="display:flex;gap:6px;margin-bottom:6px">
-          ${fone.length>=8?`<a href="https://wa.me/55${fone}" target="_blank" style="flex:1;background:var(--green);border:none;border-radius:7px;padding:8px;font-size:12px;font-weight:700;color:#000;cursor:pointer;text-decoration:none;text-align:center">Abrir WhatsApp</a>`:''}
-          <button onclick="openDetailFromFollowup('${c.id}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 14px;font-size:12px;color:var(--text2);cursor:pointer">Ver na agenda</button>
-        </div>
-        <div style="display:flex;gap:6px">
-          <button onclick="concluirFollowup('${c.id}')" style="flex:1;background:var(--green-bg);border:1px solid var(--green-border);border-radius:7px;padding:8px;font-size:12px;font-weight:600;color:var(--green);cursor:pointer">✓ Marcar como concluído</button>
-          <button onclick="excluirFollowup('${c.id}')" style="background:var(--red-bg);border:1px solid var(--red-border);border-radius:7px;padding:8px 14px;font-size:12px;color:var(--red);cursor:pointer">Excluir</button>
-        </div>
+      <span style="font-size:11px;color:var(--text3)">${aberto?'▲':'▼'}</span>
+    </div>
+    ${aberto?`<div style="padding:0 14px 14px">
+      ${c.fone?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:6px 10px;background:var(--bg3);border-radius:8px">
+        <span style="font-size:12px;color:var(--text2)">📱</span>
+        <span onclick="return copiarFone('${c.fone}',event)" style="font-size:13px;color:var(--text);cursor:pointer;flex:1;text-decoration:underline;text-decoration-style:dotted" title="Clique para copiar">${c.fone}</span>
+        <span style="font-size:10px;color:var(--text3)">copiar</span>
       </div>`:''}
-    </div>`;
-  }).join('');
+      ${c.obs?`<div style="font-size:12px;color:var(--text2);margin-bottom:8px;padding:8px 10px;background:var(--bg3);border-radius:8px;line-height:1.5"><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:3px">Anotações da call</span>${c.obs.replace(/\n/g,'<br>')}</div>`:''}
+      ${c.obsFech?`<div style="font-size:12px;color:var(--red);margin-bottom:8px;padding:8px 10px;background:var(--red-bg);border:1px solid var(--red-border);border-radius:8px"><span style="font-size:10px;opacity:.8;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:3px">Motivo de não fechar</span>${c.obsFech}</div>`:''}
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        ${fone.length>=8?`<a href="https://wa.me/55${fone}" target="_blank" style="flex:1;background:var(--green);border:none;border-radius:7px;padding:8px;font-size:12px;font-weight:700;color:#000;cursor:pointer;text-decoration:none;text-align:center">Abrir WhatsApp</a>`:''}
+        <button onclick="openDetailFromFollowup('${c.id}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 14px;font-size:12px;color:var(--text2);cursor:pointer">Ver na agenda</button>
+      </div>
+      <div style="display:flex;gap:6px">
+        ${resolvido
+          ?`<button onclick="reabrirFollowup('${c.id}')" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer">↩ Reabrir follow-up</button>`
+          :`<button onclick="concluirFollowup('${c.id}')" style="flex:1;background:var(--green-bg);border:1px solid var(--green-border);border-radius:7px;padding:8px;font-size:12px;font-weight:600;color:var(--green);cursor:pointer">✓ Marcar como concluído</button>`}
+        <button onclick="excluirFollowup('${c.id}')" style="background:var(--red-bg);border:1px solid var(--red-border);border-radius:7px;padding:8px 14px;font-size:12px;color:var(--red);cursor:pointer">Excluir</button>
+      </div>
+    </div>`:''}
+  </div>`;
+}
+function reabrirFollowup(id){
+  const idx=calls.findIndex(x=>x.id===String(id));
+  if(idx<0)return;
+  calls[idx].statusFech='nao_fechou';
+  sbUpsert('calls',{id:calls[idx].id,nome:calls[idx].nome,fone:calls[idx].fone||'',data:calls[idx].data,hora:calls[idx].hora,obs:calls[idx].obs||'',done:calls[idx].done,lead:calls[idx].lead||'',vendedora:calls[idx].vendedora||'',status_fech:'nao_fechou',obs_fech:calls[idx].obsFech||''});
+  followupAberto=null;
+  renderFollowupsPage();
+  atualizarSBBadges();
 }
 function concluirFollowup(id){
   const idx=calls.findIndex(x=>x.id===String(id));
