@@ -656,11 +656,11 @@ function verificarAvisos(avisos){
 let avisoPollTimer=null;
 function iniciarPollingAvisos(){
   if(avisoPollTimer) clearInterval(avisoPollTimer);
-  // checa a cada 8 segundos se há aviso novo
+  // checa a cada 5 segundos se há aviso novo
   avisoPollTimer=setInterval(()=>{
     if(currentUser==='ADMIN')return;
     sbGet('avisos').then(ra=>verificarAvisos(ra||[])).catch(()=>{});
-  },8000);
+  },5000);
 }
 function aplicarPermissoes(){
   if(currentUser==='ADMIN'){
