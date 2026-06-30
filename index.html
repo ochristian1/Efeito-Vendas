@@ -709,7 +709,7 @@ function hideLoading(){const e=document.getElementById('loading-bar');if(e)e.sty
 function loadAll(){
   showLoading('Carregando dados...');
   Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos')]).then(([rc,rct,rp,rn,ra])=>{
-    calls=(rc||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',data:r.data||'',hora:r.hora||'',obs:r.obs||'',done:!!r.done,lead:r.lead||'',vendedora:r.vendedora||'',statusFech:r.status_fech||'',obsFech:r.obs_fech||''}));
+    calls=(rc||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',data:r.data||'',hora:r.hora||'',obs:r.obs||'',done:!!r.done,lead:r.lead||'',vendedora:r.vendedora||'',closer:r.closer||'',statusFech:r.status_fech||'',obsFech:r.obs_fech||''}));
     calls.sort((a,b)=>a.data+a.hora>b.data+b.hora?1:-1);
     clientes=(rct||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',plano:r.plano||'',steps:r.steps||{},createdAt:r.created_at_custom||''}));
     pagos=(rp||[]).map(r=>({id:String(r.id||''),nome:r.nome||'',fone:r.fone||'',plano:r.plano||'',data:r.data||'',valor:parseFloat(r.valor)||0,obs:r.obs||'',lead:r.lead||'',vendedora:r.vendedora||'',fechamento:r.fechamento||''}));
@@ -798,17 +798,33 @@ function openForm(dateStr,id){
   const vendLabels={PAULA:'Paula',EDUARDA:'Eduarda'};
   const vendCores={PAULA:'#f472b6',EDUARDA:'#fb923c'};
   const vendHtml=vendOpts.map(v=>`<div id="fv-${v}" onclick="setFormVend('${v}')" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;background:var(--bg3);transition:all .12s${vendAtual===v?`;border-color:${vendCores[v]};background:var(--bg2)`:''};"><div style="font-size:12px;font-weight:700;color:${vendCores[v]}">${vendLabels[v]}</div></div>`).join('');
+  const closerAtual=ex?ex.closer||'':'';
+  const closerOpts=['CHRISTIAN','EDUARDA'];
+  const closerLabels={CHRISTIAN:'Christian',EDUARDA:'Eduarda'};
+  const closerCores={CHRISTIAN:'var(--green)',EDUARDA:'#fb923c'};
+  const closerHtml=closerOpts.map(v=>`<div id="fc-${v}" onclick="setFormCloser('${v}')" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;background:var(--bg3);transition:all .12s${closerAtual===v?`;border-color:${closerCores[v]};background:var(--bg2)`:''};"><div style="font-size:12px;font-weight:700;color:${closerCores[v]}">${closerLabels[v]}</div></div>`).join('');
   document.getElementById('form-area').innerHTML=`
     <div class="panel"><div class="panel-title">${ex?'Editar agendamento':'Novo agendamento'}</div>
     <div class="form-row"><div class="field"><label>Nome do cliente</label><input id="f-nome" type="text" placeholder="Ex: João Silva" value="${ex?ex.nome:''}"></div><div class="field"><label>Telefone / WhatsApp</label><input id="f-fone" type="tel" placeholder="(41) 99999-0000" value="${ex?ex.fone:''}"></div></div>
     <div class="form-row"><div class="field"><label>Data</label><input id="f-data" type="date" value="${d}"></div><div class="field"><label>Horário</label><input id="f-hora" type="time" value="${h}"></div></div>
     <div class="field" style="margin-bottom:10px"><label>Vendedora responsável</label><div style="display:flex;gap:8px;margin-top:6px">${vendHtml}</div></div>
+    <div class="field" style="margin-bottom:10px"><label>Quem vai atender (closer)</label><div style="display:flex;gap:8px;margin-top:6px">${closerHtml}</div></div>
     <div class="field" style="margin-bottom:10px"><label>Origem do lead (opcional)</label><div style="display:flex;gap:8px;margin-top:6px">${leadHtml}</div></div>
     <div class="form-row form-full"><div class="field"><label>Anotações</label><textarea id="f-obs" placeholder="Assunto, link de reunião...">${ex?ex.obs:''}</textarea></div></div>
     <div class="btn-row"><button class="btn-save" onclick="saveForm()">Salvar agendamento</button><button class="btn-cancel" onclick="closeForm()">Cancelar</button></div></div>`;
   window._formLead=leadAtual;
   window._formVend=vendAtual;
+  window._formCloser=closerAtual;
   document.getElementById('f-nome').focus();renderList();
+}
+function setFormCloser(v){
+  if(window._formCloser===v){window._formCloser='';document.getElementById('fc-'+v).style.borderColor='var(--border)';document.getElementById('fc-'+v).style.background='var(--bg3)';return;}
+  window._formCloser=v;
+  const cores={CHRISTIAN:'var(--green)',EDUARDA:'#fb923c'};
+  ['CHRISTIAN','EDUARDA'].forEach(k=>{
+    const el=document.getElementById('fc-'+k);
+    if(el){el.style.borderColor=k===v?cores[k]:'var(--border)';el.style.background=k===v?'var(--bg2)':'var(--bg3)';}
+  });
 }
 function setFormVend(v){
   if(window._formVend===v){window._formVend='';document.getElementById('fv-'+v).style.borderColor='var(--border)';document.getElementById('fv-'+v).style.background='var(--bg3)';return;}
@@ -838,22 +854,24 @@ function saveForm(){
   const obs=document.getElementById('f-obs').value.trim();
   const lead=window._formLead||'';
   const vendedora=window._formVend||'';
+  const closer=window._formCloser||'';
   if(!nome||!data||!hora){alert('Preencha nome, data e horário.');return;}
-  const conflito=calls.find(x=>x.data===data&&x.hora===hora&&x.id!==editId);
-  if(conflito){alert(`⚠️ Horário ocupado!\n\n${conflito.nome} já tem uma call em ${fmtDateBR(data)} às ${hora}.`);return;}
+  // só bloqueia se o MESMO closer já tiver call no mesmo horário
+  const conflito=calls.find(x=>x.data===data&&x.hora===hora&&x.id!==editId&&x.closer&&closer&&x.closer===closer);
+  if(conflito){alert(`⚠️ ${closer==='CHRISTIAN'?'Christian':'Eduarda'} já tem uma call nesse horário!\n\n${conflito.nome} em ${fmtDateBR(data)} às ${hora}.\n\nEscolha outro horário ou outro closer.`);return;}
   let item;
   if(editId){
     const idx=calls.findIndex(x=>x.id===editId);
     if(idx>=0){
       const horaChanged=calls[idx].hora!==hora||calls[idx].data!==data;
-      calls[idx]={...calls[idx],nome,fone,data,hora,obs,lead,vendedora};
+      calls[idx]={...calls[idx],nome,fone,data,hora,obs,lead,vendedora,closer};
       if(horaChanged) calls[idx].done=false;
       item=calls[idx];
     }
   }
-  else{item={id:String(Date.now()),nome,fone,data,hora,obs,lead,vendedora,done:false};calls.push(item);}
+  else{item={id:String(Date.now()),nome,fone,data,hora,obs,lead,vendedora,closer,done:false};calls.push(item);}
   calls.sort((a,b)=>a.data+a.hora>b.data+b.hora?1:-1);
-  sbUpsert('calls',{id:item.id,nome:item.nome,fone:item.fone||'',data:item.data,hora:item.hora,obs:item.obs||'',done:item.done,lead:item.lead||'',vendedora:item.vendedora||''});
+  sbUpsert('calls',{id:item.id,nome:item.nome,fone:item.fone||'',data:item.data,hora:item.hora,obs:item.obs||'',done:item.done,lead:item.lead||'',vendedora:item.vendedora||'',closer:item.closer||''});
   closeForm();renderAgenda();
 }
 function renderDetail(id){
@@ -1053,8 +1071,11 @@ function listItem(i){
   const leadBadge=i.lead&&LEAD_CORES[i.lead]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${LEAD_CORES[i.lead]};border:1px solid ${LEAD_CORES[i.lead]}50;margin-left:4px">${LEAD_LABELS[i.lead]}</span>`:'';
   const vendBadge=i.vendedora&&VEND_CORES[i.vendedora]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${VEND_CORES[i.vendedora]};border:1px solid ${VEND_CORES[i.vendedora]}50;margin-left:4px">${VEND_LABELS[i.vendedora]}</span>`:'';
   const fechBadge=i.statusFech==='fechou'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);margin-left:4px">✅ Fechou</span>`:i.statusFech==='nao_fechou'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);margin-left:4px">❌ Follow-up</span>`:'';
+  const closerCores={CHRISTIAN:'var(--green)',EDUARDA:'#fb923c'};
+  const closerLabels={CHRISTIAN:'👤 Christian',EDUARDA:'👤 Eduarda'};
+  const closerBadge=i.closer&&closerCores[i.closer]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${closerCores[i.closer]};border:1px solid ${closerCores[i.closer]}50;margin-left:4px">${closerLabels[i.closer]}</span>`:'';
   const foneEl=i.fone?`<span onclick="return copiarFone('${i.fone}',event)" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted" title="Clique para copiar">${i.fone}</span>`:'';
-  const card=`<div class="list-item${i.done?' done':''}${isActive?' active':''}" data-call-id="${i.id}" onclick="openDetail('${i.id}')"><div class="li-av">${initials(i.nome)}</div><div class="li-info"><div class="li-name">${i.nome} ${statusChip(i)}${leadBadge}${vendBadge}${fechBadge}</div><div class="li-sub">${foneEl}${i.obs?' · '+i.obs:''}</div></div><div class="li-time"><div class="li-date">${fmtDateShort(i.data)}</div><div class="li-hour">${i.hora}</div></div></div>`;
+  const card=`<div class="list-item${i.done?' done':''}${isActive?' active':''}" data-call-id="${i.id}" onclick="openDetail('${i.id}')"><div class="li-av">${initials(i.nome)}</div><div class="li-info"><div class="li-name">${i.nome} ${statusChip(i)}${leadBadge}${vendBadge}${closerBadge}${fechBadge}</div><div class="li-sub">${foneEl}${i.obs?' · '+i.obs:''}</div></div><div class="li-time"><div class="li-date">${fmtDateShort(i.data)}</div><div class="li-hour">${i.hora}</div></div></div>`;
   if(!isActive) return card;
   // renderizar detalhe inline
   const statusFech=i.statusFech||'';
