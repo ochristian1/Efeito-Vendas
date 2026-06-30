@@ -626,26 +626,38 @@ function iniciarApp(){
   aplicarPermissoes();
   loadAll();
   setTimeout(verificarProximaCall, 5000);
+  if(currentUser!=='ADMIN') iniciarPollingAvisos();
 }
 function abrirEnviarAviso(){
   const msg=prompt('✍️ Digite a mensagem para o time:');
   if(!msg||!msg.trim())return;
-  const id=String(Date.now());
-  // desativa avisos anteriores
-  sbUpsert('avisos',{id:'aviso_atual',mensagem:msg.trim(),ativo:true});
-  alert('✅ Aviso enviado! Vai aparecer na tela deles na próxima vez que atualizarem.');
+  // embute versão na própria mensagem para detectar avisos novos de forma confiável
+  const versao=Date.now();
+  sbUpsert('avisos',{id:'aviso_atual',mensagem:msg.trim(),ativo:true,created_at:String(versao)});
+  alert('✅ Aviso enviado! Vai aparecer na tela deles em alguns segundos.');
 }
 function fecharAviso(){
   document.getElementById('aviso-overlay').style.display='none';
-  // marcar como lido localmente
-  sessionStorage.setItem('aviso_lido','1');
 }
 function verificarAvisos(avisos){
   const aviso=(avisos||[]).find(a=>a.id==='aviso_atual'&&a.ativo&&a.mensagem);
   if(!aviso)return;
-  if(sessionStorage.getItem('aviso_lido')==='1')return;
+  // versão = created_at (string) ou fallback para a própria mensagem
+  const versao=String(aviso.created_at||aviso.mensagem);
+  const ultimaVista=localStorage.getItem('aviso_visto_versao');
+  if(ultimaVista===versao)return;
+  localStorage.setItem('aviso_visto_versao',versao);
   document.getElementById('aviso-texto').textContent=aviso.mensagem;
   document.getElementById('aviso-overlay').style.display='flex';
+}
+let avisoPollTimer=null;
+function iniciarPollingAvisos(){
+  if(avisoPollTimer) clearInterval(avisoPollTimer);
+  // checa a cada 8 segundos se há aviso novo
+  avisoPollTimer=setInterval(()=>{
+    if(currentUser==='ADMIN')return;
+    sbGet('avisos').then(ra=>verificarAvisos(ra||[])).catch(()=>{});
+  },8000);
 }
 function aplicarPermissoes(){
   if(currentUser==='ADMIN'){
