@@ -631,9 +631,10 @@ function iniciarApp(){
 function abrirEnviarAviso(){
   const msg=prompt('✍️ Digite a mensagem para o time:');
   if(!msg||!msg.trim())return;
-  // embute versão na própria mensagem para detectar avisos novos de forma confiável
+  // embute versão na mensagem com separador, sem depender de coluna extra
   const versao=Date.now();
-  sbUpsert('avisos',{id:'aviso_atual',mensagem:msg.trim(),ativo:true,created_at:String(versao)});
+  const msgComVersao=msg.trim()+'|||'+versao;
+  sbUpsert('avisos',{id:'aviso_atual',mensagem:msgComVersao,ativo:true});
   alert('✅ Aviso enviado! Vai aparecer na tela deles em alguns segundos.');
 }
 function fecharAviso(){
@@ -642,12 +643,14 @@ function fecharAviso(){
 function verificarAvisos(avisos){
   const aviso=(avisos||[]).find(a=>a.id==='aviso_atual'&&a.ativo&&a.mensagem);
   if(!aviso)return;
-  // versão = created_at (string) ou fallback para a própria mensagem
-  const versao=String(aviso.created_at||aviso.mensagem);
+  // separa texto da versão
+  const partes=String(aviso.mensagem).split('|||');
+  const texto=partes[0];
+  const versao=partes[1]||texto;
   const ultimaVista=localStorage.getItem('aviso_visto_versao');
   if(ultimaVista===versao)return;
   localStorage.setItem('aviso_visto_versao',versao);
-  document.getElementById('aviso-texto').textContent=aviso.mensagem;
+  document.getElementById('aviso-texto').textContent=texto;
   document.getElementById('aviso-overlay').style.display='flex';
 }
 let avisoPollTimer=null;
