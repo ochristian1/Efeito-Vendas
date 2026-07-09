@@ -728,9 +728,20 @@ function loadAll(){
     metasPorSDR.EDUARDA=metaEduarda?parseFloat(metaEduarda.texto)||0:0;
     notas=(rn||[]).filter(r=>r.titulo!=='__meta_mes__'&&!String(r.titulo).startsWith('__meta_sdr_')).map(r=>({id:String(r.id),titulo:r.titulo||'',texto:r.texto||'',data:r.data||'',feita:!!r.feita}));
     hideLoading();
-    renderAgenda();renderPagos();renderNotas();renderVendas();atualizarSBBadges();
-    if(currentUser!=='ADMIN') verificarAvisos(ra||[]);
-  }).catch(e=>{console.error(e);hideLoading();renderAgenda();renderPagos();renderNotas();renderVendas();});
+    try{renderAgenda();}catch(e){console.error('renderAgenda:',e);}
+    try{renderPagos();}catch(e){console.error('renderPagos:',e);}
+    try{renderNotas();}catch(e){console.error('renderNotas:',e);}
+    try{renderVendas();}catch(e){console.error('renderVendas:',e);}
+    try{atualizarSBBadges();}catch(e){console.error('badges:',e);}
+    if(currentUser!=='ADMIN'){try{verificarAvisos(ra||[]);}catch(e){}}
+  }).catch(e=>{
+    console.error('loadAll erro:',e);
+    hideLoading();
+    try{renderAgenda();}catch(err){}
+    try{renderPagos();}catch(err){}
+    try{renderNotas();}catch(err){}
+    try{renderVendas();}catch(err){}
+  });
 }
 
 // UTILS
