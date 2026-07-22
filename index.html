@@ -1530,7 +1530,7 @@ function renderMetaIndPage(listaMes){
     const meta=metasPorSDR[s.key]||0;
     const vendido=listaMes.filter(p=>p.fechamento===s.key||p.fechamento==='RECOMPRA_'+s.key).reduce((sum,p)=>sum+(p.valor||0),0);
     const pct=meta>0?Math.min(Math.round((vendido/meta)*100),100):0;
-    const cor=pct>=100?'var(--green)':pct>=70?'#f59e0b':s.cor;
+    const cor=pct>=100?'#22c55e':pct>=70?'#84cc16':pct>=40?'#f59e0b':'var(--red)';
     return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <span style="font-size:15px;font-weight:700;color:${s.cor}">${s.label}</span>
@@ -1881,7 +1881,7 @@ function renderVendas(){
   const hoje=listaMes.filter(p=>p.data===todayStr()).length;
   const ticket=total>0?receita/total:0;
   const pct=metaMes>0?Math.min(Math.round((receita/metaMes)*100),100):0;
-  const cor=pct>=100?'#22c55e':pct>=70?'#f59e0b':pct>=40?'#3b82f6':'var(--green)';
+  const cor=pct>=100?'#22c55e':pct>=70?'#84cc16':pct>=40?'#f59e0b':'var(--red)';
   document.getElementById('vendas-meta-pct').textContent=metaMes>0?pct+'%':'—';
   document.getElementById('vendas-meta-pct').style.color=cor;
   document.getElementById('vendas-meta-barra').style.width=pct+'%';
