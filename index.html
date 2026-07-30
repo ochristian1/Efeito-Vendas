@@ -311,6 +311,11 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
         <i class="ti ti-speakerphone" style="font-size:16px;color:#fbbf24" aria-hidden="true"></i>
         <span style="color:#fbbf24">Enviar aviso</span>
       </div>
+      <div class="sb-nav-item" id="nav-onboarding" onclick="switchTabSB('onboarding',this)">
+        <i class="ti ti-checklist" style="font-size:16px;color:#60a5fa" aria-hidden="true"></i>
+        <span style="color:#60a5fa">Onboarding</span>
+        <span class="sb-badge" id="sb-badge-onb"></span>
+      </div>
     </div>
     <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px">Análises</div>
     <div class="sb-nav-item" id="nav-conversao" onclick="switchTabSB('conversao',this)">
@@ -547,6 +552,19 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
   <div id="pg-followups"></div>
 </div>
 
+<!-- ONBOARDING -->
+<div id="tab-onboarding" class="tab-pane">
+  <div class="fluxo-top">
+    <span class="fluxo-title">✅ Onboarding de clientes</span>
+    <div style="display:flex;gap:6px">
+      <span id="onb-f-todos" onclick="filtrarOnboarding('todos')" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);cursor:pointer">Todos</span>
+      <span id="onb-f-pendentes" onclick="filtrarOnboarding('pendentes')" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid var(--border);color:var(--text2);cursor:pointer">Pendentes</span>
+      <span id="onb-f-concluidos" onclick="filtrarOnboarding('concluidos')" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid var(--border);color:var(--text2);cursor:pointer">Concluídos</span>
+    </div>
+  </div>
+  <div id="pg-onboarding"></div>
+</div>
+
 </div><!-- fim conteúdo principal -->
 </div><!-- fim flex layout -->
 </div><!-- fim app-root -->
@@ -595,6 +613,7 @@ function switchTabSB(name,el){
   }
   else if(name==='motivos') renderMotivosPage();
   else if(name==='followups') renderFollowupsPage();
+  else if(name==='onboarding') renderOnboardingPage();
 }
 function ativarFollowupSB(el){
   switchTabSB('agenda',document.getElementById('nav-agenda'));
@@ -726,7 +745,13 @@ function loadAll(){
     const metaEduarda=(rn||[]).find(r=>r.titulo==='__meta_sdr_EDUARDA__');
     metasPorSDR.PAULA=metaPaula?parseFloat(metaPaula.texto)||0:0;
     metasPorSDR.EDUARDA=metaEduarda?parseFloat(metaEduarda.texto)||0:0;
-    notas=(rn||[]).filter(r=>r.titulo!=='__meta_mes__'&&!String(r.titulo).startsWith('__meta_sdr_')).map(r=>({id:String(r.id),titulo:r.titulo||'',texto:r.texto||'',data:r.data||'',feita:!!r.feita}));
+    // carregar progresso de onboarding
+    onboardingData={};
+    (rn||[]).filter(r=>String(r.titulo).startsWith('__onb_')).forEach(r=>{
+      const m=String(r.titulo).match(/^__onb_(.+)__$/);
+      if(m){try{onboardingData[m[1]]=JSON.parse(r.texto);}catch(e){}}
+    });
+    notas=(rn||[]).filter(r=>r.titulo!=='__meta_mes__'&&!String(r.titulo).startsWith('__meta_sdr_')&&!String(r.titulo).startsWith('__onb_')).map(r=>({id:String(r.id),titulo:r.titulo||'',texto:r.texto||'',data:r.data||'',feita:!!r.feita}));
     hideLoading();
     try{renderAgenda();}catch(e){console.error('renderAgenda:',e);}
     try{renderPagos();}catch(e){console.error('renderPagos:',e);}
@@ -1576,6 +1601,67 @@ function renderMotivosPage(){
         <span style="font-size:12px;font-weight:700;color:var(--red);width:30px;text-align:right">${n}x</span>
       </div>`;}).join('')}
     </div>`:'<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Adicione observações ao marcar "não fechou" para ver os motivos aqui.</div>'}`;
+}
+// ============ ONBOARDING DE CLIENTES ============
+let onboardingData={}; // {pagoId: {acesso:bool, whatsapp:bool, diagnostico:bool}}
+let onboardingFiltro='todos';
+const ONB_ETAPAS=[{key:'acesso',label:'Acesso de conta'},{key:'whatsapp',label:'Grupo WhatsApp'},{key:'diagnostico',label:'Diagnóstico'}];
+function filtrarOnboarding(f){
+  onboardingFiltro=f;
+  ['todos','pendentes','concluidos'].forEach(k=>{
+    const el=document.getElementById('onb-f-'+k);
+    if(!el)return;
+    if(k===f){el.style.background='var(--green-bg)';el.style.borderColor='var(--green-border)';el.style.color='var(--green)';}
+    else{el.style.background='transparent';el.style.borderColor='var(--border)';el.style.color='var(--text2)';}
+  });
+  renderOnboardingPage();
+}
+function toggleOnbEtapa(pagoId,etapa){
+  if(!onboardingData[pagoId]) onboardingData[pagoId]={acesso:false,whatsapp:false,diagnostico:false};
+  onboardingData[pagoId][etapa]=!onboardingData[pagoId][etapa];
+  sbUpsert('notas',{id:'onb_'+pagoId,titulo:'__onb_'+pagoId+'__',texto:JSON.stringify(onboardingData[pagoId]),data:'',feita:false});
+  renderOnboardingPage();
+}
+function renderOnboardingPage(){
+  const el=document.getElementById('pg-onboarding');if(!el)return;
+  const badge=document.getElementById('sb-badge-onb');
+  const todosPagos=[...pagos].sort((a,b)=>(b.id>a.id?1:-1));
+  const comProgresso=todosPagos.map(p=>{
+    const prog=onboardingData[p.id]||{acesso:false,whatsapp:false,diagnostico:false};
+    const feitas=ONB_ETAPAS.filter(e=>prog[e.key]).length;
+    const pct=Math.round((feitas/ONB_ETAPAS.length)*100);
+    return{...p,prog,pct};
+  });
+  const pendentesCount=comProgresso.filter(p=>p.pct<100).length;
+  if(badge) badge.textContent=pendentesCount>0?pendentesCount:'';
+  let lista=comProgresso;
+  if(onboardingFiltro==='pendentes') lista=comProgresso.filter(p=>p.pct<100);
+  if(onboardingFiltro==='concluidos') lista=comProgresso.filter(p=>p.pct===100);
+  if(!lista.length){el.innerHTML=`<div style="text-align:center;padding:30px;color:var(--text3)">Nenhum cliente ${onboardingFiltro==='pendentes'?'pendente':onboardingFiltro==='concluidos'?'concluído':'ainda'}.</div>`;return;}
+  const VEND_LABELS={PAULA:'Paula',EDUARDA:'Eduarda',DONO:'Christian'};
+  el.innerHTML=lista.map(p=>{
+    const cor=p.pct===100?'var(--green)':p.pct>=34?'#f59e0b':'var(--red)';
+    const vend=VEND_LABELS[p.fechamento]||VEND_LABELS[p.vendedora]||'';
+    return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text2);flex-shrink:0">${initials(p.nome)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${p.nome}</div>
+          <div style="font-size:11px;color:var(--text3)">Fechou em ${fmtDateBR(p.data)}${vend?' · '+vend:''}${p.fone?' · '+p.fone:''}</div>
+        </div>
+        <span style="font-size:12px;font-weight:700;color:${cor}">${p.pct}%</span>
+      </div>
+      <div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:10px">
+        <div style="height:100%;width:${p.pct}%;background:${cor};border-radius:3px;transition:width .4s"></div>
+      </div>
+      <div style="display:flex;gap:6px">
+        ${ONB_ETAPAS.map(e=>{
+          const done=p.prog[e.key];
+          return`<div onclick="toggleOnbEtapa('${p.id}','${e.key}')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 6px;border-radius:7px;font-size:10.5px;text-align:center;cursor:pointer;${done?'background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)':'background:var(--bg3);color:var(--text2);border:1px solid var(--border)'}">${done?'✓':'○'} ${e.label}</div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
 }
 function renderFollowupsPage(){
   const el=document.getElementById('pg-followups');if(!el)return;
