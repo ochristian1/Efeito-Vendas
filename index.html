@@ -327,29 +327,6 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
       <i class="ti ti-chart-bar" style="font-size:16px" aria-hidden="true"></i>
       <span>Painel ao vivo</span>
     </div>
-    <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px">Comercial</div>
-    <div class="sb-nav-item" id="nav-leads" onclick="switchTabSB('leads',this)">
-      <i class="ti ti-user-plus" style="font-size:16px" aria-hidden="true"></i>
-      <span>Leads</span>
-      <span class="sb-badge" id="sb-badge-leads"></span>
-    </div>
-    <div class="sb-nav-item" id="nav-pipeline" onclick="switchTabSB('pipeline',this)">
-      <i class="ti ti-layout-kanban" style="font-size:16px" aria-hidden="true"></i>
-      <span>Pipeline</span>
-    </div>
-    <div class="sb-nav-item" id="nav-propostas" onclick="switchTabSB('propostas',this)">
-      <i class="ti ti-file-invoice" style="font-size:16px" aria-hidden="true"></i>
-      <span>Propostas</span>
-      <span class="sb-badge" id="sb-badge-propostas"></span>
-    </div>
-    <div class="sb-nav-item" id="nav-metas" onclick="switchTabSB('metas',this)">
-      <i class="ti ti-target-arrow" style="font-size:16px" aria-hidden="true"></i>
-      <span>Metas</span>
-    </div>
-    <div class="sb-nav-item" id="nav-comissoes" onclick="switchTabSB('comissoes',this)">
-      <i class="ti ti-cash" style="font-size:16px" aria-hidden="true"></i>
-      <span>Comissões</span>
-    </div>
     <div id="sb-aviso-btn" style="display:none">
       <div id="sb-time-label" style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px">Time</div>
       <div class="sb-nav-item" id="nav-aviso-item" onclick="abrirEnviarAviso()">
@@ -418,65 +395,6 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
   <div id="form-area"></div>
   <div id="detail-area"></div>
   <div id="list-area"></div>
-</div>
-
-<div id="tab-leads" class="tab-pane">
-  <div class="fluxo-top">
-    <span class="fluxo-title">Leads</span>
-    <button class="btn-novo-cliente" onclick="openLeadForm(null)">+ Novo lead</button>
-  </div>
-  <div class="stats-row" id="leads-stats"></div>
-  <div class="leads-toolbar">
-    <input class="leads-search" id="leads-busca" placeholder="Buscar por nome, telefone, email ou empresa..." oninput="renderLeadsList()">
-    <select id="leads-filtro-etapa" class="leads-search" style="flex:none;min-width:170px" onchange="renderLeadsList()">
-      <option value="">Todas as etapas</option>
-    </select>
-  </div>
-  <div id="lead-form-area"></div>
-  <div id="lead-detail-area"></div>
-  <div id="leads-list-area"></div>
-</div>
-
-<div id="tab-pipeline" class="tab-pane">
-  <div class="fluxo-top">
-    <span class="fluxo-title">Pipeline</span>
-    <button class="btn-novo-cliente" onclick="openLeadForm(null)">+ Novo lead</button>
-  </div>
-  <div id="pipeline-lead-detail-area"></div>
-  <div class="kanban-board" id="kanban-board"></div>
-</div>
-
-<div id="tab-propostas" class="tab-pane">
-  <div class="fluxo-top">
-    <span class="fluxo-title">Propostas</span>
-    <button class="btn-novo-cliente" onclick="openPropostaForm(null)">+ Nova proposta</button>
-  </div>
-  <div class="stats-row" id="propostas-stats"></div>
-  <div class="plano-filter" id="propostas-filtro-status"></div>
-  <div id="proposta-form-area"></div>
-  <div id="propostas-list-area"></div>
-</div>
-
-<div id="tab-metas" class="tab-pane">
-  <div class="fluxo-top">
-    <span class="fluxo-title">Metas</span>
-    <div style="display:flex;align-items:center;gap:8px">
-      <input id="meta-mes" type="month" class="leads-search" style="min-width:140px" onchange="renderMetasPage()">
-      <button class="btn-novo-cliente" onclick="openMetaForm()">+ Definir meta</button>
-    </div>
-  </div>
-  <div id="meta-form-area"></div>
-  <div id="metas-cards-area"></div>
-</div>
-
-<div id="tab-comissoes" class="tab-pane">
-  <div class="fluxo-top">
-    <span class="fluxo-title">Comissões</span>
-    <input id="com-mes" type="month" class="leads-search" style="min-width:140px" onchange="renderComissoesPage()">
-  </div>
-  <div class="stats-row" id="comissoes-stats"></div>
-  <div style="font-size:11px;color:var(--text3);margin-bottom:1rem">Regras fixas: 8% quando fecha sozinha(o) · 4% em recompra · 2% quando agenda e outra pessoa fecha</div>
-  <div id="comissoes-list-area"></div>
 </div>
 
 <div id="tab-notas" class="tab-pane">
@@ -762,11 +680,6 @@ function renderTabByKey(name){
   else if(name==='onboarding') renderOnboardingPage();
   else if(name==='desempenho') renderDesempenhoPage();
   else if(name==='usuarios') renderUsuariosPage();
-  else if(name==='leads') renderLeadsPage();
-  else if(name==='pipeline') renderPipelinePage();
-  else if(name==='propostas') renderPropostasPage();
-  else if(name==='metas') renderMetasPage();
-  else if(name==='comissoes') renderComissoesPage();
 }
 function switchTabSB(name,el){
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
@@ -1027,7 +940,7 @@ function hideLoading(){const e=document.getElementById('loading-bar');if(e)e.sty
 // LOAD ALL
 function loadAll(){
   showLoading('Carregando dados...');
-  return Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos'),sbGet('leads'),sbGet('propostas'),sbGet('metas')]).then(([rc,rct,rp,rn,ra,rl,rpr,rm])=>{
+  return Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos')]).then(([rc,rct,rp,rn,ra])=>{
     metas=(rm||[]).map(r=>({id:String(r.id),tipo:r.tipo||'individual',responsavel:r.responsavel||'',mes:r.mes||'',valor:parseFloat(r.valor)||0}));
     propostas=(rpr||[]).map(r=>({id:String(r.id),leadId:r.lead_id?String(r.lead_id):'',plano:r.plano||'',valor:parseFloat(r.valor)||0,desconto:parseFloat(r.desconto)||0,parcelamento:r.parcelamento||'',formaPagamento:r.forma_pagamento||'',validade:r.validade||'',status:r.status||'enviada',observacoes:r.observacoes||'',createdAt:r.created_at||''}));
     leads=(rl||[]).map(r=>({id:String(r.id),nome:r.nome||'',telefone:r.telefone||'',email:r.email||'',empresa:r.empresa||'',documento:r.documento||'',cidade:r.cidade||'',estado:r.estado||'',origem:r.origem||'',marketplace:r.marketplace||'',faturamento:r.faturamento||'',investimento:r.investimento||'',objetivo:r.objetivo||'',problemas:r.problemas||'',observacoes:r.observacoes||'',links:r.links||'',responsavel:r.responsavel||'',etapa:r.etapa||'lead_novo',prioridade:r.prioridade||'media',proximaAcao:r.proxima_acao||'',proximaAcaoData:r.proxima_acao_data||'',motivoPerda:r.motivo_perda||'',createdAt:r.created_at||''}));
@@ -1068,11 +981,6 @@ function loadAll(){
     try{renderPagos();}catch(e){console.error('renderPagos:',e);}
     try{renderNotas();}catch(e){console.error('renderNotas:',e);}
     try{renderVendas();}catch(e){console.error('renderVendas:',e);}
-    try{renderLeadsPage();}catch(e){console.error('renderLeadsPage:',e);}
-    try{renderPipelinePage();}catch(e){console.error('renderPipelinePage:',e);}
-    try{renderPropostasPage();}catch(e){console.error('renderPropostasPage:',e);}
-    try{renderMetasPage();}catch(e){console.error('renderMetasPage:',e);}
-    try{renderComissoesPage();}catch(e){console.error('renderComissoesPage:',e);}
     try{atualizarSBBadges();}catch(e){console.error('badges:',e);}
     if(podeReceberAvisos()){try{verificarAvisos(ra||[]);}catch(e){}}
     if(abaInicialPendente){try{renderTabByKey(abaInicialPendente);}catch(e){}abaInicialPendente=null;}
@@ -1083,11 +991,6 @@ function loadAll(){
     try{renderPagos();}catch(err){}
     try{renderNotas();}catch(err){}
     try{renderVendas();}catch(err){}
-    try{renderLeadsPage();}catch(err){}
-    try{renderPipelinePage();}catch(err){}
-    try{renderPropostasPage();}catch(err){}
-    try{renderMetasPage();}catch(err){}
-    try{renderComissoesPage();}catch(err){}
   });
 }
 
