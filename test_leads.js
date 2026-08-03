@@ -160,6 +160,58 @@ setTimeout(() => {
 
     window.delLead(leadParaProposta);
 
+    // ============ METAS ============
+    const getMetas = () => window.eval('metas');
+    window.document.getElementById('meta-mes').value = '2026-08';
+    window.renderMetasPage();
+    assert(window.document.getElementById('metas-cards-area').children.length === 1, 'Área de metas renderizou o grid de cards');
+    assert(window.document.getElementById('metas-cards-area').textContent.includes('Empresa'), 'Card de meta da Empresa aparece');
+    assert(window.document.getElementById('metas-cards-area').textContent.includes('Paula'), 'Card de meta individual da Paula aparece');
+
+    window.openMetaForm('empresa', '');
+    assert(!!window.document.getElementById('mf-valor'), 'Form de meta renderizou o campo de valor');
+    window.document.getElementById('mf-mes').value = '2026-08';
+    window.document.getElementById('mf-valor').value = '80000';
+    window.saveMetaForm();
+    assert(getMetas().some(m => m.tipo === 'empresa' && m.mes === '2026-08' && m.valor === 80000), 'Meta de empresa foi salva com o valor correto');
+
+    // tentar duplicar o mesmo escopo -> deve bloquear
+    window.openMetaForm('empresa', '');
+    window.document.getElementById('mf-mes').value = '2026-08';
+    window.document.getElementById('mf-valor').value = '999';
+    // como já existe meta para esse escopo/mês, metaFormId deveria ter sido setado ao editar (esperado = update, não duplicidade)
+    const metaFormIdAtual = window.eval('metaFormId');
+    assert(!!metaFormIdAtual, 'openMetaForm detectou meta existente e entrou em modo edição (sem duplicar)');
+    window.saveMetaForm();
+    assert(getMetas().filter(m => m.tipo === 'empresa' && m.mes === '2026-08').length === 1, 'Edição não criou meta duplicada para o mesmo escopo/mês (' + getMetas().filter(m => m.tipo === 'empresa' && m.mes === '2026-08').length + ')');
+    assert(getMetas().find(m => m.tipo === 'empresa' && m.mes === '2026-08').valor === 999, 'Valor da meta foi atualizado para 999 na edição');
+
+    const metaId = getMetas().find(m => m.tipo === 'empresa' && m.mes === '2026-08').id;
+    window.delMeta(metaId);
+    assert(!getMetas().some(m => m.id === metaId), 'Meta foi excluída do array local');
+
+    // ============ COMISSÕES ============
+    const getComissoesConfig = () => window.eval('comissoesConfig');
+    window.document.getElementById('com-mes').value = '2026-08';
+    window.openComissaoConfigForm();
+    assert(!!window.document.getElementById('cc-PAULA'), 'Form de configuração de comissão renderizou o campo da Paula');
+    window.document.getElementById('cc-PAULA').value = '10';
+    window.document.getElementById('cc-EDUARDA').value = '8';
+    window.document.getElementById('cc-CHRISTIAN').value = '15';
+    window.saveComissoesConfig();
+    assert(getComissoesConfig().find(c => c.responsavel === 'PAULA').percentual === 10, 'Percentual da Paula salvo corretamente (10%)');
+
+    // salvar de novo com valor diferente -> deve ATUALIZAR o mesmo registro, não duplicar
+    window.openComissaoConfigForm();
+    window.document.getElementById('cc-PAULA').value = '12';
+    window.saveComissoesConfig();
+    assert(getComissoesConfig().filter(c => c.responsavel === 'PAULA').length === 1, 'Reconfigurar percentual não duplicou o registro da Paula');
+    assert(getComissoesConfig().find(c => c.responsavel === 'PAULA').percentual === 12, 'Percentual da Paula foi atualizado para 12%');
+
+    window.renderComissoesPage();
+    const comHtml = window.document.getElementById('comissoes-list-area').innerHTML;
+    assert(comHtml.includes('12% configurado'), 'Listagem de comissões reflete o novo percentual da Paula');
+
     console.log(`\n${assertions - failures}/${assertions} checagens passaram.`);
     process.exit(failures > 0 ? 1 : 0);
   } catch (e) {

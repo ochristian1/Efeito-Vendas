@@ -342,6 +342,14 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
       <span>Propostas</span>
       <span class="sb-badge" id="sb-badge-propostas"></span>
     </div>
+    <div class="sb-nav-item" id="nav-metas" onclick="switchTabSB('metas',this)">
+      <i class="ti ti-target-arrow" style="font-size:16px" aria-hidden="true"></i>
+      <span>Metas</span>
+    </div>
+    <div class="sb-nav-item" id="nav-comissoes" onclick="switchTabSB('comissoes',this)">
+      <i class="ti ti-cash" style="font-size:16px" aria-hidden="true"></i>
+      <span>Comissões</span>
+    </div>
     <div id="sb-aviso-btn" style="display:none">
       <div id="sb-time-label" style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px">Time</div>
       <div class="sb-nav-item" id="nav-aviso-item" onclick="abrirEnviarAviso()">
@@ -447,6 +455,31 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
   <div class="plano-filter" id="propostas-filtro-status"></div>
   <div id="proposta-form-area"></div>
   <div id="propostas-list-area"></div>
+</div>
+
+<div id="tab-metas" class="tab-pane">
+  <div class="fluxo-top">
+    <span class="fluxo-title">Metas</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <input id="meta-mes" type="month" class="leads-search" style="min-width:140px" onchange="renderMetasPage()">
+      <button class="btn-novo-cliente" onclick="openMetaForm()">+ Definir meta</button>
+    </div>
+  </div>
+  <div id="meta-form-area"></div>
+  <div id="metas-cards-area"></div>
+</div>
+
+<div id="tab-comissoes" class="tab-pane">
+  <div class="fluxo-top">
+    <span class="fluxo-title">Comissões</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <input id="com-mes" type="month" class="leads-search" style="min-width:140px" onchange="renderComissoesPage()">
+      <button class="btn-novo-cliente" onclick="openComissaoConfigForm()">+ Configurar %</button>
+    </div>
+  </div>
+  <div class="stats-row" id="comissoes-stats"></div>
+  <div id="comissao-config-form-area"></div>
+  <div id="comissoes-list-area"></div>
 </div>
 
 <div id="tab-notas" class="tab-pane">
@@ -735,6 +768,8 @@ function renderTabByKey(name){
   else if(name==='leads') renderLeadsPage();
   else if(name==='pipeline') renderPipelinePage();
   else if(name==='propostas') renderPropostasPage();
+  else if(name==='metas') renderMetasPage();
+  else if(name==='comissoes') renderComissoesPage();
 }
 function switchTabSB(name,el){
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
@@ -845,6 +880,8 @@ const PERMS=[
   {key:'leads',navId:'nav-leads',label:'Leads'},
   {key:'pipeline',navId:'nav-pipeline',label:'Pipeline'},
   {key:'propostas',navId:'nav-propostas',label:'Propostas'},
+  {key:'metas',navId:'nav-metas',label:'Metas'},
+  {key:'comissoes',navId:'nav-comissoes',label:'Comissões'},
   {key:'notas',navId:'nav-notas',label:'Bloco de notas'},
   {key:'pagos',navId:'nav-pagos',label:'Clientes pagos'},
   {key:'vendas',navId:'nav-vendas',label:'Painel ao vivo'},
@@ -914,8 +951,8 @@ const LEAD_PRIORIDADES=[{key:'alta',label:'Alta'},{key:'media',label:'Média'},{
 function leadEtapaLabel(k){return (LEAD_ETAPAS.find(e=>e.key===k)||{}).label||k||'—';}
 
 // VARIÁVEIS GLOBAIS
-let calls=[], clientes=[], pagos=[], notas=[], leads=[], propostas=[];
-let leadFormId=null, leadDetailId=null, leadDraggingId=null, propostaFormId=null, propostaFiltroStatus='';
+let calls=[], clientes=[], pagos=[], notas=[], leads=[], propostas=[], metas=[], comissoesConfig=[];
+let leadFormId=null, leadDetailId=null, leadDraggingId=null, propostaFormId=null, propostaFiltroStatus='', metaFormId=null;
 const PROPOSTA_STATUS=[
   {key:'enviada',label:'Enviada',cor:'#60a5fa'},
   {key:'visualizada',label:'Visualizada',cor:'#c084fc'},
@@ -935,6 +972,9 @@ const MOTIVOS_PERDA=[
   {key:'outro',label:'Outro'}
 ];
 function motivoPerdaLabel(k){return (MOTIVOS_PERDA.find(m=>m.key===k)||{}).label||k||'—';}
+const RESPONSAVEIS_EQUIPE=['CHRISTIAN','PAULA','EDUARDA'];
+function nomeResponsavel(r){return r==='CHRISTIAN'?'Christian':r==='PAULA'?'Paula':r==='EDUARDA'?'Eduarda':r;}
+function mesAtualStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
 let weekOffset=0, editId=null, detailId=null, mostrarConcluidas=false, filtroFollowup=false;
 let novoPagoOpen=false, novoPagoPlano=null, novoPagoLead=null, pagoFiltro='todos';
 let novaNotaOpen=false, notaFiltro='todas';
@@ -968,7 +1008,9 @@ function hideLoading(){const e=document.getElementById('loading-bar');if(e)e.sty
 // LOAD ALL
 function loadAll(){
   showLoading('Carregando dados...');
-  return Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos'),sbGet('leads'),sbGet('propostas')]).then(([rc,rct,rp,rn,ra,rl,rpr])=>{
+  return Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos'),sbGet('leads'),sbGet('propostas'),sbGet('metas'),sbGet('comissoes_config')]).then(([rc,rct,rp,rn,ra,rl,rpr,rm,rcc])=>{
+    metas=(rm||[]).map(r=>({id:String(r.id),tipo:r.tipo||'individual',responsavel:r.responsavel||'',mes:r.mes||'',valor:parseFloat(r.valor)||0}));
+    comissoesConfig=(rcc||[]).map(r=>({id:String(r.id),responsavel:r.responsavel||'',percentual:parseFloat(r.percentual)||0}));
     propostas=(rpr||[]).map(r=>({id:String(r.id),leadId:r.lead_id?String(r.lead_id):'',plano:r.plano||'',valor:parseFloat(r.valor)||0,desconto:parseFloat(r.desconto)||0,parcelamento:r.parcelamento||'',formaPagamento:r.forma_pagamento||'',validade:r.validade||'',status:r.status||'enviada',observacoes:r.observacoes||'',createdAt:r.created_at||''}));
     leads=(rl||[]).map(r=>({id:String(r.id),nome:r.nome||'',telefone:r.telefone||'',email:r.email||'',empresa:r.empresa||'',documento:r.documento||'',cidade:r.cidade||'',estado:r.estado||'',origem:r.origem||'',marketplace:r.marketplace||'',faturamento:r.faturamento||'',investimento:r.investimento||'',objetivo:r.objetivo||'',problemas:r.problemas||'',observacoes:r.observacoes||'',links:r.links||'',responsavel:r.responsavel||'',etapa:r.etapa||'lead_novo',prioridade:r.prioridade||'media',proximaAcao:r.proxima_acao||'',proximaAcaoData:r.proxima_acao_data||'',motivoPerda:r.motivo_perda||'',createdAt:r.created_at||''}));
     calls=(rc||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',data:r.data||'',hora:r.hora||'',obs:r.obs||'',done:!!r.done,lead:r.lead||'',vendedora:r.vendedora||'',closer:r.closer||'',statusFech:r.status_fech||'',obsFech:r.obs_fech||''}));
@@ -1011,6 +1053,8 @@ function loadAll(){
     try{renderLeadsPage();}catch(e){console.error('renderLeadsPage:',e);}
     try{renderPipelinePage();}catch(e){console.error('renderPipelinePage:',e);}
     try{renderPropostasPage();}catch(e){console.error('renderPropostasPage:',e);}
+    try{renderMetasPage();}catch(e){console.error('renderMetasPage:',e);}
+    try{renderComissoesPage();}catch(e){console.error('renderComissoesPage:',e);}
     try{atualizarSBBadges();}catch(e){console.error('badges:',e);}
     if(podeReceberAvisos()){try{verificarAvisos(ra||[]);}catch(e){}}
     if(abaInicialPendente){try{renderTabByKey(abaInicialPendente);}catch(e){}abaInicialPendente=null;}
@@ -1024,6 +1068,8 @@ function loadAll(){
     try{renderLeadsPage();}catch(err){}
     try{renderPipelinePage();}catch(err){}
     try{renderPropostasPage();}catch(err){}
+    try{renderMetasPage();}catch(err){}
+    try{renderComissoesPage();}catch(err){}
   });
 }
 
@@ -1462,6 +1508,185 @@ function delProposta(id){
   sbDelete('propostas',id);
   closePropostaForm();
   renderPropostasPage();atualizarSBBadges();
+  syncAndRefresh();
+}
+
+// ============ METAS ============
+function getMesSelecionadoMetas(){
+  const el=document.getElementById('meta-mes');
+  const v=el&&el.value?el.value:mesAtualStr();
+  if(el&&!el.value)el.value=v;
+  return v;
+}
+function realizadoNoMes(responsavel,mes){
+  return pagos.filter(p=>p.data&&p.data.slice(0,7)===mes&&(!responsavel||p.vendedora===responsavel)).reduce((s,p)=>s+(p.valor||0),0);
+}
+function projecaoMes(realizado,mes){
+  const [y,m]=mes.split('-').map(Number);
+  if(!y||!m)return realizado;
+  const diasNoMes=new Date(y,m,0).getDate();
+  const ehMesAtual=mes===mesAtualStr();
+  const diaAtual=ehMesAtual?new Date().getDate():diasNoMes;
+  if(diaAtual<=0)return realizado;
+  return (realizado/diaAtual)*diasNoMes;
+}
+function renderMetasPage(){
+  const mes=getMesSelecionadoMetas();
+  const escopos=[
+    {tipo:'empresa',responsavel:'',label:'Empresa'},
+    {tipo:'equipe',responsavel:'',label:'Equipe (SDR + Closer)'},
+    ...RESPONSAVEIS_EQUIPE.map(r=>({tipo:'individual',responsavel:r,label:nomeResponsavel(r)}))
+  ];
+  const cards=escopos.map(e=>{
+    const meta=metas.find(m=>m.tipo===e.tipo&&(m.responsavel||'')===e.responsavel&&m.mes===mes);
+    const realizado=e.tipo==='empresa'?realizadoNoMes('',mes):(e.tipo==='equipe'?RESPONSAVEIS_EQUIPE.filter(r=>r!=='CHRISTIAN').reduce((s,r)=>s+realizadoNoMes(r,mes),0):realizadoNoMes(e.responsavel,mes));
+    const valorMeta=meta?meta.valor:0;
+    const pct=valorMeta>0?Math.min(100,Math.round((realizado/valorMeta)*100)):0;
+    const falta=Math.max(0,valorMeta-realizado);
+    const projecao=projecaoMes(realizado,mes);
+    const corBarra=pct>=100?'var(--green)':(pct>=60?'#fbbf24':'var(--red)');
+    return `<div class="panel" style="margin-bottom:0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="panel-title" style="margin-bottom:0">${e.label}</div>
+        <button class="btn-edit" style="padding:3px 9px;font-size:11px" onclick="openMetaForm('${e.tipo}','${e.responsavel}')">${meta?'editar':'definir'}</button>
+      </div>
+      ${valorMeta>0?`
+      <div style="font-size:20px;font-weight:800;color:var(--text)">R$ ${realizado.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px">de R$ ${valorMeta.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} (${pct}%)</div>
+      <div style="width:100%;height:7px;background:var(--bg3);border-radius:4px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:${pct}%;background:${corBarra};border-radius:4px"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2)">
+        <span>falta R$ ${falta.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}</span>
+        <span>projeção R$ ${projecao.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}</span>
+      </div>`:`<div style="font-size:12px;color:var(--text3);padding:8px 0">Meta não definida para este mês. Realizado até agora: R$ ${realizado.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>`}
+    </div>`;
+  }).join('');
+  const area=document.getElementById('metas-cards-area');
+  if(area)area.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px">${cards}</div>`;
+}
+function openMetaForm(tipoPre,respPre){
+  const tipo=tipoPre||'individual';
+  const responsavel=respPre||'';
+  const mes=getMesSelecionadoMetas();
+  const existente=metas.find(m=>m.tipo===tipo&&(m.responsavel||'')===responsavel&&m.mes===mes);
+  metaFormId=existente?existente.id:null;
+  const area=document.getElementById('meta-form-area');
+  if(!area)return;
+  area.innerHTML=`<div class="panel"><div class="panel-title">${existente?'Editar meta':'Definir meta'}</div>
+    <div class="form-row">
+      <div class="field"><label>Tipo</label><select id="mf-tipo" onchange="atualizarCampoRespMeta()">
+        <option value="empresa" ${tipo==='empresa'?'selected':''}>Empresa</option>
+        <option value="equipe" ${tipo==='equipe'?'selected':''}>Equipe</option>
+        <option value="individual" ${tipo==='individual'?'selected':''}>Individual</option>
+      </select></div>
+      <div class="field" id="mf-resp-wrap" style="${tipo==='individual'?'':'display:none'}"><label>Responsável</label><select id="mf-responsavel">
+        ${RESPONSAVEIS_EQUIPE.map(r=>`<option value="${r}" ${responsavel===r?'selected':''}>${nomeResponsavel(r)}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Mês</label><input id="mf-mes" type="month" value="${mes}"></div>
+      <div class="field"><label>Valor da meta (R$)</label><input id="mf-valor" type="number" step="0.01" value="${existente?existente.valor:''}"></div>
+    </div>
+    <div class="btn-row"><button class="btn-save" onclick="saveMetaForm()">Salvar meta</button><button class="btn-cancel" onclick="closeMetaForm()">Cancelar</button>${existente?`<button class="btn-del" onclick="delMeta('${existente.id}')">Excluir</button>`:''}</div>
+  </div>`;
+  switchTabSB('metas',document.getElementById('nav-metas'));
+}
+function atualizarCampoRespMeta(){
+  const tipo=document.getElementById('mf-tipo').value;
+  const wrap=document.getElementById('mf-resp-wrap');
+  if(wrap)wrap.style.display=tipo==='individual'?'':'none';
+}
+function closeMetaForm(){const a=document.getElementById('meta-form-area');if(a)a.innerHTML='';metaFormId=null;}
+function saveMetaForm(){
+  const tipo=document.getElementById('mf-tipo').value;
+  const responsavel=tipo==='individual'?document.getElementById('mf-responsavel').value:'';
+  const mes=document.getElementById('mf-mes').value;
+  const valor=parseFloat(document.getElementById('mf-valor').value)||0;
+  if(!mes){alert('Selecione o mês da meta.');return;}
+  const conflito=metas.find(m=>m.id!==metaFormId&&m.tipo===tipo&&(m.responsavel||'')===responsavel&&m.mes===mes);
+  if(conflito){alert('Já existe uma meta definida para esse escopo e mês. Edite a existente em vez de criar outra.');return;}
+  let item;
+  if(metaFormId){
+    const idx=metas.findIndex(m=>m.id===metaFormId);
+    if(idx>=0){metas[idx]={...metas[idx],tipo,responsavel,mes,valor};item=metas[idx];}
+  } else {
+    item={id:'meta_'+Date.now(),tipo,responsavel,mes,valor};
+    metas.push(item);
+  }
+  sbUpsert('metas',{id:item.id,tipo:item.tipo,responsavel:item.responsavel||null,mes:item.mes,valor:item.valor});
+  closeMetaForm();renderMetasPage();
+  syncAndRefresh();
+}
+function delMeta(id){
+  if(!confirm('Excluir essa meta? Essa ação não pode ser desfeita.'))return;
+  metas=metas.filter(m=>m.id!==id);
+  sbDelete('metas',id);
+  closeMetaForm();renderMetasPage();
+  syncAndRefresh();
+}
+
+// ============ COMISSÕES ============
+function getMesSelecionadoComissoes(){
+  const el=document.getElementById('com-mes');
+  const v=el&&el.value?el.value:mesAtualStr();
+  if(el&&!el.value)el.value=v;
+  return v;
+}
+function comissaoConfigFor(responsavel){return comissoesConfig.find(c=>c.responsavel===responsavel);}
+function renderComissoesPage(){
+  const mes=getMesSelecionadoComissoes();
+  const linhas=RESPONSAVEIS_EQUIPE.map(r=>{
+    const cfg=comissaoConfigFor(r);
+    const pct=cfg?cfg.percentual:0;
+    const vendasMes=pagos.filter(p=>p.vendedora===r&&p.data&&p.data.slice(0,7)===mes);
+    const totalVendido=vendasMes.reduce((s,p)=>s+(p.valor||0),0);
+    const comissao=totalVendido*(pct/100);
+    return {responsavel:r,pct,totalVendido,comissao,qtd:vendasMes.length};
+  });
+  const totalComissoes=linhas.reduce((s,l)=>s+l.comissao,0);
+  const totalVendidoGeral=linhas.reduce((s,l)=>s+l.totalVendido,0);
+  const totalVendasGeral=linhas.reduce((s,l)=>s+l.qtd,0);
+  const statsEl=document.getElementById('comissoes-stats');
+  if(statsEl)statsEl.innerHTML=`
+    <div class="stat"><div class="stat-n">R$ ${totalVendidoGeral.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div><div class="stat-l">vendido no mês</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--green)">R$ ${totalComissoes.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div><div class="stat-l">total em comissões</div></div>
+    <div class="stat"><div class="stat-n">${totalVendasGeral}</div><div class="stat-l">vendas no mês</div></div>`;
+  const listaEl=document.getElementById('comissoes-list-area');
+  if(listaEl)listaEl.innerHTML=linhas.map(l=>`
+    <div class="list-item" style="cursor:default">
+      <div class="li-av">${initials(nomeResponsavel(l.responsavel))}</div>
+      <div class="li-info">
+        <div class="li-name">${nomeResponsavel(l.responsavel)} <span class="chip chip-fut">${l.pct}% configurado</span></div>
+        <div class="li-sub">${l.qtd} venda${l.qtd===1?'':'s'} · R$ ${l.totalVendido.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} vendidos</div>
+      </div>
+      <div class="li-time"><div class="li-date" style="color:var(--green)">R$ ${l.comissao.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>
+    </div>`).join('');
+}
+function openComissaoConfigForm(){
+  const area=document.getElementById('comissao-config-form-area');
+  if(!area)return;
+  area.innerHTML=`<div class="panel"><div class="panel-title">Configurar percentual de comissão</div>
+    ${RESPONSAVEIS_EQUIPE.map(r=>{
+      const cfg=comissaoConfigFor(r);
+      return `<div class="form-row"><div class="field"><label>${nomeResponsavel(r)}</label><input id="cc-${r}" type="number" step="0.01" min="0" max="100" value="${cfg?cfg.percentual:0}"></div></div>`;
+    }).join('')}
+    <div class="btn-row"><button class="btn-save" onclick="saveComissoesConfig()">Salvar percentuais</button><button class="btn-cancel" onclick="closeComissaoConfigForm()">Cancelar</button></div>
+  </div>`;
+  switchTabSB('comissoes',document.getElementById('nav-comissoes'));
+}
+function closeComissaoConfigForm(){const a=document.getElementById('comissao-config-form-area');if(a)a.innerHTML='';}
+function saveComissoesConfig(){
+  RESPONSAVEIS_EQUIPE.forEach(r=>{
+    const el=document.getElementById('cc-'+r);
+    if(!el)return;
+    const pct=parseFloat(el.value)||0;
+    const existente=comissaoConfigFor(r);
+    let item;
+    if(existente){existente.percentual=pct;item=existente;}
+    else{item={id:'com_'+Date.now()+'_'+r,responsavel:r,percentual:pct};comissoesConfig.push(item);}
+    sbUpsert('comissoes_config',{id:item.id,responsavel:item.responsavel,percentual:item.percentual});
+  });
+  closeComissaoConfigForm();
+  renderComissoesPage();
   syncAndRefresh();
 }
 
