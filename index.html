@@ -569,11 +569,6 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
     <div id="vendas-ranking"></div>
   </div>
 
-  <!-- RESUMO DE COMISSÕES (admin only) -->
-  <div id="vendas-comissoes" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem">
-    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">💰 Resumo de comissões a pagar</div>
-    <div id="vendas-comissoes-content"></div>
-  </div>
 </div>
 
 <!-- TAXA DE CONVERSÃO -->
@@ -635,7 +630,14 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
 
 <!-- COMISSÕES (página própria) -->
 <div id="tab-comissoes-page" class="tab-pane">
-  <div class="fluxo-top"><span class="fluxo-title">💰 Comissões</span></div>
+  <div class="fluxo-top" style="margin-bottom:.5rem">
+    <span class="fluxo-title">💰 Comissões</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button onclick="navegarMesComissoes(-1)" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:13px;color:var(--text2);cursor:pointer">&#8592;</button>
+      <span id="comissoes-mes-label" style="font-size:13px;font-weight:600;color:var(--text);min-width:100px;text-align:center"></span>
+      <button onclick="navegarMesComissoes(1)" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:13px;color:var(--text2);cursor:pointer">&#8594;</button>
+    </div>
+  </div>
   <div id="pg-comissoes-page"></div>
 </div>
 
@@ -2714,9 +2716,22 @@ function renderDashboardPage(){
 }
 
 // ============ COMISSÕES (página própria, admin only) ============
+let mesComissoes=mesSelecionado;
+function navegarMesComissoes(dir){
+  const [ano,mes]=mesComissoes.split('-').map(Number);
+  const d=new Date(ano,mes-1+dir,1);
+  mesComissoes=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  renderComissoesPagePage();
+}
 function renderComissoesPagePage(){
   const el=document.getElementById('pg-comissoes-page');if(!el)return;
-  const mesStr=mesVendas||mesSelecionado;
+  if(!mesComissoes) mesComissoes=mesSelecionado;
+  const mesStr=mesComissoes;
+  const labelEl=document.getElementById('comissoes-mes-label');
+  if(labelEl){
+    const [anoL,mesL]=mesStr.split('-').map(Number);
+    labelEl.textContent=`${MONTHS_PT[mesL-1].charAt(0).toUpperCase()+MONTHS_PT[mesL-1].slice(1)} ${anoL}`;
+  }
   const listaMes=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesStr);
   const PESSOAS=[
     {key:'PAULA',label:'Paula',cor:'#f472b6',bg:'#2a0d1e'},
@@ -2725,7 +2740,6 @@ function renderComissoesPagePage(){
   const dados=PESSOAS.map(p=>({...p,...calcularComissaoResponsavel(p.key,listaMes)}));
   const totalGeral=dados.reduce((s,d)=>s+(d.comissao||0),0);
   el.innerHTML=`
-    <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Mês de referência: ${mesStr}</div>
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px">
       ${dados.map(d=>`
         <div style="background:${d.bg};border:1px solid ${d.cor}40;border-radius:12px;padding:16px;text-align:center">
@@ -3425,45 +3439,6 @@ function renderVendas(){
   renderMetaIndividual(listaMes);
   renderMotivos();
   renderFollowups();
-  renderComissoes(rankingComDados);
-}
-
-function renderComissoes(ranking){
-  const box=document.getElementById('vendas-comissoes');
-  const el=document.getElementById('vendas-comissoes-content');
-  if(!box||!el)return;
-  if(currentUser!=='ADMIN'){box.style.display='none';return;}
-  box.style.display='block';
-  const sdrs=ranking.filter(v=>!v.isChristian);
-  if(!sdrs.length){el.innerHTML=`<div style="color:var(--text3);font-size:12px">Nenhuma venda registrada ainda.</div>`;return;}
-  const totalComissoes=sdrs.reduce((s,v)=>s+(v.comissao||0),0);
-  el.innerHTML=`
-    <div style="display:grid;grid-template-columns:repeat(${sdrs.length},1fr);gap:10px;margin-bottom:12px">
-      ${sdrs.map(v=>`
-        <div style="background:${v.bg};border:1px solid ${v.cor}40;border-radius:10px;padding:14px;text-align:center">
-          <div style="font-size:13px;font-weight:700;color:${v.cor};margin-bottom:8px">${v.label}</div>
-          <div style="font-size:24px;font-weight:800;color:${v.cor}">R$ ${(v.comissao||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-          <div style="font-size:10px;color:${v.cor};opacity:.7;margin-bottom:10px">a pagar</div>
-          <div style="display:flex;flex-direction:column;gap:4px">
-            <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 8px;background:var(--bg3);border-radius:5px">
-              <span style="color:var(--text2)">${v.fechouCount}× fechou (8%)</span>
-              <span style="color:${v.cor};font-weight:600">R$ ${(v.comFechou||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 8px;background:var(--bg3);border-radius:5px">
-              <span style="color:var(--text2)">${v.recompraCount}× recompra (4%)</span>
-              <span style="color:${v.cor};font-weight:600">R$ ${(v.comRecompra||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 8px;background:var(--bg3);border-radius:5px">
-              <span style="color:var(--text2)">${v.agendouCount}× agendou (2%)</span>
-              <span style="color:${v.cor};font-weight:600">R$ ${(v.comAgendou||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
-            </div>
-          </div>
-        </div>`).join('')}
-    </div>
-    <div style="background:var(--green-bg);border:1px solid var(--green-border);border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:13px;font-weight:600;color:var(--text)">Total a pagar no mês</span>
-      <span style="font-size:22px;font-weight:800;color:var(--green)">R$ ${totalComissoes.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
-    </div>`;
 }
 </script>
 </body>
