@@ -1033,6 +1033,7 @@ function saveForm(){
   calls.sort((a,b)=>a.data+a.hora>b.data+b.hora?1:-1);
   sbUpsert('calls',{id:item.id,nome:item.nome,fone:item.fone||'',data:item.data,hora:item.hora,obs:item.obs||'',done:item.done,lead:item.lead||'',vendedora:item.vendedora||'',closer:item.closer||''});
   closeForm();renderAgenda();
+  syncAndRefresh();
 }
 function renderDetail(id){
   const item=calls.find(x=>x.id===String(id));if(!item)return;
@@ -1106,6 +1107,7 @@ function setStatusFech(id,status){
   renderDetail(id);
   renderList();
   atualizarSBBadges();
+  syncAndRefresh();
   // Ao marcar como "fechou", oferece já criar o registro em Clientes pagos (e assim entrar no Onboarding)
   if(status==='fechou'&&calls[idx].statusFech==='fechou'){
     const jaTemPago=pagos.some(p=>p.fone&&calls[idx].fone&&p.fone.replace(/\D/g,'')===calls[idx].fone.replace(/\D/g,'')&&p.data===todayStr());
@@ -1172,10 +1174,20 @@ function toggleDone(id){
   }
   renderDetail(id);renderList();renderStats();renderWeek();
 }
+function syncAndRefresh(){
+  loadAll().then(()=>{
+    const ativo=document.querySelector('.tab-pane.active');
+    if(ativo){
+      const key=ativo.id.replace('tab-','');
+      try{renderTabByKey(key);}catch(e){}
+    }
+  });
+}
 function delCall(id){
   calls=calls.filter(x=>x.id!==String(id));
   sbDelete('calls',id);
   detailId=null;document.getElementById('detail-area').innerHTML='';renderAgenda();
+  syncAndRefresh();
 }
 let mesConcluidas=todayStr().slice(0,7);
 function navegarMesConcluidas(dir){
@@ -1446,6 +1458,7 @@ function salvarPago(){
   novoPagoOpen=false;novoPagoPlano=null;novoPagoLead=null;novoPagoVendedora=null;novoPagoFechamento=null;
   document.getElementById('novo-pago-form').style.display='none';
   renderPagos();renderVendas();
+  syncAndRefresh();
 }
 function editarLead(id){
   const c=pagos.find(x=>x.id===String(id));if(!c)return;
@@ -1533,10 +1546,12 @@ function salvarEditPago(id){
   if(c._editFech) c.fechamento=c._editFech;
   sbUpsert('pagos',{id:c.id,nome:c.nome,fone:c.fone||'',plano:c.plano||'',data:c.data,valor:c.valor,obs:c.obs||'',lead:c.lead||'',vendedora:c.vendedora||'',fechamento:c.fechamento||''});
   renderPagos();renderVendas();
+  syncAndRefresh();
 }
 function delPago(id){
   pagos=pagos.filter(x=>x.id!==String(id));
   sbDelete('pagos',id);renderPagos();renderVendas();
+  syncAndRefresh();
 }
 function renderPagos(){
   const [ano,mes]=mesSelecionado.split('-').map(Number);
@@ -2150,6 +2165,7 @@ function reabrirFollowup(id){
   followupAberto=null;
   renderFollowupsPage();
   atualizarSBBadges();
+  syncAndRefresh();
 }
 function concluirFollowup(id){
   const idx=calls.findIndex(x=>x.id===String(id));
@@ -2159,6 +2175,7 @@ function concluirFollowup(id){
   followupAberto=null;
   renderFollowupsPage();
   atualizarSBBadges();
+  syncAndRefresh();
 }
 function excluirFollowup(id){
   if(!confirm('Excluir este follow-up permanentemente?'))return;
@@ -2169,6 +2186,7 @@ function excluirFollowup(id){
   followupAberto=null;
   renderFollowupsPage();
   atualizarSBBadges();
+  syncAndRefresh();
 }
 function toggleFollowup(id){
   followupAberto=followupAberto===id?null:id;
