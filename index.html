@@ -1106,6 +1106,25 @@ function setStatusFech(id,status){
   renderDetail(id);
   renderList();
   atualizarSBBadges();
+  // Ao marcar como "fechou", oferece já criar o registro em Clientes pagos (e assim entrar no Onboarding)
+  if(status==='fechou'&&calls[idx].statusFech==='fechou'){
+    const jaTemPago=pagos.some(p=>p.fone&&calls[idx].fone&&p.fone.replace(/\D/g,'')===calls[idx].fone.replace(/\D/g,'')&&p.data===todayStr());
+    if(!jaTemPago&&confirm(`🎉 ${calls[idx].nome} fechou!\n\nQuer já cadastrar em Clientes pagos agora? (isso faz ele entrar automaticamente no Onboarding)`)){
+      abrirPagoPreenchido(calls[idx]);
+    }
+  }
+}
+function abrirPagoPreenchido(call){
+  switchTabSB('pagos',document.getElementById('nav-pagos'));
+  setTimeout(()=>{
+    toggleNovoPago();
+    const nomeEl=document.getElementById('pp-nome');
+    const foneEl=document.getElementById('pp-fone');
+    if(nomeEl) nomeEl.value=call.nome||'';
+    if(foneEl) foneEl.value=call.fone||'';
+    if(call.lead){novoPagoLead=null;setPagoLead(call.lead);}
+    if(call.vendedora){novoPagoVendedora=null;setPagoVendedora(call.vendedora);novoPagoFechamento=null;setPagoFechamento(call.vendedora);}
+  },150);
 }
 function salvarObsFech(id){
   const idx=calls.findIndex(x=>x.id===String(id));
