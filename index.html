@@ -472,13 +472,10 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
 <div id="tab-comissoes" class="tab-pane">
   <div class="fluxo-top">
     <span class="fluxo-title">Comissões</span>
-    <div style="display:flex;align-items:center;gap:8px">
-      <input id="com-mes" type="month" class="leads-search" style="min-width:140px" onchange="renderComissoesPage()">
-      <button class="btn-novo-cliente" onclick="openComissaoConfigForm()">+ Configurar %</button>
-    </div>
+    <input id="com-mes" type="month" class="leads-search" style="min-width:140px" onchange="renderComissoesPage()">
   </div>
   <div class="stats-row" id="comissoes-stats"></div>
-  <div id="comissao-config-form-area"></div>
+  <div style="font-size:11px;color:var(--text3);margin-bottom:1rem">Regras fixas: 8% quando fecha sozinha(o) · 4% em recompra · 2% quando agenda e outra pessoa fecha</div>
   <div id="comissoes-list-area"></div>
 </div>
 
@@ -951,7 +948,7 @@ const LEAD_PRIORIDADES=[{key:'alta',label:'Alta'},{key:'media',label:'Média'},{
 function leadEtapaLabel(k){return (LEAD_ETAPAS.find(e=>e.key===k)||{}).label||k||'—';}
 
 // VARIÁVEIS GLOBAIS
-let calls=[], clientes=[], pagos=[], notas=[], leads=[], propostas=[], metas=[], comissoesConfig=[];
+let calls=[], clientes=[], pagos=[], notas=[], leads=[], propostas=[], metas=[];
 let leadFormId=null, leadDetailId=null, leadDraggingId=null, propostaFormId=null, propostaFiltroStatus='', metaFormId=null;
 const PROPOSTA_STATUS=[
   {key:'enviada',label:'Enviada',cor:'#60a5fa'},
@@ -975,6 +972,28 @@ function motivoPerdaLabel(k){return (MOTIVOS_PERDA.find(m=>m.key===k)||{}).label
 const RESPONSAVEIS_EQUIPE=['CHRISTIAN','PAULA','EDUARDA'];
 function nomeResponsavel(r){return r==='CHRISTIAN'?'Christian':r==='PAULA'?'Paula':r==='EDUARDA'?'Eduarda':r;}
 function mesAtualStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
+// Fórmula oficial de comissão (fixa, não configurável): 8% quando fecha sozinha(o),
+// 4% em recompra, 2% quando agenda e outra pessoa/o dono fecha. Única fonte de verdade,
+// usada tanto no Painel ao vivo quanto na aba Comissões.
+function calcularComissaoResponsavel(key,listaMes){
+  if(key==='CHRISTIAN'){
+    const vendas=listaMes.filter(p=>p.fechamento==='DONO');
+    const bruto=vendas.reduce((s,p)=>s+(p.valor||0),0);
+    return {bruto,comissao:null,totalVendas:vendas.length,fechouCount:0,comFechou:0,recompraCount:0,comRecompra:0,agendouCount:0,comAgendou:0};
+  }
+  const fechou=listaMes.filter(p=>p.fechamento===key);
+  const recFechou=fechou.reduce((s,p)=>s+(p.valor||0),0);
+  const comFechou=recFechou*0.08;
+  const recompra=listaMes.filter(p=>p.fechamento==='RECOMPRA_'+key);
+  const recRecompra=recompra.reduce((s,p)=>s+(p.valor||0),0);
+  const comRecompra=recRecompra*0.04;
+  const outraSDR=key==='PAULA'?'EDUARDA':'PAULA';
+  const agendou=listaMes.filter(p=>p.vendedora===key&&(p.fechamento==='DONO'||p.fechamento===outraSDR));
+  const recAgendou=agendou.reduce((s,p)=>s+(p.valor||0),0);
+  const comAgendou=recAgendou*0.02;
+  return {bruto:recFechou+recRecompra,comissao:comFechou+comRecompra+comAgendou,totalVendas:fechou.length+recompra.length+agendou.length,
+    fechouCount:fechou.length,comFechou,recompraCount:recompra.length,comRecompra,agendouCount:agendou.length,comAgendou};
+}
 let weekOffset=0, editId=null, detailId=null, mostrarConcluidas=false, filtroFollowup=false;
 let novoPagoOpen=false, novoPagoPlano=null, novoPagoLead=null, pagoFiltro='todos';
 let novaNotaOpen=false, notaFiltro='todas';
@@ -1008,9 +1027,8 @@ function hideLoading(){const e=document.getElementById('loading-bar');if(e)e.sty
 // LOAD ALL
 function loadAll(){
   showLoading('Carregando dados...');
-  return Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos'),sbGet('leads'),sbGet('propostas'),sbGet('metas'),sbGet('comissoes_config')]).then(([rc,rct,rp,rn,ra,rl,rpr,rm,rcc])=>{
+  return Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos'),sbGet('leads'),sbGet('propostas'),sbGet('metas')]).then(([rc,rct,rp,rn,ra,rl,rpr,rm])=>{
     metas=(rm||[]).map(r=>({id:String(r.id),tipo:r.tipo||'individual',responsavel:r.responsavel||'',mes:r.mes||'',valor:parseFloat(r.valor)||0}));
-    comissoesConfig=(rcc||[]).map(r=>({id:String(r.id),responsavel:r.responsavel||'',percentual:parseFloat(r.percentual)||0}));
     propostas=(rpr||[]).map(r=>({id:String(r.id),leadId:r.lead_id?String(r.lead_id):'',plano:r.plano||'',valor:parseFloat(r.valor)||0,desconto:parseFloat(r.desconto)||0,parcelamento:r.parcelamento||'',formaPagamento:r.forma_pagamento||'',validade:r.validade||'',status:r.status||'enviada',observacoes:r.observacoes||'',createdAt:r.created_at||''}));
     leads=(rl||[]).map(r=>({id:String(r.id),nome:r.nome||'',telefone:r.telefone||'',email:r.email||'',empresa:r.empresa||'',documento:r.documento||'',cidade:r.cidade||'',estado:r.estado||'',origem:r.origem||'',marketplace:r.marketplace||'',faturamento:r.faturamento||'',investimento:r.investimento||'',objetivo:r.objetivo||'',problemas:r.problemas||'',observacoes:r.observacoes||'',links:r.links||'',responsavel:r.responsavel||'',etapa:r.etapa||'lead_novo',prioridade:r.prioridade||'media',proximaAcao:r.proxima_acao||'',proximaAcaoData:r.proxima_acao_data||'',motivoPerda:r.motivo_perda||'',createdAt:r.created_at||''}));
     calls=(rc||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',data:r.data||'',hora:r.hora||'',obs:r.obs||'',done:!!r.done,lead:r.lead||'',vendedora:r.vendedora||'',closer:r.closer||'',statusFech:r.status_fech||'',obsFech:r.obs_fech||''}));
@@ -1631,63 +1649,34 @@ function getMesSelecionadoComissoes(){
   if(el&&!el.value)el.value=v;
   return v;
 }
-function comissaoConfigFor(responsavel){return comissoesConfig.find(c=>c.responsavel===responsavel);}
 function renderComissoesPage(){
   const mes=getMesSelecionadoComissoes();
-  const linhas=RESPONSAVEIS_EQUIPE.map(r=>{
-    const cfg=comissaoConfigFor(r);
-    const pct=cfg?cfg.percentual:0;
-    const vendasMes=pagos.filter(p=>p.vendedora===r&&p.data&&p.data.slice(0,7)===mes);
-    const totalVendido=vendasMes.reduce((s,p)=>s+(p.valor||0),0);
-    const comissao=totalVendido*(pct/100);
-    return {responsavel:r,pct,totalVendido,comissao,qtd:vendasMes.length};
-  });
-  const totalComissoes=linhas.reduce((s,l)=>s+l.comissao,0);
-  const totalVendidoGeral=linhas.reduce((s,l)=>s+l.totalVendido,0);
-  const totalVendasGeral=linhas.reduce((s,l)=>s+l.qtd,0);
+  const listaMes=pagos.filter(p=>p.data&&p.data.slice(0,7)===mes);
+  const linhas=RESPONSAVEIS_EQUIPE.map(key=>({responsavel:key,...calcularComissaoResponsavel(key,listaMes)}));
+  const sdrs=linhas.filter(l=>l.responsavel!=='CHRISTIAN');
+  const totalComissoes=sdrs.reduce((s,l)=>s+(l.comissao||0),0);
+  const totalVendidoGeral=linhas.reduce((s,l)=>s+(l.bruto||0),0);
+  const totalVendasGeral=linhas.reduce((s,l)=>s+(l.totalVendas||0),0);
   const statsEl=document.getElementById('comissoes-stats');
   if(statsEl)statsEl.innerHTML=`
     <div class="stat"><div class="stat-n">R$ ${totalVendidoGeral.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div><div class="stat-l">vendido no mês</div></div>
-    <div class="stat"><div class="stat-n" style="color:var(--green)">R$ ${totalComissoes.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div><div class="stat-l">total em comissões</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--green)">R$ ${totalComissoes.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div><div class="stat-l">total em comissões (SDRs)</div></div>
     <div class="stat"><div class="stat-n">${totalVendasGeral}</div><div class="stat-l">vendas no mês</div></div>`;
   const listaEl=document.getElementById('comissoes-list-area');
-  if(listaEl)listaEl.innerHTML=linhas.map(l=>`
-    <div class="list-item" style="cursor:default">
+  if(listaEl)listaEl.innerHTML=linhas.map(l=>{
+    const ehChristian=l.responsavel==='CHRISTIAN';
+    return `<div class="list-item" style="cursor:default">
       <div class="li-av">${initials(nomeResponsavel(l.responsavel))}</div>
       <div class="li-info">
-        <div class="li-name">${nomeResponsavel(l.responsavel)} <span class="chip chip-fut">${l.pct}% configurado</span></div>
-        <div class="li-sub">${l.qtd} venda${l.qtd===1?'':'s'} · R$ ${l.totalVendido.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})} vendidos</div>
+        <div class="li-name">${nomeResponsavel(l.responsavel)}${ehChristian?' <span class="chip chip-fut">dono · sem comissão</span>':''}</div>
+        <div class="li-sub">${ehChristian?`${l.totalVendas} fechamento${l.totalVendas===1?'':'s'} diretos`:`${l.fechouCount}× fechou (8%) · ${l.recompraCount}× recompra (4%) · ${l.agendouCount}× agendou (2%)`}</div>
       </div>
-      <div class="li-time"><div class="li-date" style="color:var(--green)">R$ ${l.comissao.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>
-    </div>`).join('');
-}
-function openComissaoConfigForm(){
-  const area=document.getElementById('comissao-config-form-area');
-  if(!area)return;
-  area.innerHTML=`<div class="panel"><div class="panel-title">Configurar percentual de comissão</div>
-    ${RESPONSAVEIS_EQUIPE.map(r=>{
-      const cfg=comissaoConfigFor(r);
-      return `<div class="form-row"><div class="field"><label>${nomeResponsavel(r)}</label><input id="cc-${r}" type="number" step="0.01" min="0" max="100" value="${cfg?cfg.percentual:0}"></div></div>`;
-    }).join('')}
-    <div class="btn-row"><button class="btn-save" onclick="saveComissoesConfig()">Salvar percentuais</button><button class="btn-cancel" onclick="closeComissaoConfigForm()">Cancelar</button></div>
-  </div>`;
-  switchTabSB('comissoes',document.getElementById('nav-comissoes'));
-}
-function closeComissaoConfigForm(){const a=document.getElementById('comissao-config-form-area');if(a)a.innerHTML='';}
-function saveComissoesConfig(){
-  RESPONSAVEIS_EQUIPE.forEach(r=>{
-    const el=document.getElementById('cc-'+r);
-    if(!el)return;
-    const pct=parseFloat(el.value)||0;
-    const existente=comissaoConfigFor(r);
-    let item;
-    if(existente){existente.percentual=pct;item=existente;}
-    else{item={id:'com_'+Date.now()+'_'+r,responsavel:r,percentual:pct};comissoesConfig.push(item);}
-    sbUpsert('comissoes_config',{id:item.id,responsavel:item.responsavel,percentual:item.percentual});
-  });
-  closeComissaoConfigForm();
-  renderComissoesPage();
-  syncAndRefresh();
+      <div class="li-time">
+        <div class="li-date">R$ ${l.bruto.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+        ${!ehChristian?`<div class="li-hour" style="color:var(--green)">com. R$ ${l.comissao.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ============ AGENDA ============
@@ -3236,24 +3225,8 @@ function renderVendas(){
     {key:'EDUARDA',label:'Eduarda',cor:'#fb923c',corClara:'#fdba74',bg:'#2a1500',avatar:'E',isChristian:false},
   ];
   const rankingComDados=TODOS.map(v=>{
-    if(v.isChristian){
-      const vendas=listaMes.filter(p=>p.fechamento==='DONO');
-      const bruto=vendas.reduce((s,p)=>s+(p.valor||0),0);
-      return{...v,bruto,comissao:null,totalVendas:vendas.length};
-    } else {
-      const fechou=listaMes.filter(p=>p.fechamento===v.key);
-      const recFechou=fechou.reduce((s,p)=>s+(p.valor||0),0);
-      const comFechou=recFechou*0.08;
-      const recompra=listaMes.filter(p=>p.fechamento==='RECOMPRA_'+v.key);
-      const recRecompra=recompra.reduce((s,p)=>s+(p.valor||0),0);
-      const comRecompra=recRecompra*0.04;
-      const outraSDR=v.key==='PAULA'?'EDUARDA':'PAULA';
-      const agendou=listaMes.filter(p=>p.vendedora===v.key&&(p.fechamento==='DONO'||p.fechamento===outraSDR));
-      const recAgendou=agendou.reduce((s,p)=>s+(p.valor||0),0);
-      const comAgendou=recAgendou*0.02;
-      return{...v,bruto:recFechou+recRecompra,comissao:comFechou+comRecompra+comAgendou,totalVendas:fechou.length+recompra.length+agendou.length,
-        fechouCount:fechou.length,comFechou,recompraCount:recompra.length,comRecompra,agendouCount:agendou.length,comAgendou};
-    }
+    const r=calcularComissaoResponsavel(v.key,listaMes);
+    return {...v,...r};
   }).sort((a,b)=>b.bruto-a.bruto);
 
   const maxBruto=Math.max(...rankingComDados.map(v=>v.bruto),1);

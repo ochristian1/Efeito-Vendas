@@ -190,27 +190,34 @@ setTimeout(() => {
     window.delMeta(metaId);
     assert(!getMetas().some(m => m.id === metaId), 'Meta foi excluída do array local');
 
-    // ============ COMISSÕES ============
-    const getComissoesConfig = () => window.eval('comissoesConfig');
+    // ============ COMISSÕES (fórmula fixa 8%/4%/2%, não configurável) ============
+    window.eval(`
+      pagos = [
+        {id:'p1', nome:'Cliente 1', valor:1000, data:'2026-08-05', vendedora:'PAULA', fechamento:'PAULA'},
+        {id:'p2', nome:'Cliente 2', valor:500, data:'2026-08-06', vendedora:'PAULA', fechamento:'RECOMPRA_PAULA'},
+        {id:'p3', nome:'Cliente 3', valor:2000, data:'2026-08-07', vendedora:'PAULA', fechamento:'DONO'},
+        {id:'p4', nome:'Cliente 4', valor:3000, data:'2026-08-08', vendedora:'EDUARDA', fechamento:'EDUARDA'}
+      ];
+    `);
+    const calcPaula = window.eval("calcularComissaoResponsavel('PAULA', pagos)");
+    const esperadoPaula = 1000 * 0.08 + 500 * 0.04 + 2000 * 0.02;
+    assert(Math.abs(calcPaula.comissao - esperadoPaula) < 0.01, `Fórmula bate pra Paula: 8% fechou + 4% recompra + 2% agendou = ${esperadoPaula} (obtido ${calcPaula.comissao})`);
+    assert(calcPaula.fechouCount === 1 && calcPaula.recompraCount === 1 && calcPaula.agendouCount === 1, 'Contagens de fechou/recompra/agendou da Paula corretas');
+
+    const calcChristian = window.eval("calcularComissaoResponsavel('CHRISTIAN', pagos)");
+    assert(calcChristian.comissao === null, 'Christian (dono) não tem comissão calculada, só faturamento bruto');
+    assert(calcChristian.bruto === 2000, 'Faturamento bruto do Christian bate com a venda fechada como DONO (2000)');
+
     window.document.getElementById('com-mes').value = '2026-08';
-    window.openComissaoConfigForm();
-    assert(!!window.document.getElementById('cc-PAULA'), 'Form de configuração de comissão renderizou o campo da Paula');
-    window.document.getElementById('cc-PAULA').value = '10';
-    window.document.getElementById('cc-EDUARDA').value = '8';
-    window.document.getElementById('cc-CHRISTIAN').value = '15';
-    window.saveComissoesConfig();
-    assert(getComissoesConfig().find(c => c.responsavel === 'PAULA').percentual === 10, 'Percentual da Paula salvo corretamente (10%)');
-
-    // salvar de novo com valor diferente -> deve ATUALIZAR o mesmo registro, não duplicar
-    window.openComissaoConfigForm();
-    window.document.getElementById('cc-PAULA').value = '12';
-    window.saveComissoesConfig();
-    assert(getComissoesConfig().filter(c => c.responsavel === 'PAULA').length === 1, 'Reconfigurar percentual não duplicou o registro da Paula');
-    assert(getComissoesConfig().find(c => c.responsavel === 'PAULA').percentual === 12, 'Percentual da Paula foi atualizado para 12%');
-
     window.renderComissoesPage();
     const comHtml = window.document.getElementById('comissoes-list-area').innerHTML;
-    assert(comHtml.includes('12% configurado'), 'Listagem de comissões reflete o novo percentual da Paula');
+    assert(comHtml.includes('fechou (8%)') && comHtml.includes('recompra (4%)') && comHtml.includes('agendou (2%)'), 'Listagem de comissões mostra a régua fixa 8%/4%/2%');
+    assert(!comHtml.includes('configurado'), 'Não sobrou nenhum texto da versão antiga de percentual configurável');
+    assert(comHtml.includes('dono · sem comissão'), 'Christian aparece marcado como dono sem comissão na listagem');
+    assert(window.openComissaoConfigForm === undefined, 'Função antiga de configurar percentual foi removida por completo');
+    assert(window.comissaoConfigFor === undefined, 'Helper antigo de config de comissão foi removido por completo');
+
+    window.eval('pagos = [];');
 
     console.log(`\n${assertions - failures}/${assertions} checagens passaram.`);
     process.exit(failures > 0 ? 1 : 0);
