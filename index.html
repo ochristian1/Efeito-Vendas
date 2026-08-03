@@ -316,6 +316,10 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
         <span style="color:#60a5fa">Onboarding</span>
         <span class="sb-badge" id="sb-badge-onb"></span>
       </div>
+      <div class="sb-nav-item" id="nav-desempenho" onclick="switchTabSB('desempenho',this)">
+        <i class="ti ti-calendar-stats" style="font-size:16px;color:#c084fc" aria-hidden="true"></i>
+        <span style="color:#c084fc">Desempenho</span>
+      </div>
     </div>
     <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px">Análises</div>
     <div class="sb-nav-item" id="nav-conversao" onclick="switchTabSB('conversao',this)">
@@ -565,6 +569,12 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
   <div id="pg-onboarding"></div>
 </div>
 
+<!-- DESEMPENHO POR PERÍODO -->
+<div id="tab-desempenho" class="tab-pane">
+  <div class="fluxo-top"><span class="fluxo-title">📊 Desempenho por período</span></div>
+  <div id="pg-desempenho"></div>
+</div>
+
 </div><!-- fim conteúdo principal -->
 </div><!-- fim flex layout -->
 </div><!-- fim app-root -->
@@ -614,6 +624,7 @@ function switchTabSB(name,el){
   else if(name==='motivos') renderMotivosPage();
   else if(name==='followups') renderFollowupsPage();
   else if(name==='onboarding') renderOnboardingPage();
+  else if(name==='desempenho') renderDesempenhoPage();
 }
 function ativarFollowupSB(el){
   switchTabSB('agenda',document.getElementById('nav-agenda'));
@@ -1663,6 +1674,115 @@ function renderOnboardingPage(){
     </div>`;
   }).join('');
 }
+// ============ DESEMPENHO POR PERÍODO ============
+let despTipo='mes';
+let despRef=new Date();
+const MESES_PT=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function pad2(n){return String(n).padStart(2,'0');}
+function toISO(d){return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;}
+function despRange(){
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  let start,end,label;
+  if(despTipo==='hoje'){start=end=new Date(hoje);label='Hoje';}
+  else if(despTipo==='ontem'){start=end=new Date(hoje);start.setDate(start.getDate()-1);end=new Date(start);label='Ontem';}
+  else if(despTipo==='7dias'){end=new Date(hoje);start=new Date(hoje);start.setDate(start.getDate()-6);label=`${toISO(start).split('-').reverse().join('/')} – ${toISO(end).split('-').reverse().join('/')}`;}
+  else if(despTipo==='30dias'){end=new Date(hoje);start=new Date(hoje);start.setDate(start.getDate()-29);label=`${toISO(start).split('-').reverse().join('/')} – ${toISO(end).split('-').reverse().join('/')}`;}
+  else if(despTipo==='dia'){start=end=new Date(despRef);label=`${pad2(start.getDate())}/${pad2(start.getMonth()+1)}/${start.getFullYear()}`;}
+  else if(despTipo==='semana'){
+    const diaSemana=(despRef.getDay()+6)%7; // segunda=0
+    start=new Date(despRef);start.setDate(start.getDate()-diaSemana);
+    end=new Date(start);end.setDate(end.getDate()+6);
+    label=`${start.getDate()} ${MESES_PT[start.getMonth()]} – ${end.getDate()} ${MESES_PT[end.getMonth()]} ${end.getFullYear()}`;
+  }
+  else if(despTipo==='ano'){start=new Date(despRef.getFullYear(),0,1);end=new Date(despRef.getFullYear(),11,31);label=`${despRef.getFullYear()}`;}
+  else{start=new Date(despRef.getFullYear(),despRef.getMonth(),1);end=new Date(despRef.getFullYear(),despRef.getMonth()+1,0);label=`${MESES_PT[despRef.getMonth()]} ${despRef.getFullYear()}`;}
+  return{start:toISO(start),end:toISO(end),label};
+}
+function despSetTipo(tipo){
+  despTipo=tipo;
+  if(['dia','semana','mes','ano'].includes(tipo)) despRef=new Date();
+  renderDesempenhoPage();
+}
+function despNav(dir){
+  if(despTipo==='dia') despRef.setDate(despRef.getDate()+dir);
+  else if(despTipo==='semana') despRef.setDate(despRef.getDate()+dir*7);
+  else if(despTipo==='mes') despRef.setMonth(despRef.getMonth()+dir);
+  else if(despTipo==='ano') despRef.setFullYear(despRef.getFullYear()+dir);
+  renderDesempenhoPage();
+}
+function renderDesempenhoPage(){
+  const el=document.getElementById('pg-desempenho');if(!el)return;
+  const {start,end,label}=despRange();
+  const callsPeriodo=calls.filter(c=>c.data>=start&&c.data<=end);
+  const pagosPeriodo=pagos.filter(p=>p.data>=start&&p.data<=end);
+  const temNav=['dia','semana','mes','ano'].includes(despTipo);
+
+  const chips=[
+    {k:'hoje',l:'Hoje'},{k:'ontem',l:'Ontem'},{k:'7dias',l:'Últimos 7 dias'},{k:'30dias',l:'Últimos 30 dias'}
+  ];
+  const chipsHtml=chips.map(c=>`<span onclick="despSetTipo('${c.k}')" style="font-size:11px;padding:5px 11px;border-radius:7px;cursor:pointer;${despTipo===c.k?'background:var(--green-bg);border:1px solid var(--green-border);color:var(--green)':'background:var(--bg3);border:1px solid var(--border);color:var(--text2)'}">${c.l}</span>`).join('');
+  const gran=[{k:'dia',l:'Dia'},{k:'semana',l:'Semana'},{k:'mes',l:'Mês'},{k:'ano',l:'Ano'}];
+  const granHtml=gran.map(c=>`<span onclick="despSetTipo('${c.k}')" style="font-size:11px;padding:5px 11px;border-radius:7px;cursor:pointer;${despTipo===c.k?'background:var(--green-bg);border:1px solid var(--green-border);color:var(--green)':'background:var(--bg3);border:1px solid var(--border);color:var(--text2)'}">${c.l}</span>`).join('');
+
+  // agendamentos por SDR
+  const SDRS=[{key:'PAULA',label:'Paula',cor:'#f472b6'},{key:'EDUARDA',label:'Eduarda',cor:'#fb923c'}];
+  const agendCards=SDRS.map(s=>{
+    const n=callsPeriodo.filter(c=>c.vendedora===s.key).length;
+    return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center">
+      <div style="font-size:12px;font-weight:700;color:${s.cor};margin-bottom:6px">${s.label}</div>
+      <div style="font-size:28px;font-weight:800;color:${s.cor}">${n}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">agendamentos</div>
+    </div>`;
+  }).join('');
+  const semSDR=callsPeriodo.filter(c=>!c.vendedora).length;
+
+  // calls atendidas (realizadas) por closer
+  const CLOSERS=[{key:'CHRISTIAN',label:'Christian',cor:'var(--green)'},{key:'EDUARDA',label:'Eduarda',cor:'#fb923c'}];
+  const closerCards=CLOSERS.map(c=>{
+    const realizadas=callsPeriodo.filter(x=>x.closer===c.key&&x.done).length;
+    const marcadas=callsPeriodo.filter(x=>x.closer===c.key).length;
+    return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center">
+      <div style="font-size:12px;font-weight:700;color:${c.cor};margin-bottom:6px">${c.label}</div>
+      <div style="font-size:28px;font-weight:800;color:${c.cor}">${realizadas}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">calls realizadas</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">${marcadas} marcadas no total</div>
+    </div>`;
+  }).join('');
+
+  // fechamentos por pessoa
+  const FECH_MAP=[{keys:['DONO'],label:'Christian',cor:'var(--green)'},{keys:['PAULA','RECOMPRA_PAULA'],label:'Paula',cor:'#f472b6'},{keys:['EDUARDA','RECOMPRA_EDUARDA'],label:'Eduarda',cor:'#fb923c'}];
+  const fechCards=FECH_MAP.map(f=>{
+    const lista=pagosPeriodo.filter(p=>f.keys.includes(p.fechamento));
+    const valor=lista.reduce((s,p)=>s+(p.valor||0),0);
+    return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center">
+      <div style="font-size:12px;font-weight:700;color:${f.cor};margin-bottom:6px">${f.label}</div>
+      <div style="font-size:24px;font-weight:800;color:${f.cor}">${lista.length}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">fechamentos</div>
+      <div style="font-size:11px;color:${f.cor};margin-top:4px;opacity:.85">R$ ${valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML=`
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${chipsHtml}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;padding-top:8px;border-top:1px solid var(--border)">${granHtml}</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      ${temNav?`<button onclick="despNav(-1)" style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:5px 12px;color:var(--text2);cursor:pointer;font-size:14px">←</button>`:''}
+      <span style="font-size:14px;font-weight:600;color:var(--text);text-transform:capitalize">${label}</span>
+      ${temNav?`<button onclick="despNav(1)" style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:5px 12px;color:var(--text2);cursor:pointer;font-size:14px">→</button>`:''}
+    </div>
+
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Agendamentos por SDR</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:6px">${agendCards}</div>
+    ${semSDR?`<div style="font-size:11px;color:var(--text3);margin-bottom:16px">${semSDR} agendamento${semSDR!==1?'s':''} sem vendedora definida</div>`:'<div style="margin-bottom:16px"></div>'}
+
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Calls por closer (quem atendeu)</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px">${closerCards}</div>
+
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Fechamentos por pessoa</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${fechCards}</div>
+  `;
+}
+
 function renderFollowupsPage(){
   const el=document.getElementById('pg-followups');if(!el)return;
   const hoje=new Date();hoje.setHours(0,0,0,0);
