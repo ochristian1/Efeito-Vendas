@@ -337,6 +337,11 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
       <i class="ti ti-layout-kanban" style="font-size:16px" aria-hidden="true"></i>
       <span>Pipeline</span>
     </div>
+    <div class="sb-nav-item" id="nav-propostas" onclick="switchTabSB('propostas',this)">
+      <i class="ti ti-file-invoice" style="font-size:16px" aria-hidden="true"></i>
+      <span>Propostas</span>
+      <span class="sb-badge" id="sb-badge-propostas"></span>
+    </div>
     <div id="sb-aviso-btn" style="display:none">
       <div id="sb-time-label" style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px">Time</div>
       <div class="sb-nav-item" id="nav-aviso-item" onclick="abrirEnviarAviso()">
@@ -431,6 +436,17 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
   </div>
   <div id="pipeline-lead-detail-area"></div>
   <div class="kanban-board" id="kanban-board"></div>
+</div>
+
+<div id="tab-propostas" class="tab-pane">
+  <div class="fluxo-top">
+    <span class="fluxo-title">Propostas</span>
+    <button class="btn-novo-cliente" onclick="openPropostaForm(null)">+ Nova proposta</button>
+  </div>
+  <div class="stats-row" id="propostas-stats"></div>
+  <div class="plano-filter" id="propostas-filtro-status"></div>
+  <div id="proposta-form-area"></div>
+  <div id="propostas-list-area"></div>
 </div>
 
 <div id="tab-notas" class="tab-pane">
@@ -613,6 +629,8 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
 <div id="tab-motivos" class="tab-pane">
   <div class="fluxo-top"><span class="fluxo-title">❌ Motivos de não fechamento</span></div>
   <div id="pg-motivos"></div>
+  <div class="fluxo-top" style="margin-top:1.5rem"><span class="fluxo-title">Motivos de perda — Leads (pipeline)</span></div>
+  <div id="pg-motivos-leads"></div>
 </div>
 
 <!-- FOLLOW-UP -->
@@ -709,13 +727,14 @@ function renderTabByKey(name){
     const m=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesVendas);
     renderMetaIndPage(m);
   }
-  else if(name==='motivos') renderMotivosPage();
+  else if(name==='motivos'){renderMotivosPage();renderMotivosLeadsPage();}
   else if(name==='followups') renderFollowupsPage();
   else if(name==='onboarding') renderOnboardingPage();
   else if(name==='desempenho') renderDesempenhoPage();
   else if(name==='usuarios') renderUsuariosPage();
   else if(name==='leads') renderLeadsPage();
   else if(name==='pipeline') renderPipelinePage();
+  else if(name==='propostas') renderPropostasPage();
 }
 function switchTabSB(name,el){
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
@@ -748,6 +767,9 @@ function atualizarSBBadges(){
   const leadsNovos=leads.filter(l=>l.etapa==='lead_novo').length;
   const badgeL=document.getElementById('sb-badge-leads');
   if(badgeL) badgeL.textContent=leadsNovos>0?leadsNovos:'';
+  const propostasAbertas=propostas.filter(p=>p.status==='enviada'||p.status==='visualizada').length;
+  const badgeP=document.getElementById('sb-badge-propostas');
+  if(badgeP) badgeP.textContent=propostasAbertas>0?propostasAbertas:'';
 }
 function iniciarApp(){
   document.getElementById('login-screen').style.display='none';
@@ -822,6 +844,7 @@ const PERMS=[
   {key:'agenda',navId:'nav-agenda',label:'Agenda'},
   {key:'leads',navId:'nav-leads',label:'Leads'},
   {key:'pipeline',navId:'nav-pipeline',label:'Pipeline'},
+  {key:'propostas',navId:'nav-propostas',label:'Propostas'},
   {key:'notas',navId:'nav-notas',label:'Bloco de notas'},
   {key:'pagos',navId:'nav-pagos',label:'Clientes pagos'},
   {key:'vendas',navId:'nav-vendas',label:'Painel ao vivo'},
@@ -891,8 +914,27 @@ const LEAD_PRIORIDADES=[{key:'alta',label:'Alta'},{key:'media',label:'Média'},{
 function leadEtapaLabel(k){return (LEAD_ETAPAS.find(e=>e.key===k)||{}).label||k||'—';}
 
 // VARIÁVEIS GLOBAIS
-let calls=[], clientes=[], pagos=[], notas=[], leads=[];
-let leadFormId=null, leadDetailId=null, leadDraggingId=null;
+let calls=[], clientes=[], pagos=[], notas=[], leads=[], propostas=[];
+let leadFormId=null, leadDetailId=null, leadDraggingId=null, propostaFormId=null, propostaFiltroStatus='';
+const PROPOSTA_STATUS=[
+  {key:'enviada',label:'Enviada',cor:'#60a5fa'},
+  {key:'visualizada',label:'Visualizada',cor:'#c084fc'},
+  {key:'aprovada',label:'Aprovada',cor:'var(--green)'},
+  {key:'recusada',label:'Recusada',cor:'var(--red)'},
+  {key:'expirada',label:'Expirada',cor:'var(--text3)'}
+];
+function propostaStatusInfo(k){return PROPOSTA_STATUS.find(s=>s.key===k)||{label:k,cor:'var(--text2)'};}
+const MOTIVOS_PERDA=[
+  {key:'preco',label:'Preço'},
+  {key:'sem_orcamento',label:'Sem orçamento'},
+  {key:'concorrencia',label:'Concorrência'},
+  {key:'sem_perfil',label:'Sem perfil'},
+  {key:'nao_respondeu',label:'Não respondeu'},
+  {key:'sem_urgencia',label:'Sem urgência'},
+  {key:'desistiu',label:'Desistiu'},
+  {key:'outro',label:'Outro'}
+];
+function motivoPerdaLabel(k){return (MOTIVOS_PERDA.find(m=>m.key===k)||{}).label||k||'—';}
 let weekOffset=0, editId=null, detailId=null, mostrarConcluidas=false, filtroFollowup=false;
 let novoPagoOpen=false, novoPagoPlano=null, novoPagoLead=null, pagoFiltro='todos';
 let novaNotaOpen=false, notaFiltro='todas';
@@ -926,8 +968,9 @@ function hideLoading(){const e=document.getElementById('loading-bar');if(e)e.sty
 // LOAD ALL
 function loadAll(){
   showLoading('Carregando dados...');
-  return Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos'),sbGet('leads')]).then(([rc,rct,rp,rn,ra,rl])=>{
-    leads=(rl||[]).map(r=>({id:String(r.id),nome:r.nome||'',telefone:r.telefone||'',email:r.email||'',empresa:r.empresa||'',documento:r.documento||'',cidade:r.cidade||'',estado:r.estado||'',origem:r.origem||'',marketplace:r.marketplace||'',faturamento:r.faturamento||'',investimento:r.investimento||'',objetivo:r.objetivo||'',problemas:r.problemas||'',observacoes:r.observacoes||'',links:r.links||'',responsavel:r.responsavel||'',etapa:r.etapa||'lead_novo',prioridade:r.prioridade||'media',proximaAcao:r.proxima_acao||'',proximaAcaoData:r.proxima_acao_data||'',createdAt:r.created_at||''}));
+  return Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos'),sbGet('leads'),sbGet('propostas')]).then(([rc,rct,rp,rn,ra,rl,rpr])=>{
+    propostas=(rpr||[]).map(r=>({id:String(r.id),leadId:r.lead_id?String(r.lead_id):'',plano:r.plano||'',valor:parseFloat(r.valor)||0,desconto:parseFloat(r.desconto)||0,parcelamento:r.parcelamento||'',formaPagamento:r.forma_pagamento||'',validade:r.validade||'',status:r.status||'enviada',observacoes:r.observacoes||'',createdAt:r.created_at||''}));
+    leads=(rl||[]).map(r=>({id:String(r.id),nome:r.nome||'',telefone:r.telefone||'',email:r.email||'',empresa:r.empresa||'',documento:r.documento||'',cidade:r.cidade||'',estado:r.estado||'',origem:r.origem||'',marketplace:r.marketplace||'',faturamento:r.faturamento||'',investimento:r.investimento||'',objetivo:r.objetivo||'',problemas:r.problemas||'',observacoes:r.observacoes||'',links:r.links||'',responsavel:r.responsavel||'',etapa:r.etapa||'lead_novo',prioridade:r.prioridade||'media',proximaAcao:r.proxima_acao||'',proximaAcaoData:r.proxima_acao_data||'',motivoPerda:r.motivo_perda||'',createdAt:r.created_at||''}));
     calls=(rc||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',data:r.data||'',hora:r.hora||'',obs:r.obs||'',done:!!r.done,lead:r.lead||'',vendedora:r.vendedora||'',closer:r.closer||'',statusFech:r.status_fech||'',obsFech:r.obs_fech||''}));
     calls.sort((a,b)=>a.data+a.hora>b.data+b.hora?1:-1);
     clientes=(rct||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',plano:r.plano||'',steps:r.steps||{},createdAt:r.created_at_custom||''}));
@@ -967,6 +1010,7 @@ function loadAll(){
     try{renderVendas();}catch(e){console.error('renderVendas:',e);}
     try{renderLeadsPage();}catch(e){console.error('renderLeadsPage:',e);}
     try{renderPipelinePage();}catch(e){console.error('renderPipelinePage:',e);}
+    try{renderPropostasPage();}catch(e){console.error('renderPropostasPage:',e);}
     try{atualizarSBBadges();}catch(e){console.error('badges:',e);}
     if(podeReceberAvisos()){try{verificarAvisos(ra||[]);}catch(e){}}
     if(abaInicialPendente){try{renderTabByKey(abaInicialPendente);}catch(e){}abaInicialPendente=null;}
@@ -979,6 +1023,7 @@ function loadAll(){
     try{renderVendas();}catch(err){}
     try{renderLeadsPage();}catch(err){}
     try{renderPipelinePage();}catch(err){}
+    try{renderPropostasPage();}catch(err){}
   });
 }
 
@@ -1100,6 +1145,7 @@ function openLeadForm(id){
       <div class="field"><label>Próxima ação</label><input id="lf-proxima-acao" value="${ex?ex.proximaAcao:''}" placeholder="Ex: ligar amanhã"></div>
       <div class="field"><label>Data da próxima ação</label><input id="lf-proxima-acao-data" type="date" value="${ex?ex.proximaAcaoData:''}"></div>
     </div>
+    <div class="form-row form-full"><div class="field"><label>Motivo de perda (se aplicável)</label><select id="lf-motivo-perda"><option value="">—</option>${MOTIVOS_PERDA.map(m=>`<option value="${m.key}" ${(ex?ex.motivoPerda:'')===m.key?'selected':''}>${m.label}</option>`).join('')}</select></div></div>
     <div class="form-row form-full"><div class="field"><label>Objetivo</label><textarea id="lf-objetivo">${ex?ex.objetivo:''}</textarea></div></div>
     <div class="form-row form-full"><div class="field"><label>Problemas</label><textarea id="lf-problemas">${ex?ex.problemas:''}</textarea></div></div>
     <div class="form-row form-full"><div class="field"><label>Observações</label><textarea id="lf-observacoes">${ex?ex.observacoes:''}</textarea></div></div>
@@ -1128,7 +1174,7 @@ function saveLeadForm(){
     investimento:g('lf-investimento'),objetivo:g('lf-objetivo'),problemas:g('lf-problemas'),
     observacoes:g('lf-observacoes'),links:g('lf-links'),responsavel:g('lf-responsavel'),
     etapa:g('lf-etapa')||'lead_novo',prioridade:g('lf-prioridade')||'media',
-    proximaAcao:g('lf-proxima-acao'),proximaAcaoData:g('lf-proxima-acao-data')
+    proximaAcao:g('lf-proxima-acao'),proximaAcaoData:g('lf-proxima-acao-data'),motivoPerda:g('lf-motivo-perda')
   };
   let item;
   if(leadFormId){
@@ -1138,9 +1184,9 @@ function saveLeadForm(){
     item={id:'lead_'+Date.now(),...dados,createdAt:new Date().toISOString()};
     leads.push(item);
   }
-  sbUpsert('leads',{id:item.id,nome:item.nome,telefone:item.telefone||'',email:item.email||'',empresa:item.empresa||'',documento:item.documento||'',cidade:item.cidade||'',estado:item.estado||'',origem:item.origem||'',marketplace:item.marketplace||'',faturamento:item.faturamento||'',investimento:item.investimento||'',objetivo:item.objetivo||'',problemas:item.problemas||'',observacoes:item.observacoes||'',links:item.links||'',responsavel:item.responsavel||'',etapa:item.etapa,prioridade:item.prioridade,proxima_acao:item.proximaAcao||'',proxima_acao_data:item.proximaAcaoData||null});
+  sbUpsert('leads',{id:item.id,nome:item.nome,telefone:item.telefone||'',email:item.email||'',empresa:item.empresa||'',documento:item.documento||'',cidade:item.cidade||'',estado:item.estado||'',origem:item.origem||'',marketplace:item.marketplace||'',faturamento:item.faturamento||'',investimento:item.investimento||'',objetivo:item.objetivo||'',problemas:item.problemas||'',observacoes:item.observacoes||'',links:item.links||'',responsavel:item.responsavel||'',etapa:item.etapa,prioridade:item.prioridade,proxima_acao:item.proximaAcao||'',proxima_acao_data:item.proximaAcaoData||null,motivo_perda:item.motivoPerda||null});
   closeLeadForm();
-  renderLeadsPage();renderPipelinePage();atualizarSBBadges();
+  renderLeadsPage();renderPipelinePage();renderMotivosLeadsPage();atualizarSBBadges();
   syncAndRefresh();
 }
 function targetLeadDetailEl(){
@@ -1177,6 +1223,7 @@ function openLeadDetail(id){
       ${campo('Investimento',l.investimento)}
       ${campo('Responsável',l.responsavel)}
       ${campo('Próxima ação',[l.proximaAcao,l.proximaAcaoData?fmtDateBR(l.proximaAcaoData):''].filter(Boolean).join(' — '))}
+      ${campo('Motivo de perda',l.motivoPerda?motivoPerdaLabel(l.motivoPerda):'')}
     </div>
     ${l.objetivo?`<div class="detail-notes"><div class="dfield-label">Objetivo</div><div class="dfield-val">${l.objetivo}</div></div>`:''}
     ${l.problemas?`<div class="detail-notes"><div class="dfield-label">Problemas</div><div class="dfield-val">${l.problemas}</div></div>`:''}
@@ -1208,13 +1255,24 @@ function carregarHistoricoLead(id){
       el.innerHTML='<div style="font-weight:700;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em;font-size:10px">Histórico de etapas</div>'+rows.map(h=>`<div>${new Date(h.created_at).toLocaleString('pt-BR')} — ${leadEtapaLabel(h.etapa_anterior)} → ${leadEtapaLabel(h.etapa_nova)}</div>`).join('');
     }).catch(()=>{const el=document.getElementById('ld-historico-'+id);if(el)el.textContent='';});
 }
+function pedirMotivoPerda(){
+  const opcoes=MOTIVOS_PERDA.map((m,i)=>`${i+1}. ${m.label}`).join('\n');
+  const resp=prompt(`Por que esse lead foi perdido?\n\n${opcoes}\n\nDigite o número da opção (ou cancele para deixar em branco):`);
+  if(!resp)return '';
+  const idx=parseInt(resp.trim(),10)-1;
+  if(isNaN(idx)||idx<0||idx>=MOTIVOS_PERDA.length)return '';
+  return MOTIVOS_PERDA[idx].key;
+}
 function moverLeadEtapa(id,novaEtapa){
   const idx=leads.findIndex(l=>l.id===id);
   if(idx<0)return;
   leads[idx].etapa=novaEtapa;
+  if(novaEtapa==='perdido'&&!leads[idx].motivoPerda){
+    leads[idx].motivoPerda=pedirMotivoPerda();
+  }
   const item=leads[idx];
-  sbUpsert('leads',{id:item.id,nome:item.nome,telefone:item.telefone||'',email:item.email||'',empresa:item.empresa||'',documento:item.documento||'',cidade:item.cidade||'',estado:item.estado||'',origem:item.origem||'',marketplace:item.marketplace||'',faturamento:item.faturamento||'',investimento:item.investimento||'',objetivo:item.objetivo||'',problemas:item.problemas||'',observacoes:item.observacoes||'',links:item.links||'',responsavel:item.responsavel||'',etapa:item.etapa,prioridade:item.prioridade||'media',proxima_acao:item.proximaAcao||'',proxima_acao_data:item.proximaAcaoData||null});
-  renderLeadsPage();renderPipelinePage();atualizarSBBadges();
+  sbUpsert('leads',{id:item.id,nome:item.nome,telefone:item.telefone||'',email:item.email||'',empresa:item.empresa||'',documento:item.documento||'',cidade:item.cidade||'',estado:item.estado||'',origem:item.origem||'',marketplace:item.marketplace||'',faturamento:item.faturamento||'',investimento:item.investimento||'',objetivo:item.objetivo||'',problemas:item.problemas||'',observacoes:item.observacoes||'',links:item.links||'',responsavel:item.responsavel||'',etapa:item.etapa,prioridade:item.prioridade||'media',proxima_acao:item.proximaAcao||'',proxima_acao_data:item.proximaAcaoData||null,motivo_perda:item.motivoPerda||null});
+  renderLeadsPage();renderPipelinePage();renderMotivosLeadsPage();atualizarSBBadges();
   if(leadDetailId===id)openLeadDetail(id);
   syncAndRefresh();
 }
@@ -1225,7 +1283,7 @@ function delLead(id){
   leads=leads.filter(x=>x.id!==id);
   sbDelete('leads',id);
   closeLeadDetail();
-  renderLeadsPage();renderPipelinePage();atualizarSBBadges();
+  renderLeadsPage();renderPipelinePage();renderMotivosLeadsPage();atualizarSBBadges();
   syncAndRefresh();
 }
 
@@ -1266,6 +1324,145 @@ function kbDrop(ev,novaEtapa){
   const l=leads.find(x=>x.id===id);
   if(!l||l.etapa===novaEtapa)return;
   moverLeadEtapa(id,novaEtapa);
+}
+
+function renderMotivosLeadsPage(){
+  const el=document.getElementById('pg-motivos-leads');
+  if(!el)return;
+  const perdidos=leads.filter(l=>l.etapa==='perdido');
+  if(!perdidos.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3)">Nenhum lead marcado como perdido ainda.</div>';return;}
+  const comMotivo=perdidos.filter(l=>l.motivoPerda);
+  const semMotivo=perdidos.length-comMotivo.length;
+  const contagem={};
+  comMotivo.forEach(l=>{contagem[l.motivoPerda]=(contagem[l.motivoPerda]||0)+1;});
+  const sorted=Object.entries(contagem).sort((a,b)=>b[1]-a[1]);
+  const total=perdidos.length;
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+      <div style="background:var(--bg2);border:1px solid var(--red-border);border-radius:10px;padding:12px;text-align:center"><div style="font-size:28px;font-weight:800;color:var(--red)">${total}</div><div style="font-size:11px;color:var(--text3)">leads perdidos</div></div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center"><div style="font-size:28px;font-weight:800;color:#fb923c">${comMotivo.length}</div><div style="font-size:11px;color:var(--text3)">com motivo</div></div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center"><div style="font-size:28px;font-weight:800;color:var(--text3)">${semMotivo}</div><div style="font-size:11px;color:var(--text3)">sem motivo</div></div>
+    </div>
+    ${sorted.length?`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px">
+      ${sorted.map(([mot,n])=>{const pct=Math.round((n/total)*100);return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:12px;color:var(--text2);flex:1">${motivoPerdaLabel(mot)}</span>
+        <div style="width:100px;height:7px;background:var(--bg3);border-radius:4px;overflow:hidden;flex-shrink:0"><div style="height:100%;width:${pct}%;background:var(--red);border-radius:4px"></div></div>
+        <span style="font-size:12px;font-weight:700;color:var(--red);width:30px;text-align:right">${n}x</span>
+      </div>`;}).join('')}
+    </div>`:'<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Defina o motivo ao mover um lead para "Perdido" no Pipeline para ver o gráfico aqui.</div>'}`;
+}
+
+// ============ PROPOSTAS ============
+function renderPropostasPage(){
+  const total=propostas.length;
+  const abertas=propostas.filter(p=>p.status==='enviada'||p.status==='visualizada').length;
+  const aprovadas=propostas.filter(p=>p.status==='aprovada').length;
+  const valorAberto=propostas.filter(p=>p.status==='enviada'||p.status==='visualizada').reduce((s,p)=>s+(p.valor||0)-(p.desconto||0),0);
+  const el=document.getElementById('propostas-stats');
+  if(el)el.innerHTML=`
+    <div class="stat"><div class="stat-n">${total}</div><div class="stat-l">total</div></div>
+    <div class="stat"><div class="stat-n">${abertas}</div><div class="stat-l">em aberto</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--green)">${aprovadas}</div><div class="stat-l">aprovadas</div></div>
+    <div class="stat"><div class="stat-n">R$ ${valorAberto.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div><div class="stat-l">em negociação</div></div>`;
+  const filtroEl=document.getElementById('propostas-filtro-status');
+  if(filtroEl)filtroEl.innerHTML=['<button class="pf-btn'+(propostaFiltroStatus===''?' active':'')+'" onclick="setPropostaFiltro(\'\')">Todas</button>']
+    .concat(PROPOSTA_STATUS.map(s=>`<button class="pf-btn${propostaFiltroStatus===s.key?' active':''}" onclick="setPropostaFiltro('${s.key}')">${s.label}</button>`)).join('');
+  renderPropostasList();
+}
+function setPropostaFiltro(status){propostaFiltroStatus=status;renderPropostasPage();}
+function renderPropostasList(){
+  const area=document.getElementById('propostas-list-area');
+  if(!area)return;
+  let lista=propostas.slice();
+  if(propostaFiltroStatus)lista=lista.filter(p=>p.status===propostaFiltroStatus);
+  lista.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  if(!lista.length){area.innerHTML='<div class="empty-day">Nenhuma proposta encontrada.</div>';return;}
+  area.innerHTML=lista.map(p=>{
+    const lead=leads.find(l=>l.id===p.leadId);
+    const info=propostaStatusInfo(p.status);
+    const valorLiq=(p.valor||0)-(p.desconto||0);
+    return `<div class="list-item" onclick="openPropostaForm('${p.id}')">
+      <div class="li-av" style="background:none;border-color:${info.cor};color:${info.cor}">${(p.plano||'PR').slice(0,2).toUpperCase()}</div>
+      <div class="li-info">
+        <div class="li-name">${lead?lead.nome:'(lead removido)'} <span class="chip" style="background:none;border:1px solid ${info.cor};color:${info.cor}">${info.label}</span></div>
+        <div class="li-sub">${[p.plano,p.parcelamento,p.validade?('validade '+fmtDateBR(p.validade)):''].filter(Boolean).join(' · ')||'—'}</div>
+      </div>
+      <div class="li-time"><div class="li-date">R$ ${valorLiq.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>
+    </div>`;
+  }).join('');
+}
+function opcoesLeadsSelect(selecionadoId){
+  const ordenados=leads.slice().sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  return '<option value="">— selecione o lead —</option>'+ordenados.map(l=>`<option value="${l.id}" ${selecionadoId===l.id?'selected':''}>${l.nome||'(sem nome)'}${l.empresa?' · '+l.empresa:''}</option>`).join('');
+}
+function openPropostaForm(id){
+  propostaFormId=id?String(id):null;
+  const ex=propostaFormId?propostas.find(p=>p.id===propostaFormId):null;
+  const area=document.getElementById('proposta-form-area');
+  if(!area)return;
+  area.innerHTML=`
+    <div class="panel"><div class="panel-title">${ex?'Editar proposta':'Nova proposta'}</div>
+    <div class="form-row form-full"><div class="field"><label>Lead</label><select id="pf-lead">${opcoesLeadsSelect(ex?ex.leadId:'')}</select></div></div>
+    <div class="form-row">
+      <div class="field"><label>Plano</label><input id="pf-plano" value="${ex?ex.plano:''}" placeholder="Ex: E3 · Gestão Completa"></div>
+      <div class="field"><label>Valor (R$)</label><input id="pf-valor" type="number" step="0.01" value="${ex?ex.valor:''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Desconto (R$)</label><input id="pf-desconto" type="number" step="0.01" value="${ex?ex.desconto:0}"></div>
+      <div class="field"><label>Parcelamento</label><input id="pf-parcelamento" value="${ex?ex.parcelamento:''}" placeholder="Ex: 3x sem juros"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Forma de pagamento</label><input id="pf-forma-pagamento" value="${ex?ex.formaPagamento:''}" placeholder="Pix, cartão, boleto..."></div>
+      <div class="field"><label>Validade</label><input id="pf-validade" type="date" value="${ex?ex.validade:''}"></div>
+    </div>
+    <div class="form-row"><div class="field"><label>Status</label><select id="pf-status">${PROPOSTA_STATUS.map(s=>`<option value="${s.key}" ${(ex?ex.status:'enviada')===s.key?'selected':''}>${s.label}</option>`).join('')}</select></div></div>
+    <div class="form-row form-full"><div class="field"><label>Observações</label><textarea id="pf-observacoes">${ex?ex.observacoes:''}</textarea></div></div>
+    <div class="btn-row"><button class="btn-save" onclick="savePropostaForm()">Salvar proposta</button><button class="btn-cancel" onclick="closePropostaForm()">Cancelar</button>${ex?`<button class="btn-del" onclick="delProposta('${ex.id}')">Excluir</button>`:''}</div>
+    </div>`;
+  switchTabSB('propostas',document.getElementById('nav-propostas'));
+}
+function closePropostaForm(){const a=document.getElementById('proposta-form-area');if(a)a.innerHTML='';propostaFormId=null;}
+function savePropostaForm(){
+  const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
+  const leadId=g('pf-lead');
+  if(!leadId){alert('Selecione o lead vinculado a essa proposta.');return;}
+  const valor=parseFloat(g('pf-valor'))||0;
+  const dados={
+    leadId,plano:g('pf-plano'),valor,desconto:parseFloat(g('pf-desconto'))||0,
+    parcelamento:g('pf-parcelamento'),formaPagamento:g('pf-forma-pagamento'),
+    validade:g('pf-validade'),status:g('pf-status')||'enviada',observacoes:g('pf-observacoes')
+  };
+  let item;
+  if(propostaFormId){
+    const idx=propostas.findIndex(p=>p.id===propostaFormId);
+    if(idx>=0){propostas[idx]={...propostas[idx],...dados};item=propostas[idx];}
+  } else {
+    item={id:'prop_'+Date.now(),...dados,createdAt:new Date().toISOString()};
+    propostas.push(item);
+  }
+  sbUpsert('propostas',{id:item.id,lead_id:item.leadId||null,plano:item.plano||'',valor:item.valor||0,desconto:item.desconto||0,parcelamento:item.parcelamento||'',forma_pagamento:item.formaPagamento||'',validade:item.validade||null,status:item.status,observacoes:item.observacoes||''});
+  closePropostaForm();
+  renderPropostasPage();atualizarSBBadges();
+  syncAndRefresh();
+}
+function mudarStatusProposta(id,status){
+  const idx=propostas.findIndex(p=>p.id===id);
+  if(idx<0)return;
+  propostas[idx].status=status;
+  const item=propostas[idx];
+  sbUpsert('propostas',{id:item.id,lead_id:item.leadId||null,plano:item.plano||'',valor:item.valor||0,desconto:item.desconto||0,parcelamento:item.parcelamento||'',forma_pagamento:item.formaPagamento||'',validade:item.validade||null,status:item.status,observacoes:item.observacoes||''});
+  renderPropostasPage();atualizarSBBadges();
+  syncAndRefresh();
+}
+function delProposta(id){
+  const p=propostas.find(x=>x.id===id);
+  if(!p)return;
+  if(!confirm('Excluir essa proposta? Essa ação não pode ser desfeita.'))return;
+  propostas=propostas.filter(x=>x.id!==id);
+  sbDelete('propostas',id);
+  closePropostaForm();
+  renderPropostasPage();atualizarSBBadges();
+  syncAndRefresh();
 }
 
 // ============ AGENDA ============

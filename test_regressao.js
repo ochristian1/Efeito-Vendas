@@ -36,7 +36,7 @@ setTimeout(() => {
   try {
     window.loadAll().then(() => {
       try {
-        const tabs = ['agenda','leads','pipeline','notas','pagos','vendas','conversao','meta-ind','motivos','followups','onboarding','desempenho','usuarios'];
+        const tabs = ['agenda','leads','pipeline','propostas','notas','pagos','vendas','conversao','meta-ind','motivos','followups','onboarding','desempenho','usuarios'];
         tabs.forEach(t => {
           const nav = window.document.getElementById('nav-' + t) || window.document.getElementById('nav-followups-sb');
           try {
