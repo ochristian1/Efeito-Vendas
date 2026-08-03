@@ -309,6 +309,10 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
   </div>
   <div style="flex:1;padding:8px;overflow-y:auto">
     <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px">Principal</div>
+    <div class="sb-nav-item" id="nav-dashboard" style="display:none" onclick="switchTabSB('dashboard',this)">
+      <i class="ti ti-layout-dashboard" style="font-size:16px" aria-hidden="true"></i>
+      <span>Dashboard</span>
+    </div>
     <div class="sb-nav-item active" id="nav-agenda" onclick="switchTabSB('agenda',this)">
       <i class="ti ti-calendar-event" style="font-size:16px" aria-hidden="true"></i>
       <span>Agenda</span>
@@ -341,6 +345,17 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
       <div class="sb-nav-item" id="nav-desempenho" onclick="switchTabSB('desempenho',this)">
         <i class="ti ti-calendar-stats" style="font-size:16px;color:#c084fc" aria-hidden="true"></i>
         <span style="color:#c084fc">Desempenho</span>
+      </div>
+      <div class="sb-nav-item" id="nav-comissoes-page" style="display:none" onclick="switchTabSB('comissoes-page',this)">
+        <i class="ti ti-cash" style="font-size:16px;color:#34d399" aria-hidden="true"></i>
+        <span style="color:#34d399">Comissões</span>
+      </div>
+    </div>
+    <div id="sb-ia-block" style="display:none">
+      <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px">Inteligência</div>
+      <div class="sb-nav-item" id="nav-central-ia" onclick="switchTabSB('central-ia',this)">
+        <i class="ti ti-bulb" style="font-size:16px;color:#f472b6" aria-hidden="true"></i>
+        <span style="color:#f472b6">Central de Inteligência</span>
       </div>
     </div>
     <div id="sb-admin-block" style="display:none">
@@ -612,6 +627,24 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
   <div id="pg-usuarios"></div>
 </div>
 
+<!-- DASHBOARD -->
+<div id="tab-dashboard" class="tab-pane">
+  <div class="fluxo-top"><span class="fluxo-title">📊 Dashboard</span></div>
+  <div id="pg-dashboard"></div>
+</div>
+
+<!-- COMISSÕES (página própria) -->
+<div id="tab-comissoes-page" class="tab-pane">
+  <div class="fluxo-top"><span class="fluxo-title">💰 Comissões</span></div>
+  <div id="pg-comissoes-page"></div>
+</div>
+
+<!-- CENTRAL DE INTELIGÊNCIA -->
+<div id="tab-central-ia" class="tab-pane">
+  <div class="fluxo-top"><span class="fluxo-title">💡 Central de Inteligência</span></div>
+  <div id="pg-central-ia"></div>
+</div>
+
 </div><!-- fim conteúdo principal -->
 </div><!-- fim flex layout -->
 </div><!-- fim app-root -->
@@ -680,6 +713,9 @@ function renderTabByKey(name){
   else if(name==='onboarding') renderOnboardingPage();
   else if(name==='desempenho') renderDesempenhoPage();
   else if(name==='usuarios') renderUsuariosPage();
+  else if(name==='dashboard') renderDashboardPage();
+  else if(name==='comissoes-page') renderComissoesPagePage();
+  else if(name==='central-ia') renderCentralIAPage();
 }
 function switchTabSB(name,el){
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
@@ -809,6 +845,12 @@ function aplicarPermissoes(){
     if(btn) btn.style.display='block';
     const ab=document.getElementById('sb-admin-block');
     if(ab) ab.style.display='block';
+    const dash=document.getElementById('nav-dashboard');
+    if(dash) dash.style.display='flex';
+    const ia=document.getElementById('sb-ia-block');
+    if(ia) ia.style.display='block';
+    const com=document.getElementById('nav-comissoes-page');
+    if(com) com.style.display='flex';
     return;
   }
   // Usuário customizado (criado na tela de Usuários): aplica permissões individuais
@@ -2636,6 +2678,167 @@ function renderDesempenhoPage(){
 // ============ USUÁRIOS E PERMISSÕES (admin only) ============
 let novoUsuarioPerms=[];
 let usuarioEditando=null;
+// ============ DASHBOARD (admin only) ============
+function renderDashboardPage(){
+  const el=document.getElementById('pg-dashboard');if(!el)return;
+  const mesAtual=todayStr().slice(0,7);
+  const hoje=todayStr();
+  const callsHoje=calls.filter(c=>c.data===hoje).length;
+  const callsConcluidasMes=calls.filter(c=>c.done&&c.data&&c.data.slice(0,7)===mesAtual).length;
+  const semAtendimento=calls.filter(c=>!c.done&&c.data<=hoje&&c.statusFech!=='nao_fechou'&&c.statusFech!=='resolvido').length;
+  const pagosMes=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesAtual);
+  const faturamentoMes=pagosMes.reduce((s,p)=>s+(p.valor||0),0);
+  const ticketMedio=pagosMes.length>0?faturamentoMes/pagosMes.length:0;
+  const pctMeta=metaMes>0?Math.round((faturamentoMes/metaMes)*100):0;
+  const agendamentosMes=calls.filter(c=>c.data&&c.data.slice(0,7)===mesAtual).length;
+  const txConversao=agendamentosMes>0?Math.round((pagosMes.length/agendamentosMes)*100):0;
+  const naoFecharam=calls.filter(c=>c.statusFech==='nao_fechou').length;
+
+  const cards=[
+    {label:'Agendamentos no mês',val:agendamentosMes,cor:'var(--green)'},
+    {label:'Sem atendimento',val:semAtendimento,cor:'#f59e0b'},
+    {label:'Calls hoje',val:callsHoje,cor:'var(--green)'},
+    {label:'Calls concluídas (mês)',val:callsConcluidasMes,cor:'var(--green)'},
+    {label:'Follow-up pendente',val:naoFecharam,cor:'var(--red)'},
+    {label:'Faturamento no mês',val:`R$ ${faturamentoMes.toLocaleString('pt-BR',{minimumFractionDigits:2})}`,cor:'var(--green)'},
+    {label:'Da meta da empresa',val:metaMes>0?pctMeta+'%':'—',cor:pctMeta>=100?'var(--green)':pctMeta>=50?'#f59e0b':'var(--red)'},
+    {label:'Ticket médio',val:`R$ ${ticketMedio.toLocaleString('pt-BR',{minimumFractionDigits:2})}`,cor:'var(--text)'},
+    {label:'Conversão geral',val:txConversao+'%',cor:'var(--green)'},
+  ];
+  el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${cards.map(c=>`
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center">
+      <div style="font-size:20px;font-weight:800;color:${c.cor}">${c.val}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">${c.label}</div>
+    </div>`).join('')}</div>
+    <div style="font-size:11px;color:var(--text3);margin-top:14px">Obs: "Leads" e "Propostas" separados não são rastreados neste sistema — os cards acima usam os agendamentos e clientes pagos reais da Agenda.</div>`;
+}
+
+// ============ COMISSÕES (página própria, admin only) ============
+function renderComissoesPagePage(){
+  const el=document.getElementById('pg-comissoes-page');if(!el)return;
+  const mesStr=mesVendas||mesSelecionado;
+  const listaMes=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesStr);
+  const PESSOAS=[
+    {key:'PAULA',label:'Paula',cor:'#f472b6',bg:'#2a0d1e'},
+    {key:'EDUARDA',label:'Eduarda',cor:'#fb923c',bg:'#2a1500'},
+  ];
+  const dados=PESSOAS.map(p=>({...p,...calcularComissaoResponsavel(p.key,listaMes)}));
+  const totalGeral=dados.reduce((s,d)=>s+(d.comissao||0),0);
+  el.innerHTML=`
+    <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Mês de referência: ${mesStr}</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px">
+      ${dados.map(d=>`
+        <div style="background:${d.bg};border:1px solid ${d.cor}40;border-radius:12px;padding:16px;text-align:center">
+          <div style="font-size:13px;font-weight:700;color:${d.cor};margin-bottom:8px">${d.label}</div>
+          <div style="font-size:24px;font-weight:800;color:${d.cor}">R$ ${(d.comissao||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+          <div style="font-size:10px;color:${d.cor};opacity:.7;margin-bottom:10px">a pagar</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 8px;background:var(--bg3);border-radius:5px">
+              <span style="color:var(--text2)">${d.fechouCount||0}× fechou (8%)</span>
+              <span style="color:${d.cor};font-weight:600">R$ ${(d.comFechou||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 8px;background:var(--bg3);border-radius:5px">
+              <span style="color:var(--text2)">${d.recompraCount||0}× recompra (4%)</span>
+              <span style="color:${d.cor};font-weight:600">R$ ${(d.comRecompra||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 8px;background:var(--bg3);border-radius:5px">
+              <span style="color:var(--text2)">${d.agendouCount||0}× agendou (2%)</span>
+              <span style="color:${d.cor};font-weight:600">R$ ${(d.comAgendou||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>
+    <div style="background:var(--green-bg);border:1px solid var(--green-border);border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:13px;font-weight:600;color:var(--text)">Total a pagar no mês</span>
+      <span style="font-size:22px;font-weight:800;color:var(--green)">R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+    </div>`;
+}
+
+// ============ CENTRAL DE INTELIGÊNCIA (alertas automáticos, sem custo de IA) ============
+function renderCentralIAPage(){
+  const el=document.getElementById('pg-central-ia');if(!el)return;
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const mesAtual=todayStr().slice(0,7);
+  const [anoA,mesA]=mesAtual.split('-').map(Number);
+  const dPassado=new Date(anoA,mesA-2,1);
+  const mesPassado=`${dPassado.getFullYear()}-${String(dPassado.getMonth()+1).padStart(2,'0')}`;
+
+  const pagosAtual=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesAtual);
+  const pagosPassado=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesPassado);
+  const callsAtual=calls.filter(c=>c.data&&c.data.slice(0,7)===mesAtual);
+  const callsConcluidasAtual=callsAtual.filter(c=>c.done);
+  const txAtual=callsConcluidasAtual.length>0?(pagosAtual.length/callsConcluidasAtual.length)*100:0;
+  const callsPassado=calls.filter(c=>c.data&&c.data.slice(0,7)===mesPassado&&c.done);
+  const txPassado=callsPassado.length>0?(pagosPassado.length/callsPassado.length)*100:0;
+
+  const alertas=[];
+
+  // taxa de fechamento
+  if(callsConcluidasAtual.length>=3&&callsPassado.length>=3){
+    const diff=txAtual-txPassado;
+    if(diff<=-10) alertas.push({tipo:'alerta',icone:'📉',titulo:'Taxa de fechamento caiu',texto:`Caiu de ${txPassado.toFixed(0)}% para ${txAtual.toFixed(0)}% em relação ao mês passado. Vale revisar o pitch ou os motivos de perda recentes.`});
+    else if(diff>=10) alertas.push({tipo:'positivo',icone:'📈',titulo:'Taxa de fechamento subiu',texto:`Subiu de ${txPassado.toFixed(0)}% para ${txAtual.toFixed(0)}% em relação ao mês passado. Continue assim!`});
+  }
+
+  // meta individual das SDRs
+  ['PAULA','EDUARDA'].forEach(key=>{
+    const meta=metasPorSDR[key];
+    if(!meta)return;
+    const vendido=pagosAtual.filter(p=>p.fechamento===key||p.fechamento==='RECOMPRA_'+key).reduce((s,p)=>s+(p.valor||0),0);
+    const diasNoMes=new Date(anoA,mesA,0).getDate();
+    const diaAtual=hoje.getDate();
+    const pctEsperado=(diaAtual/diasNoMes)*100;
+    const pctReal=meta>0?(vendido/meta)*100:0;
+    if(pctReal<pctEsperado-15){
+      const nome=key==='PAULA'?'Paula':'Eduarda';
+      alertas.push({tipo:'alerta',icone:'⚠️',titulo:`${nome} abaixo do ritmo da meta`,texto:`Está em ${pctReal.toFixed(0)}% da meta individual, mas já eram esperados ~${pctEsperado.toFixed(0)}% do mês. Vale conversar sobre o volume de agendamentos.`});
+    }
+  });
+
+  // follow-ups acumulando
+  const followupsVelhos=calls.filter(c=>{
+    if(c.statusFech!=='nao_fechou')return false;
+    const dt=new Date(c.data+'T12:00:00');
+    const dias=Math.round((hoje-dt)/(1000*60*60*24));
+    return dias>=7;
+  });
+  if(followupsVelhos.length>0) alertas.push({tipo:'alerta',icone:'🔔',titulo:'Follow-ups parados há mais de 7 dias',texto:`${followupsVelhos.length} cliente${followupsVelhos.length!==1?'s':''} sem retorno há uma semana ou mais. Esses leads esfriam rápido — priorize o resgate.`});
+
+  // ticket médio
+  if(pagosAtual.length>=3&&pagosPassado.length>=3){
+    const ticketAtual=pagosAtual.reduce((s,p)=>s+(p.valor||0),0)/pagosAtual.length;
+    const ticketPassado=pagosPassado.reduce((s,p)=>s+(p.valor||0),0)/pagosPassado.length;
+    const diffTicket=((ticketAtual-ticketPassado)/ticketPassado)*100;
+    if(diffTicket<=-15) alertas.push({tipo:'alerta',icone:'💸',titulo:'Ticket médio caindo',texto:`Caiu ${Math.abs(diffTicket).toFixed(0)}% em relação ao mês passado (R$ ${ticketPassado.toLocaleString('pt-BR',{minimumFractionDigits:2})} → R$ ${ticketAtual.toLocaleString('pt-BR',{minimumFractionDigits:2})}). Vale revisar se estão vendendo planos menores.`});
+  }
+
+  // motivo de perda mais comum
+  const naoFecharam=calls.filter(c=>c.statusFech==='nao_fechou'&&c.obsFech);
+  if(naoFecharam.length>=3){
+    const contagem={};
+    naoFecharam.forEach(c=>{const o=c.obsFech.trim().toLowerCase();contagem[o]=(contagem[o]||0)+1;});
+    const top=Object.entries(contagem).sort((a,b)=>b[1]-a[1])[0];
+    if(top&&top[1]>=3) alertas.push({tipo:'info',icone:'💡',titulo:'Motivo de perda mais recorrente',texto:`"${top[0]}" apareceu ${top[1]}x nos motivos de não fechamento. Pode valer a pena preparar uma resposta padrão pra essa objeção.`});
+  }
+
+  if(!alertas.length){
+    el.innerHTML=`<div style="text-align:center;padding:40px;color:var(--text3)">✅ Nenhum alerta no momento. Os números estão dentro do esperado.</div>`;
+    return;
+  }
+  const CORES={alerta:{bg:'var(--red-bg)',bd:'var(--red-border)',tx:'var(--red)'},positivo:{bg:'var(--green-bg)',bd:'var(--green-border)',tx:'var(--green)'},info:{bg:'#1a0f2e',bd:'#3a2a5c',tx:'#c084fc'}};
+  el.innerHTML=`<div style="font-size:11px;color:var(--text3);margin-bottom:14px">Análise automática com base nos dados reais do sistema — sem custo de IA, atualiza toda vez que você entra aqui.</div>`+
+  alertas.map(a=>{
+    const c=CORES[a.tipo];
+    return`<div style="background:${c.bg};border:1px solid ${c.bd};border-radius:10px;padding:14px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:16px">${a.icone}</span>
+        <span style="font-size:13px;font-weight:700;color:${c.tx}">${a.titulo}</span>
+      </div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.5">${a.texto}</div>
+    </div>`;
+  }).join('');
+}
+
 function renderUsuariosPage(){
   const el=document.getElementById('pg-usuarios');if(!el)return;
   const fixosHtml=`
