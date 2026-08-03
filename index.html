@@ -320,7 +320,10 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
         <i class="ti ti-calendar-stats" style="font-size:16px;color:#c084fc" aria-hidden="true"></i>
         <span style="color:#c084fc">Desempenho</span>
       </div>
-      <div class="sb-nav-item" id="nav-usuarios" style="display:none" onclick="switchTabSB('usuarios',this)">
+    </div>
+    <div id="sb-admin-block" style="display:none">
+      <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px">Admin</div>
+      <div class="sb-nav-item" id="nav-usuarios" onclick="switchTabSB('usuarios',this)">
         <i class="ti ti-users-group" style="font-size:16px;color:#34d399" aria-hidden="true"></i>
         <span style="color:#34d399">Usuários</span>
       </div>
@@ -746,8 +749,8 @@ function aplicarPermissoes(){
   if(currentUser==='ADMIN'){
     const btn=document.getElementById('sb-aviso-btn');
     if(btn) btn.style.display='block';
-    const nu=document.getElementById('nav-usuarios');
-    if(nu) nu.style.display='flex';
+    const ab=document.getElementById('sb-admin-block');
+    if(ab) ab.style.display='block';
     return;
   }
   // Usuário customizado (criado na tela de Usuários): aplica permissões individuais
@@ -1869,6 +1872,7 @@ function renderDesempenhoPage(){
 
 // ============ USUÁRIOS E PERMISSÕES (admin only) ============
 let novoUsuarioPerms=[];
+let usuarioEditando=null;
 function renderUsuariosPage(){
   const el=document.getElementById('pg-usuarios');if(!el)return;
   const fixosHtml=`
@@ -1922,13 +1926,44 @@ function renderUsuariosPage(){
     listaHtml=`<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Usuários criados</div>`;
     listaHtml+=custom.map(u=>{
       const permsLabels=PERMS.filter(p=>u.permissoes.includes(p.key)).map(p=>p.label);
+      const editando=usuarioEditando===u.id;
+      if(editando){
+        const permsCheckEdit=PERMS.map(p=>`
+          <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg2);border-radius:7px;cursor:pointer;font-size:12px;color:var(--text2)">
+            <input type="checkbox" class="edit-usr-perm-${u.id}" value="${p.key}" ${u.permissoes.includes(p.key)?'checked':''} style="width:15px;height:15px;accent-color:var(--green)">
+            ${p.label}
+          </label>`).join('');
+        return`<div style="background:var(--bg2);border:1px solid var(--green-border);border-radius:10px;padding:14px;margin-bottom:8px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Nome</label>
+              <input id="edit-nome-${u.id}" type="text" value="${u.nome}" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Cargo</label>
+              <input id="edit-cargo-${u.id}" type="text" value="${u.cargo||''}" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;font-family:inherit">
+            </div>
+          </div>
+          <div style="margin-bottom:14px">
+            <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Senha de acesso</label>
+            <input id="edit-senha-${u.id}" type="text" value="${u.senha}" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;font-family:inherit">
+          </div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:8px">Permissões</label>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">${permsCheckEdit}</div>
+          <div style="display:flex;gap:8px">
+            <button onclick="salvarEdicaoUsuario('${u.id}')" style="flex:1;background:var(--green);border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;color:#000;cursor:pointer">Salvar alterações</button>
+            <button onclick="usuarioEditando=null;renderUsuariosPage();" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:13px;color:var(--text2);cursor:pointer">Cancelar</button>
+          </div>
+        </div>`;
+      }
       return`<div style="background:var(--bg2);border:1px solid ${u.ativo?'var(--border)':'var(--red-border)'};border-radius:10px;padding:14px;margin-bottom:8px;${u.ativo?'':'opacity:.6'}">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
           <div style="width:32px;height:32px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text2)">${(u.nome[0]||'?').toUpperCase()}</div>
-          <div style="flex:1;min-width:0">
+          <div style="flex:1;min-width:120px">
             <div style="font-size:13px;font-weight:600;color:var(--text)">${u.nome} ${u.ativo?'':'<span style="font-size:10px;color:var(--red);font-weight:700">· INATIVO</span>'}</div>
             <div style="font-size:11px;color:var(--text3)">${u.cargo||'Sem cargo'} · senha: ${u.senha}</div>
           </div>
+          <button onclick="usuarioEditando='${u.id}';renderUsuariosPage();" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text2);cursor:pointer">Editar</button>
           <button onclick="toggleAtivoUsuario('${u.id}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text2);cursor:pointer">${u.ativo?'Desativar':'Ativar'}</button>
           <button onclick="excluirUsuario('${u.id}')" style="background:var(--red-bg);border:1px solid var(--red-border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--red);cursor:pointer">Excluir</button>
         </div>
@@ -1942,6 +1977,20 @@ function renderUsuariosPage(){
   }
 
   el.innerHTML=fixosHtml+formHtml+listaHtml;
+}
+function salvarEdicaoUsuario(id){
+  const u=usuariosCustom.find(x=>x.id===id);
+  if(!u)return;
+  const nome=document.getElementById('edit-nome-'+id).value.trim();
+  const cargo=document.getElementById('edit-cargo-'+id).value.trim();
+  const senha=document.getElementById('edit-senha-'+id).value.trim();
+  const perms=Array.from(document.querySelectorAll(`.edit-usr-perm-${id}:checked`)).map(c=>c.value);
+  if(!nome||!senha){alert('Preencha nome e senha.');return;}
+  if(senha!==u.senha&&(SENHAS[senha]||usuariosCustom.some(x=>x.id!==id&&x.senha===senha))){alert('Essa senha já está em uso. Escolha outra.');return;}
+  u.nome=nome;u.cargo=cargo;u.senha=senha;u.permissoes=perms;
+  sbUpsert('usuarios',{id:u.id,nome:u.nome,senha:u.senha,cargo:u.cargo,permissoes:JSON.stringify(u.permissoes),ativo:u.ativo});
+  usuarioEditando=null;
+  renderUsuariosPage();
 }
 function criarUsuario(){
   const nome=document.getElementById('nu-nome').value.trim();
