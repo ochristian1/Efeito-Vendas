@@ -306,8 +306,8 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
       <span>Painel ao vivo</span>
     </div>
     <div id="sb-aviso-btn" style="display:none">
-      <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px">Time</div>
-      <div class="sb-nav-item" onclick="abrirEnviarAviso()">
+      <div id="sb-time-label" style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px">Time</div>
+      <div class="sb-nav-item" id="nav-aviso-item" onclick="abrirEnviarAviso()">
         <i class="ti ti-speakerphone" style="font-size:16px;color:#fbbf24" aria-hidden="true"></i>
         <span style="color:#fbbf24">Enviar aviso</span>
       </div>
@@ -319,6 +319,10 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
       <div class="sb-nav-item" id="nav-desempenho" onclick="switchTabSB('desempenho',this)">
         <i class="ti ti-calendar-stats" style="font-size:16px;color:#c084fc" aria-hidden="true"></i>
         <span style="color:#c084fc">Desempenho</span>
+      </div>
+      <div class="sb-nav-item" id="nav-usuarios" style="display:none" onclick="switchTabSB('usuarios',this)">
+        <i class="ti ti-users-group" style="font-size:16px;color:#34d399" aria-hidden="true"></i>
+        <span style="color:#34d399">Usuários</span>
       </div>
     </div>
     <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px">Análises</div>
@@ -575,26 +579,58 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
   <div id="pg-desempenho"></div>
 </div>
 
+<!-- USUÁRIOS E PERMISSÕES -->
+<div id="tab-usuarios" class="tab-pane">
+  <div class="fluxo-top"><span class="fluxo-title">👥 Usuários e permissões</span></div>
+  <div id="pg-usuarios"></div>
+</div>
+
 </div><!-- fim conteúdo principal -->
 </div><!-- fim flex layout -->
 </div><!-- fim app-root -->
 <script>
 // LOGIN E PERMISSÕES
 const SENHAS={'admin2026':'ADMIN','paula123':'PAULA','eduarda123':'EDUARDA'};
+const SENHAS_VALUES=Object.values(SENHAS);
 let currentUser=sessionStorage.getItem('ev_user')||null;
 function logout(){
   sessionStorage.removeItem('ev_user');
+  sessionStorage.removeItem('ev_user_perms');
+  sessionStorage.removeItem('ev_user_nome');
+  sessionStorage.removeItem('ev_user_cargo');
   location.reload();
 }
 function fazerLogin(){
   const senha=document.getElementById('login-senha').value.trim();
   if(SENHAS[senha]){
     currentUser=SENHAS[senha];
+    currentUserPerms=[];
     sessionStorage.setItem('ev_user',currentUser);
+    sessionStorage.removeItem('ev_user_perms');
     iniciarApp();
-  } else {
-    document.getElementById('login-erro').style.display='block';
+    return;
   }
+  const custom=usuariosCustom.find(u=>u.senha===senha&&u.ativo);
+  if(custom){
+    entrarComoCustom(custom);
+    return;
+  }
+  // pode ser que a lista de usuários ainda não tenha carregado — tenta buscar de novo
+  carregarUsuariosCustom().then(()=>{
+    const c2=usuariosCustom.find(u=>u.senha===senha&&u.ativo);
+    if(c2){entrarComoCustom(c2);}
+    else{document.getElementById('login-erro').style.display='block';}
+  });
+}
+function entrarComoCustom(user){
+  currentUser=user.id;
+  currentUserPerms=user.permissoes||[];
+  USER_INFO[user.id]={nome:user.nome,role:user.cargo||'Usuário',av:(user.nome[0]||'?').toUpperCase()};
+  sessionStorage.setItem('ev_user',currentUser);
+  sessionStorage.setItem('ev_user_perms',JSON.stringify(currentUserPerms));
+  sessionStorage.setItem('ev_user_nome',user.nome);
+  sessionStorage.setItem('ev_user_cargo',user.cargo||'Usuário');
+  iniciarApp();
 }
 const USER_INFO={ADMIN:{nome:'Christian',role:'Administrador',av:'C'},PAULA:{nome:'Paula',role:'SDR',av:'P'},EDUARDA:{nome:'Eduarda',role:'SDR',av:'E'}};
 function switchTabSB(name,el){
@@ -625,6 +661,7 @@ function switchTabSB(name,el){
   else if(name==='followups') renderFollowupsPage();
   else if(name==='onboarding') renderOnboardingPage();
   else if(name==='desempenho') renderDesempenhoPage();
+  else if(name==='usuarios') renderUsuariosPage();
 }
 function ativarFollowupSB(el){
   switchTabSB('agenda',document.getElementById('nav-agenda'));
@@ -692,13 +729,41 @@ function iniciarPollingAvisos(){
     sbGet('avisos').then(ra=>verificarAvisos(ra||[])).catch(()=>{});
   },5000);
 }
+const PERMS=[
+  {key:'agenda',navId:'nav-agenda',label:'Agenda'},
+  {key:'notas',navId:'nav-notas',label:'Bloco de notas'},
+  {key:'pagos',navId:'nav-pagos',label:'Clientes pagos'},
+  {key:'vendas',navId:'nav-vendas',label:'Painel ao vivo'},
+  {key:'aviso',navId:'nav-aviso-item',label:'Enviar aviso'},
+  {key:'onboarding',navId:'nav-onboarding',label:'Onboarding'},
+  {key:'desempenho',navId:'nav-desempenho',label:'Desempenho'},
+  {key:'conversao',navId:'nav-conversao',label:'Conversão'},
+  {key:'meta-ind',navId:'nav-meta-ind',label:'Meta individual'},
+  {key:'motivos',navId:'nav-motivos',label:'Motivos de perda'},
+  {key:'followups',navId:'nav-followups-sb',label:'Follow-up'}
+];
 function aplicarPermissoes(){
   if(currentUser==='ADMIN'){
     const btn=document.getElementById('sb-aviso-btn');
     if(btn) btn.style.display='block';
+    const nu=document.getElementById('nav-usuarios');
+    if(nu) nu.style.display='flex';
     return;
   }
-  // SDRs agora podem adicionar/editar/excluir os próprios clientes pagos
+  // Usuário customizado (criado na tela de Usuários): aplica permissões individuais
+  if(!SENHAS_VALUES.includes(currentUser)){
+    const temAlgumaDoBloco=['aviso','onboarding','desempenho'].some(k=>currentUserPerms.includes(k));
+    const btn=document.getElementById('sb-aviso-btn');
+    if(btn) btn.style.display=temAlgumaDoBloco?'block':'none';
+    const lbl=document.getElementById('sb-time-label');
+    if(lbl) lbl.style.display=currentUserPerms.includes('aviso')?'block':'none';
+    PERMS.forEach(p=>{
+      const el=document.getElementById(p.navId);
+      if(el) el.style.display=currentUserPerms.includes(p.key)?'flex':'none';
+    });
+    return;
+  }
+  // SDRs (Paula/Eduarda) agora podem adicionar/editar/excluir os próprios clientes pagos
   const idsEsconder=['vendas-leads'];
   idsEsconder.forEach(id=>{
     const el=document.getElementById(id);
@@ -730,6 +795,16 @@ const SBH={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'appl
 function sbGet(t){return fetch(`${SB_URL}/rest/v1/${t}?select=*`,{headers:SBH}).then(r=>r.ok?r.json():[]).catch(()=>[]);}
 function sbUpsert(t,row){return fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...SBH,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(row)}).catch(()=>{});}
 function sbDelete(t,id){return fetch(`${SB_URL}/rest/v1/${t}?id=eq.${id}`,{method:'DELETE',headers:SBH}).catch(()=>{});}
+
+// USUÁRIOS CUSTOMIZADOS (carrega já na tela de login para permitir login deles)
+let usuariosCustom=[];
+let currentUserPerms=[];
+function carregarUsuariosCustom(){
+  return sbGet('usuarios').then(rows=>{
+    usuariosCustom=(rows||[]).map(r=>({id:r.id,nome:r.nome||'',senha:r.senha||'',cargo:r.cargo||'',permissoes:(()=>{try{return JSON.parse(r.permissoes||'[]');}catch(e){return[];}})(),ativo:r.ativo!==false}));
+  });
+}
+carregarUsuariosCustom();
 
 // LOADING
 function showLoading(m){const e=document.getElementById('loading-bar');if(e){e.textContent=m;e.style.display='block';}}
@@ -1483,7 +1558,16 @@ function renderPagos(){
   }).join('');
 }
 
-if(currentUser) iniciarApp();
+if(currentUser){
+  if(!SENHAS_VALUES.includes(currentUser)){
+    // usuário customizado: restaura nome/cargo/permissões da sessão, e confirma quando a lista carregar
+    try{currentUserPerms=JSON.parse(sessionStorage.getItem('ev_user_perms')||'[]');}catch(e){currentUserPerms=[];}
+    const nomeSalvo=sessionStorage.getItem('ev_user_nome')||currentUser;
+    const cargoSalvo=sessionStorage.getItem('ev_user_cargo')||'Usuário';
+    USER_INFO[currentUser]={nome:nomeSalvo,role:cargoSalvo,av:(nomeSalvo[0]||'?').toUpperCase()};
+  }
+  iniciarApp();
+}
 
 // ============ PÁGINAS DE ANÁLISE ============
 let mesConversao=mesSelecionado;
@@ -1781,6 +1865,109 @@ function renderDesempenhoPage(){
     <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Fechamentos por pessoa</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">${fechCards}</div>
   `;
+}
+
+// ============ USUÁRIOS E PERMISSÕES (admin only) ============
+let novoUsuarioPerms=[];
+function renderUsuariosPage(){
+  const el=document.getElementById('pg-usuarios');if(!el)return;
+  const fixosHtml=`
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Usuários fixos do sistema</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:13px;font-weight:700;color:var(--green)">Christian</div>
+        <div style="font-size:11px;color:var(--text3)">Administrador · acesso total</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:13px;font-weight:700;color:#f472b6">Paula</div>
+        <div style="font-size:11px;color:var(--text3)">SDR · acesso padrão</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:13px;font-weight:700;color:#fb923c">Eduarda</div>
+        <div style="font-size:11px;color:var(--text3)">SDR/Closer · acesso padrão</div>
+      </div>
+    </div>`;
+
+  const permsCheckboxes=PERMS.map(p=>`
+    <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border-radius:7px;cursor:pointer;font-size:12px;color:var(--text2)">
+      <input type="checkbox" class="novo-usr-perm" value="${p.key}" style="width:15px;height:15px;accent-color:var(--green)">
+      ${p.label}
+    </label>`).join('');
+
+  const formHtml=`
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Criar novo usuário</div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Nome</label>
+          <input id="nu-nome" type="text" placeholder="Ex: Roberto" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;font-family:inherit">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Cargo</label>
+          <input id="nu-cargo" type="text" placeholder="Ex: CS, Suporte" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;font-family:inherit">
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Senha de acesso</label>
+        <input id="nu-senha" type="text" placeholder="Ex: roberto2026" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;font-family:inherit">
+      </div>
+      <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:8px">Permissões — o que essa pessoa pode acessar</label>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">${permsCheckboxes}</div>
+      <button onclick="criarUsuario()" style="width:100%;background:var(--green);border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;color:#000;cursor:pointer">+ Criar usuário</button>
+    </div>`;
+
+  const custom=usuariosCustom;
+  let listaHtml='';
+  if(custom.length){
+    listaHtml=`<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Usuários criados</div>`;
+    listaHtml+=custom.map(u=>{
+      const permsLabels=PERMS.filter(p=>u.permissoes.includes(p.key)).map(p=>p.label);
+      return`<div style="background:var(--bg2);border:1px solid ${u.ativo?'var(--border)':'var(--red-border)'};border-radius:10px;padding:14px;margin-bottom:8px;${u.ativo?'':'opacity:.6'}">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text2)">${(u.nome[0]||'?').toUpperCase()}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${u.nome} ${u.ativo?'':'<span style="font-size:10px;color:var(--red);font-weight:700">· INATIVO</span>'}</div>
+            <div style="font-size:11px;color:var(--text3)">${u.cargo||'Sem cargo'} · senha: ${u.senha}</div>
+          </div>
+          <button onclick="toggleAtivoUsuario('${u.id}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text2);cursor:pointer">${u.ativo?'Desativar':'Ativar'}</button>
+          <button onclick="excluirUsuario('${u.id}')" style="background:var(--red-bg);border:1px solid var(--red-border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--red);cursor:pointer">Excluir</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">
+          ${permsLabels.length?permsLabels.map(l=>`<span style="font-size:10px;padding:2px 7px;border-radius:5px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)">${l}</span>`).join(''):'<span style="font-size:10px;color:var(--text3)">Nenhuma permissão marcada</span>'}
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    listaHtml=`<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Nenhum usuário criado ainda.</div>`;
+  }
+
+  el.innerHTML=fixosHtml+formHtml+listaHtml;
+}
+function criarUsuario(){
+  const nome=document.getElementById('nu-nome').value.trim();
+  const cargo=document.getElementById('nu-cargo').value.trim();
+  const senha=document.getElementById('nu-senha').value.trim();
+  const perms=Array.from(document.querySelectorAll('.novo-usr-perm:checked')).map(c=>c.value);
+  if(!nome||!senha){alert('Preencha nome e senha.');return;}
+  if(SENHAS[senha]||usuariosCustom.some(u=>u.senha===senha)){alert('Essa senha já está em uso. Escolha outra.');return;}
+  const id='USR_'+Date.now();
+  const novo={id,nome,senha,cargo,permissoes:perms,ativo:true};
+  usuariosCustom.push(novo);
+  sbUpsert('usuarios',{id,nome,senha,cargo,permissoes:JSON.stringify(perms),ativo:true});
+  renderUsuariosPage();
+}
+function toggleAtivoUsuario(id){
+  const u=usuariosCustom.find(x=>x.id===id);
+  if(!u)return;
+  u.ativo=!u.ativo;
+  sbUpsert('usuarios',{id:u.id,nome:u.nome,senha:u.senha,cargo:u.cargo,permissoes:JSON.stringify(u.permissoes),ativo:u.ativo});
+  renderUsuariosPage();
+}
+function excluirUsuario(id){
+  if(!confirm('Excluir este usuário permanentemente? Ele não vai mais conseguir acessar o sistema.'))return;
+  sbDelete('usuarios',id);
+  usuariosCustom=usuariosCustom.filter(u=>u.id!==id);
+  renderUsuariosPage();
 }
 
 function renderFollowupsPage(){
