@@ -941,9 +941,7 @@ function hideLoading(){const e=document.getElementById('loading-bar');if(e)e.sty
 function loadAll(){
   showLoading('Carregando dados...');
   return Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos')]).then(([rc,rct,rp,rn,ra])=>{
-    metas=(rm||[]).map(r=>({id:String(r.id),tipo:r.tipo||'individual',responsavel:r.responsavel||'',mes:r.mes||'',valor:parseFloat(r.valor)||0}));
-    propostas=(rpr||[]).map(r=>({id:String(r.id),leadId:r.lead_id?String(r.lead_id):'',plano:r.plano||'',valor:parseFloat(r.valor)||0,desconto:parseFloat(r.desconto)||0,parcelamento:r.parcelamento||'',formaPagamento:r.forma_pagamento||'',validade:r.validade||'',status:r.status||'enviada',observacoes:r.observacoes||'',createdAt:r.created_at||''}));
-    leads=(rl||[]).map(r=>({id:String(r.id),nome:r.nome||'',telefone:r.telefone||'',email:r.email||'',empresa:r.empresa||'',documento:r.documento||'',cidade:r.cidade||'',estado:r.estado||'',origem:r.origem||'',marketplace:r.marketplace||'',faturamento:r.faturamento||'',investimento:r.investimento||'',objetivo:r.objetivo||'',problemas:r.problemas||'',observacoes:r.observacoes||'',links:r.links||'',responsavel:r.responsavel||'',etapa:r.etapa||'lead_novo',prioridade:r.prioridade||'media',proximaAcao:r.proxima_acao||'',proximaAcaoData:r.proxima_acao_data||'',motivoPerda:r.motivo_perda||'',createdAt:r.created_at||''}));
+    
     calls=(rc||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',data:r.data||'',hora:r.hora||'',obs:r.obs||'',done:!!r.done,lead:r.lead||'',vendedora:r.vendedora||'',closer:r.closer||'',statusFech:r.status_fech||'',obsFech:r.obs_fech||''}));
     calls.sort((a,b)=>a.data+a.hora>b.data+b.hora?1:-1);
     clientes=(rct||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',plano:r.plano||'',steps:r.steps||{},createdAt:r.created_at_custom||''}));
