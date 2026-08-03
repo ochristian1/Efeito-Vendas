@@ -1184,9 +1184,19 @@ function syncAndRefresh(){
   });
 }
 function delCall(id){
+  const call=calls.find(x=>x.id===String(id));
   calls=calls.filter(x=>x.id!==String(id));
   sbDelete('calls',id);
   detailId=null;document.getElementById('detail-area').innerHTML='';renderAgenda();
+  // se essa call tiver um cliente pago vinculado (mesmo telefone), oferece excluir também
+  if(call&&call.fone){
+    const foneCall=call.fone.replace(/\D/g,'');
+    const pagoVinculado=foneCall.length>=8?pagos.find(p=>p.fone&&p.fone.replace(/\D/g,'')===foneCall):null;
+    if(pagoVinculado&&confirm(`Esse cliente também está cadastrado em Clientes pagos (${pagoVinculado.nome}).\n\nQuer excluir de lá também?`)){
+      pagos=pagos.filter(p=>p.id!==pagoVinculado.id);
+      sbDelete('pagos',pagoVinculado.id);
+    }
+  }
   syncAndRefresh();
 }
 let mesConcluidas=todayStr().slice(0,7);
@@ -1549,8 +1559,18 @@ function salvarEditPago(id){
   syncAndRefresh();
 }
 function delPago(id){
+  const pago=pagos.find(x=>x.id===String(id));
   pagos=pagos.filter(x=>x.id!==String(id));
   sbDelete('pagos',id);renderPagos();renderVendas();
+  // se esse cliente pago tiver uma call vinculada (mesmo telefone), oferece excluir também
+  if(pago&&pago.fone){
+    const fonePago=pago.fone.replace(/\D/g,'');
+    const callVinculada=fonePago.length>=8?calls.find(c=>c.fone&&c.fone.replace(/\D/g,'')===fonePago):null;
+    if(callVinculada&&confirm(`Esse cliente também tem um agendamento na Agenda (${callVinculada.nome}).\n\nQuer excluir de lá também?`)){
+      calls=calls.filter(c=>c.id!==callVinculada.id);
+      sbDelete('calls',callVinculada.id);
+    }
+  }
   syncAndRefresh();
 }
 function renderPagos(){
