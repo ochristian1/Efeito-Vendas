@@ -328,7 +328,7 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
         <span style="color:#34d399">Usuários</span>
       </div>
     </div>
-    <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px">Análises</div>
+    <div id="sb-analises-label" style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px">Análises</div>
     <div class="sb-nav-item" id="nav-conversao" onclick="switchTabSB('conversao',this)">
       <i class="ti ti-chart-line" style="font-size:16px" aria-hidden="true"></i>
       <span>Conversão</span>
@@ -636,16 +636,7 @@ function entrarComoCustom(user){
   iniciarApp();
 }
 const USER_INFO={ADMIN:{nome:'Christian',role:'Administrador',av:'C'},PAULA:{nome:'Paula',role:'SDR',av:'P'},EDUARDA:{nome:'Eduarda',role:'SDR',av:'E'}};
-function switchTabSB(name,el){
-  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.sb-nav-item').forEach(b=>b.classList.remove('active'));
-  const pane=document.getElementById('tab-'+name);
-  if(pane) pane.classList.add('active');
-  if(el) el.classList.add('active');
-  filtroFollowup=false;
-  const btn=document.getElementById('nav-followup');
-  if(btn) btn.classList.remove('active');
-  // re-renderizar ao entrar
+function renderTabByKey(name){
   if(name==='agenda') renderAgenda();
   else if(name==='notas') renderNotas();
   else if(name==='pagos') renderPagos();
@@ -665,6 +656,17 @@ function switchTabSB(name,el){
   else if(name==='onboarding') renderOnboardingPage();
   else if(name==='desempenho') renderDesempenhoPage();
   else if(name==='usuarios') renderUsuariosPage();
+}
+function switchTabSB(name,el){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-nav-item').forEach(b=>b.classList.remove('active'));
+  const pane=document.getElementById('tab-'+name);
+  if(pane) pane.classList.add('active');
+  if(el) el.classList.add('active');
+  filtroFollowup=false;
+  const btn=document.getElementById('nav-followup');
+  if(btn) btn.classList.remove('active');
+  renderTabByKey(name);
 }
 function ativarFollowupSB(el){
   switchTabSB('agenda',document.getElementById('nav-agenda'));
@@ -694,9 +696,29 @@ function iniciarApp(){
   if(nome) nome.textContent=info.nome;
   if(role) role.textContent=info.role;
   aplicarPermissoes();
+  abrirPrimeiraAbaPermitida();
   loadAll();
   setTimeout(verificarProximaCall, 5000);
-  if(currentUser!=='ADMIN') iniciarPollingAvisos();
+  if(podeReceberAvisos()) iniciarPollingAvisos();
+}
+function podeReceberAvisos(){
+  if(currentUser==='PAULA'||currentUser==='EDUARDA')return true;
+  if(!SENHAS_VALUES.includes(currentUser))return currentUserPerms.includes('aviso');
+  return false;
+}
+let abaInicialPendente=null;
+function abrirPrimeiraAbaPermitida(){
+  if(currentUser==='ADMIN'||SENHAS_VALUES.includes(currentUser))return; // Christian/Paula/Eduarda mantêm padrão (Agenda)
+  if(currentUserPerms.includes('agenda'))return; // já tem acesso à Agenda, mantém padrão
+  const primeira=PERMS.find(p=>p.key!=='aviso'&&currentUserPerms.includes(p.key));
+  if(!primeira)return;
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-nav-item').forEach(b=>b.classList.remove('active'));
+  const navEl=document.getElementById(primeira.navId);
+  if(navEl) navEl.classList.add('active');
+  const paneAlvo=document.getElementById('tab-'+primeira.key);
+  if(paneAlvo) paneAlvo.classList.add('active');
+  abaInicialPendente=primeira.key;
 }
 function abrirEnviarAviso(){
   const msg=prompt('✍️ Digite a mensagem para o time:');
@@ -764,6 +786,9 @@ function aplicarPermissoes(){
       const el=document.getElementById(p.navId);
       if(el) el.style.display=currentUserPerms.includes(p.key)?'flex':'none';
     });
+    const temAnalise=['conversao','meta-ind','motivos','followups'].some(k=>currentUserPerms.includes(k));
+    const lblAn=document.getElementById('sb-analises-label');
+    if(lblAn) lblAn.style.display=temAnalise?'block':'none';
     return;
   }
   // SDRs (Paula/Eduarda) agora podem adicionar/editar/excluir os próprios clientes pagos
@@ -847,7 +872,8 @@ function loadAll(){
     try{renderNotas();}catch(e){console.error('renderNotas:',e);}
     try{renderVendas();}catch(e){console.error('renderVendas:',e);}
     try{atualizarSBBadges();}catch(e){console.error('badges:',e);}
-    if(currentUser!=='ADMIN'){try{verificarAvisos(ra||[]);}catch(e){}}
+    if(podeReceberAvisos()){try{verificarAvisos(ra||[]);}catch(e){}}
+    if(abaInicialPendente){try{renderTabByKey(abaInicialPendente);}catch(e){}}
   }).catch(e=>{
     console.error('loadAll erro:',e);
     hideLoading();
