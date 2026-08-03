@@ -859,9 +859,17 @@ function loadAll(){
     const metaEduarda=(rn||[]).find(r=>r.titulo==='__meta_sdr_EDUARDA__');
     metasPorSDR.PAULA=metaPaula?parseFloat(metaPaula.texto)||0:0;
     metasPorSDR.EDUARDA=metaEduarda?parseFloat(metaEduarda.texto)||0:0;
-    // carregar progresso de onboarding
+    // data de início do onboarding (zera contagem, conta só clientes fechados a partir de hoje)
+    const onbInicioRow=(rn||[]).find(r=>r.titulo==='__onb_inicio__');
+    if(onbInicioRow){
+      onboardingInicio=onbInicioRow.texto;
+    } else {
+      onboardingInicio=todayStr();
+      sbUpsert('notas',{id:'onb_inicio_config',titulo:'__onb_inicio__',texto:onboardingInicio,data:'',feita:false});
+    }
+    // carregar progresso de onboarding (excluindo a nota de config de início)
     onboardingData={};
-    (rn||[]).filter(r=>String(r.titulo).startsWith('__onb_')).forEach(r=>{
+    (rn||[]).filter(r=>String(r.titulo).startsWith('__onb_')&&r.titulo!=='__onb_inicio__').forEach(r=>{
       const m=String(r.titulo).match(/^__onb_(.+)__$/);
       if(m){try{onboardingData[m[1]]=JSON.parse(r.texto);}catch(e){}}
     });
@@ -1728,6 +1736,7 @@ function renderMotivosPage(){
 }
 // ============ ONBOARDING DE CLIENTES ============
 let onboardingData={}; // {pagoId: {acesso:bool, whatsapp:bool, diagnostico:bool}}
+let onboardingInicio=null; // data a partir da qual o onboarding conta (salva no Supabase)
 let onboardingFiltro='todos';
 const ONB_ETAPAS=[{key:'acesso',label:'Acesso de conta'},{key:'whatsapp',label:'Grupo WhatsApp'},{key:'diagnostico',label:'Diagnóstico'}];
 function filtrarOnboarding(f){
@@ -1749,7 +1758,8 @@ function toggleOnbEtapa(pagoId,etapa){
 function renderOnboardingPage(){
   const el=document.getElementById('pg-onboarding');if(!el)return;
   const badge=document.getElementById('sb-badge-onb');
-  const todosPagos=[...pagos].sort((a,b)=>(b.id>a.id?1:-1));
+  const inicio=onboardingInicio||todayStr();
+  const todosPagos=[...pagos].filter(p=>p.data&&p.data>=inicio).sort((a,b)=>(b.id>a.id?1:-1));
   const comProgresso=todosPagos.map(p=>{
     const prog=onboardingData[p.id]||{acesso:false,whatsapp:false,diagnostico:false};
     const feitas=ONB_ETAPAS.filter(e=>prog[e.key]).length;
