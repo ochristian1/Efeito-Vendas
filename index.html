@@ -111,6 +111,28 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
 .chip-fut{background:#1a1a2e;color:#818cf8;border:1px solid #2e2e5e}
 .chip-late{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
 .empty-day{text-align:center;padding:2rem 1rem;color:var(--text3);font-size:13px;border:1px dashed var(--border2);border-radius:10px}
+/* KANBAN / PIPELINE */
+.kanban-board{display:flex;gap:10px;overflow-x:auto;padding-bottom:10px}
+.kanban-col{background:var(--bg2);border:1px solid var(--border);border-radius:12px;min-width:230px;max-width:230px;flex-shrink:0;display:flex;flex-direction:column;max-height:calc(100vh - 150px)}
+.kanban-col.drag-over{border-color:var(--green-border);background:var(--green-bg)}
+.kanban-col-head{padding:10px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.kanban-col-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}
+.kanban-col-count{font-size:11px;font-weight:700;color:var(--green);background:var(--green-bg);border:1px solid var(--green-border);border-radius:20px;padding:1px 7px}
+.kanban-col-body{padding:8px;overflow-y:auto;flex:1;min-height:40px}
+.kanban-card{background:var(--bg3);border:1px solid var(--border2);border-radius:9px;padding:9px 10px;margin-bottom:7px;cursor:grab;transition:all .12s}
+.kanban-card:hover{border-color:var(--green-border)}
+.kanban-card.dragging{opacity:.35}
+.kanban-card-name{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kanban-card-sub{font-size:11px;color:var(--text2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kanban-card-tags{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.kanban-empty-col{text-align:center;padding:1rem .5rem;color:var(--text3);font-size:11px}
+/* LEADS */
+.leads-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap}
+.leads-search{flex:1;min-width:180px;font-size:13px;padding:8px 11px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);outline:none;font-family:inherit}
+.leads-search:focus{border-color:var(--green)}
+.prio-alta{color:var(--red)}
+.prio-media{color:#fbbf24}
+.prio-baixa{color:var(--text3)}
 .fluxo-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px}
 .fluxo-title{font-size:15px;font-weight:600;color:var(--text);letter-spacing:.02em}
 .fluxo-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.25rem}
@@ -305,6 +327,16 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
       <i class="ti ti-chart-bar" style="font-size:16px" aria-hidden="true"></i>
       <span>Painel ao vivo</span>
     </div>
+    <div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px">Comercial</div>
+    <div class="sb-nav-item" id="nav-leads" onclick="switchTabSB('leads',this)">
+      <i class="ti ti-user-plus" style="font-size:16px" aria-hidden="true"></i>
+      <span>Leads</span>
+      <span class="sb-badge" id="sb-badge-leads"></span>
+    </div>
+    <div class="sb-nav-item" id="nav-pipeline" onclick="switchTabSB('pipeline',this)">
+      <i class="ti ti-layout-kanban" style="font-size:16px" aria-hidden="true"></i>
+      <span>Pipeline</span>
+    </div>
     <div id="sb-aviso-btn" style="display:none">
       <div id="sb-time-label" style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:10px 8px 4px">Time</div>
       <div class="sb-nav-item" id="nav-aviso-item" onclick="abrirEnviarAviso()">
@@ -373,6 +405,32 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
   <div id="form-area"></div>
   <div id="detail-area"></div>
   <div id="list-area"></div>
+</div>
+
+<div id="tab-leads" class="tab-pane">
+  <div class="fluxo-top">
+    <span class="fluxo-title">Leads</span>
+    <button class="btn-novo-cliente" onclick="openLeadForm(null)">+ Novo lead</button>
+  </div>
+  <div class="stats-row" id="leads-stats"></div>
+  <div class="leads-toolbar">
+    <input class="leads-search" id="leads-busca" placeholder="Buscar por nome, telefone, email ou empresa..." oninput="renderLeadsList()">
+    <select id="leads-filtro-etapa" class="leads-search" style="flex:none;min-width:170px" onchange="renderLeadsList()">
+      <option value="">Todas as etapas</option>
+    </select>
+  </div>
+  <div id="lead-form-area"></div>
+  <div id="lead-detail-area"></div>
+  <div id="leads-list-area"></div>
+</div>
+
+<div id="tab-pipeline" class="tab-pane">
+  <div class="fluxo-top">
+    <span class="fluxo-title">Pipeline</span>
+    <button class="btn-novo-cliente" onclick="openLeadForm(null)">+ Novo lead</button>
+  </div>
+  <div id="pipeline-lead-detail-area"></div>
+  <div class="kanban-board" id="kanban-board"></div>
 </div>
 
 <div id="tab-notas" class="tab-pane">
@@ -656,6 +714,8 @@ function renderTabByKey(name){
   else if(name==='onboarding') renderOnboardingPage();
   else if(name==='desempenho') renderDesempenhoPage();
   else if(name==='usuarios') renderUsuariosPage();
+  else if(name==='leads') renderLeadsPage();
+  else if(name==='pipeline') renderPipelinePage();
 }
 function switchTabSB(name,el){
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
@@ -685,6 +745,9 @@ function atualizarSBBadges(){
   const followups=calls.filter(c=>c.statusFech==='nao_fechou').length;
   const badgeF=document.getElementById('sb-badge-followup');
   if(badgeF) badgeF.textContent=followups>0?followups:'';
+  const leadsNovos=leads.filter(l=>l.etapa==='lead_novo').length;
+  const badgeL=document.getElementById('sb-badge-leads');
+  if(badgeL) badgeL.textContent=leadsNovos>0?leadsNovos:'';
 }
 function iniciarApp(){
   document.getElementById('login-screen').style.display='none';
@@ -757,6 +820,8 @@ function iniciarPollingAvisos(){
 }
 const PERMS=[
   {key:'agenda',navId:'nav-agenda',label:'Agenda'},
+  {key:'leads',navId:'nav-leads',label:'Leads'},
+  {key:'pipeline',navId:'nav-pipeline',label:'Pipeline'},
   {key:'notas',navId:'nav-notas',label:'Bloco de notas'},
   {key:'pagos',navId:'nav-pagos',label:'Clientes pagos'},
   {key:'vendas',navId:'nav-vendas',label:'Painel ao vivo'},
@@ -806,9 +871,28 @@ function aplicarPermissoes(){
 const DAYS_PT=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MONTHS_PT=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 const PLANOS={E1:{nome:'E1 · Inteligência Estratégica',short:'E1 · IA',cls:'p1'},E2:{nome:'E2 · Gestão Shopee Ads',short:'E2 · Shopee Ads',cls:'p2'},E3:{nome:'E3 · Gestão Completa',short:'E3 · Completo',cls:'p3'},E4:{nome:'E4 · Gestão Mercado Livre',short:'E4 · ML',cls:'p4'},E5:{nome:'E5 · Gestão TikTok Shop',short:'E5 · TikTok',cls:'p5'}};
+const LEAD_ETAPAS=[
+  {key:'lead_novo',label:'Lead Novo'},
+  {key:'tentativa_contato',label:'Tentativa de Contato'},
+  {key:'em_contato',label:'Em Contato'},
+  {key:'aguardando_resposta',label:'Aguardando Resposta'},
+  {key:'qualificado',label:'Qualificado'},
+  {key:'agendamento',label:'Agendamento'},
+  {key:'call_agendada',label:'Call Agendada'},
+  {key:'call_realizada',label:'Call Realizada'},
+  {key:'proposta_enviada',label:'Proposta Enviada'},
+  {key:'negociacao',label:'Negociação'},
+  {key:'follow_up',label:'Follow-up'},
+  {key:'fechado',label:'Fechado'},
+  {key:'perdido',label:'Perdido'},
+  {key:'sem_perfil',label:'Sem Perfil'}
+];
+const LEAD_PRIORIDADES=[{key:'alta',label:'Alta'},{key:'media',label:'Média'},{key:'baixa',label:'Baixa'}];
+function leadEtapaLabel(k){return (LEAD_ETAPAS.find(e=>e.key===k)||{}).label||k||'—';}
 
 // VARIÁVEIS GLOBAIS
-let calls=[], clientes=[], pagos=[], notas=[];
+let calls=[], clientes=[], pagos=[], notas=[], leads=[];
+let leadFormId=null, leadDetailId=null, leadDraggingId=null;
 let weekOffset=0, editId=null, detailId=null, mostrarConcluidas=false, filtroFollowup=false;
 let novoPagoOpen=false, novoPagoPlano=null, novoPagoLead=null, pagoFiltro='todos';
 let novaNotaOpen=false, notaFiltro='todas';
@@ -842,7 +926,8 @@ function hideLoading(){const e=document.getElementById('loading-bar');if(e)e.sty
 // LOAD ALL
 function loadAll(){
   showLoading('Carregando dados...');
-  return Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos')]).then(([rc,rct,rp,rn,ra])=>{
+  return Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos'),sbGet('leads')]).then(([rc,rct,rp,rn,ra,rl])=>{
+    leads=(rl||[]).map(r=>({id:String(r.id),nome:r.nome||'',telefone:r.telefone||'',email:r.email||'',empresa:r.empresa||'',documento:r.documento||'',cidade:r.cidade||'',estado:r.estado||'',origem:r.origem||'',marketplace:r.marketplace||'',faturamento:r.faturamento||'',investimento:r.investimento||'',objetivo:r.objetivo||'',problemas:r.problemas||'',observacoes:r.observacoes||'',links:r.links||'',responsavel:r.responsavel||'',etapa:r.etapa||'lead_novo',prioridade:r.prioridade||'media',proximaAcao:r.proxima_acao||'',proximaAcaoData:r.proxima_acao_data||'',createdAt:r.created_at||''}));
     calls=(rc||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',data:r.data||'',hora:r.hora||'',obs:r.obs||'',done:!!r.done,lead:r.lead||'',vendedora:r.vendedora||'',closer:r.closer||'',statusFech:r.status_fech||'',obsFech:r.obs_fech||''}));
     calls.sort((a,b)=>a.data+a.hora>b.data+b.hora?1:-1);
     clientes=(rct||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',plano:r.plano||'',steps:r.steps||{},createdAt:r.created_at_custom||''}));
@@ -880,6 +965,8 @@ function loadAll(){
     try{renderPagos();}catch(e){console.error('renderPagos:',e);}
     try{renderNotas();}catch(e){console.error('renderNotas:',e);}
     try{renderVendas();}catch(e){console.error('renderVendas:',e);}
+    try{renderLeadsPage();}catch(e){console.error('renderLeadsPage:',e);}
+    try{renderPipelinePage();}catch(e){console.error('renderPipelinePage:',e);}
     try{atualizarSBBadges();}catch(e){console.error('badges:',e);}
     if(podeReceberAvisos()){try{verificarAvisos(ra||[]);}catch(e){}}
     if(abaInicialPendente){try{renderTabByKey(abaInicialPendente);}catch(e){}abaInicialPendente=null;}
@@ -890,6 +977,8 @@ function loadAll(){
     try{renderPagos();}catch(err){}
     try{renderNotas();}catch(err){}
     try{renderVendas();}catch(err){}
+    try{renderLeadsPage();}catch(err){}
+    try{renderPipelinePage();}catch(err){}
   });
 }
 
@@ -907,6 +996,277 @@ function statusChip(item){
   return'';
 }
 function switchTab(name,el){switchTabSB(name,document.getElementById('nav-'+name));}
+
+// ============ LEADS ============
+function fmtTelefoneDigits(s){return (s||'').replace(/\D/g,'');}
+function leadDedupeConflito(campo,valor,ignoreId){
+  const v=(valor||'').trim();
+  if(!v)return null;
+  if(campo==='email'){
+    const vl=v.toLowerCase();
+    return leads.find(l=>l.id!==ignoreId&&(l.email||'').trim().toLowerCase()===vl);
+  }
+  const vd=fmtTelefoneDigits(v);
+  if(!vd)return null;
+  if(campo==='telefone')return leads.find(l=>l.id!==ignoreId&&fmtTelefoneDigits(l.telefone)===vd);
+  if(campo==='documento')return leads.find(l=>l.id!==ignoreId&&fmtTelefoneDigits(l.documento)===vd);
+  return null;
+}
+function popularFiltroEtapa(){
+  const sel=document.getElementById('leads-filtro-etapa');
+  if(!sel||sel.dataset.populated)return;
+  sel.innerHTML='<option value="">Todas as etapas</option>'+LEAD_ETAPAS.map(e=>`<option value="${e.key}">${e.label}</option>`).join('');
+  sel.dataset.populated='1';
+}
+function renderLeadsPage(){
+  popularFiltroEtapa();
+  const total=leads.length;
+  const novos=leads.filter(l=>l.etapa==='lead_novo').length;
+  const emAndamento=leads.filter(l=>!['lead_novo','fechado','perdido','sem_perfil'].includes(l.etapa)).length;
+  const fechados=leads.filter(l=>l.etapa==='fechado').length;
+  const el=document.getElementById('leads-stats');
+  if(el)el.innerHTML=`
+    <div class="stat"><div class="stat-n">${total}</div><div class="stat-l">total</div></div>
+    <div class="stat"><div class="stat-n">${novos}</div><div class="stat-l">novos</div></div>
+    <div class="stat"><div class="stat-n">${emAndamento}</div><div class="stat-l">em andamento</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--green)">${fechados}</div><div class="stat-l">fechados</div></div>`;
+  renderLeadsList();
+}
+function renderLeadsList(){
+  const buscaEl=document.getElementById('leads-busca');
+  const filtroEl=document.getElementById('leads-filtro-etapa');
+  const busca=(buscaEl?buscaEl.value:'').trim().toLowerCase();
+  const filtroEtapa=filtroEl?filtroEl.value:'';
+  let lista=leads.slice();
+  if(filtroEtapa)lista=lista.filter(l=>l.etapa===filtroEtapa);
+  if(busca)lista=lista.filter(l=>
+    (l.nome||'').toLowerCase().includes(busca)||
+    (l.telefone||'').toLowerCase().includes(busca)||
+    (l.email||'').toLowerCase().includes(busca)||
+    (l.empresa||'').toLowerCase().includes(busca)
+  );
+  lista.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  const area=document.getElementById('leads-list-area');
+  if(!area)return;
+  if(!lista.length){area.innerHTML='<div class="empty-day">Nenhum lead encontrado.</div>';return;}
+  area.innerHTML=lista.map(l=>`
+    <div class="list-item" onclick="openLeadDetail('${l.id}')">
+      <div class="li-av">${initials(l.nome)||'?'}</div>
+      <div class="li-info">
+        <div class="li-name">${l.nome||'(sem nome)'} <span class="chip chip-fut">${leadEtapaLabel(l.etapa)}</span></div>
+        <div class="li-sub">${[l.empresa,l.telefone,l.origem].filter(Boolean).join(' · ')||'—'}</div>
+      </div>
+      <div class="li-time"><div class="li-hour prio-${l.prioridade||'media'}">● ${(LEAD_PRIORIDADES.find(p=>p.key===l.prioridade)||{}).label||''}</div></div>
+    </div>`).join('');
+}
+function openLeadForm(id){
+  leadFormId=id?String(id):null;
+  const detArea=document.getElementById('lead-detail-area');if(detArea)detArea.innerHTML='';
+  const pipeDetArea=document.getElementById('pipeline-lead-detail-area');if(pipeDetArea)pipeDetArea.innerHTML='';
+  const ex=leadFormId?leads.find(l=>l.id===leadFormId):null;
+  const respOpts=['CHRISTIAN','PAULA','EDUARDA'];
+  const respLabels={CHRISTIAN:'Christian',PAULA:'Paula',EDUARDA:'Eduarda'};
+  const formHtml=`
+    <div class="panel"><div class="panel-title">${ex?'Editar lead':'Novo lead'}</div>
+    <div class="form-row">
+      <div class="field"><label>Nome</label><input id="lf-nome" value="${ex?ex.nome:''}" placeholder="Nome do lead"></div>
+      <div class="field"><label>Empresa</label><input id="lf-empresa" value="${ex?ex.empresa:''}" placeholder="Nome da loja/empresa"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Telefone</label><input id="lf-telefone" value="${ex?ex.telefone:''}" placeholder="(41) 99999-0000"></div>
+      <div class="field"><label>Email</label><input id="lf-email" type="email" value="${ex?ex.email:''}" placeholder="email@exemplo.com"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>CPF/CNPJ</label><input id="lf-documento" value="${ex?ex.documento:''}"></div>
+      <div class="field"><label>Cidade</label><input id="lf-cidade" value="${ex?ex.cidade:''}" placeholder="Cidade"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Estado (UF)</label><input id="lf-estado" value="${ex?ex.estado:''}" placeholder="Ex: PR" maxlength="2"></div>
+      <div class="field"><label>Origem</label><input id="lf-origem" value="${ex?ex.origem:''}" placeholder="Instagram, indicação..."></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Marketplace</label><input id="lf-marketplace" value="${ex?ex.marketplace:''}" placeholder="Shopee, Mercado Livre, TikTok Shop"></div>
+      <div class="field"><label>Faturamento</label><input id="lf-faturamento" value="${ex?ex.faturamento:''}" placeholder="Faixa de faturamento"></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Investimento</label><input id="lf-investimento" value="${ex?ex.investimento:''}"></div>
+      <div class="field"><label>Responsável</label><select id="lf-responsavel">${['',...respOpts].map(r=>`<option value="${r}" ${(ex?ex.responsavel:'')===r?'selected':''}>${r?respLabels[r]:'—'}</option>`).join('')}</select></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Etapa</label><select id="lf-etapa">${LEAD_ETAPAS.map(e=>`<option value="${e.key}" ${(ex?ex.etapa:'lead_novo')===e.key?'selected':''}>${e.label}</option>`).join('')}</select></div>
+      <div class="field"><label>Prioridade</label><select id="lf-prioridade">${LEAD_PRIORIDADES.map(p=>`<option value="${p.key}" ${(ex?ex.prioridade:'media')===p.key?'selected':''}>${p.label}</option>`).join('')}</select></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Próxima ação</label><input id="lf-proxima-acao" value="${ex?ex.proximaAcao:''}" placeholder="Ex: ligar amanhã"></div>
+      <div class="field"><label>Data da próxima ação</label><input id="lf-proxima-acao-data" type="date" value="${ex?ex.proximaAcaoData:''}"></div>
+    </div>
+    <div class="form-row form-full"><div class="field"><label>Objetivo</label><textarea id="lf-objetivo">${ex?ex.objetivo:''}</textarea></div></div>
+    <div class="form-row form-full"><div class="field"><label>Problemas</label><textarea id="lf-problemas">${ex?ex.problemas:''}</textarea></div></div>
+    <div class="form-row form-full"><div class="field"><label>Observações</label><textarea id="lf-observacoes">${ex?ex.observacoes:''}</textarea></div></div>
+    <div class="form-row form-full"><div class="field"><label>Links</label><input id="lf-links" value="${ex?ex.links:''}" placeholder="Link da loja, redes sociais..."></div></div>
+    <div class="btn-row"><button class="btn-save" onclick="saveLeadForm()">Salvar lead</button><button class="btn-cancel" onclick="closeLeadForm()">Cancelar</button></div>
+    </div>`;
+  const formArea=document.getElementById('lead-form-area');
+  if(formArea){formArea.innerHTML=formHtml;switchTabSB('leads',document.getElementById('nav-leads'));document.getElementById('lf-nome').focus();}
+}
+function closeLeadForm(){const a=document.getElementById('lead-form-area');if(a)a.innerHTML='';leadFormId=null;}
+function saveLeadForm(){
+  const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
+  const nome=g('lf-nome');
+  if(!nome){alert('Preencha o nome do lead.');return;}
+  const telefone=g('lf-telefone'),email=g('lf-email'),documento=g('lf-documento');
+  const cTel=leadDedupeConflito('telefone',telefone,leadFormId);
+  if(cTel){alert(`⚠️ Esse telefone já pertence ao lead "${cTel.nome}".\n\nEvite duplicidade — abra o lead existente para atualizar.`);return;}
+  const cEmail=leadDedupeConflito('email',email,leadFormId);
+  if(cEmail){alert(`⚠️ Esse email já pertence ao lead "${cEmail.nome}".`);return;}
+  const cDoc=leadDedupeConflito('documento',documento,leadFormId);
+  if(cDoc){alert(`⚠️ Esse CPF/CNPJ já pertence ao lead "${cDoc.nome}".`);return;}
+  const dados={
+    nome,telefone,email,
+    empresa:g('lf-empresa'),documento,cidade:g('lf-cidade'),estado:g('lf-estado'),
+    origem:g('lf-origem'),marketplace:g('lf-marketplace'),faturamento:g('lf-faturamento'),
+    investimento:g('lf-investimento'),objetivo:g('lf-objetivo'),problemas:g('lf-problemas'),
+    observacoes:g('lf-observacoes'),links:g('lf-links'),responsavel:g('lf-responsavel'),
+    etapa:g('lf-etapa')||'lead_novo',prioridade:g('lf-prioridade')||'media',
+    proximaAcao:g('lf-proxima-acao'),proximaAcaoData:g('lf-proxima-acao-data')
+  };
+  let item;
+  if(leadFormId){
+    const idx=leads.findIndex(l=>l.id===leadFormId);
+    if(idx>=0){leads[idx]={...leads[idx],...dados};item=leads[idx];}
+  } else {
+    item={id:'lead_'+Date.now(),...dados,createdAt:new Date().toISOString()};
+    leads.push(item);
+  }
+  sbUpsert('leads',{id:item.id,nome:item.nome,telefone:item.telefone||'',email:item.email||'',empresa:item.empresa||'',documento:item.documento||'',cidade:item.cidade||'',estado:item.estado||'',origem:item.origem||'',marketplace:item.marketplace||'',faturamento:item.faturamento||'',investimento:item.investimento||'',objetivo:item.objetivo||'',problemas:item.problemas||'',observacoes:item.observacoes||'',links:item.links||'',responsavel:item.responsavel||'',etapa:item.etapa,prioridade:item.prioridade,proxima_acao:item.proximaAcao||'',proxima_acao_data:item.proximaAcaoData||null});
+  closeLeadForm();
+  renderLeadsPage();renderPipelinePage();atualizarSBBadges();
+  syncAndRefresh();
+}
+function targetLeadDetailEl(){
+  const pipelineActive=document.getElementById('tab-pipeline')&&document.getElementById('tab-pipeline').classList.contains('active');
+  return document.getElementById(pipelineActive?'pipeline-lead-detail-area':'lead-detail-area');
+}
+function openLeadDetail(id){
+  leadDetailId=String(id);
+  const formArea=document.getElementById('lead-form-area');if(formArea)formArea.innerHTML='';
+  const l=leads.find(x=>x.id===leadDetailId);
+  const a1=document.getElementById('lead-detail-area');if(a1)a1.innerHTML='';
+  const a2=document.getElementById('pipeline-lead-detail-area');if(a2)a2.innerHTML='';
+  const targetArea=targetLeadDetailEl();
+  if(!l||!targetArea)return;
+  const campo=(label,val)=>val?`<div class="dfield"><div class="dfield-label">${label}</div><div class="dfield-val">${val}</div></div>`:'';
+  targetArea.innerHTML=`
+  <div class="detail-panel">
+    <div class="detail-header">
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="detail-av">${initials(l.nome)||'?'}</div>
+        <div><div class="detail-name">${l.nome||'(sem nome)'}</div><div class="detail-sub">${leadEtapaLabel(l.etapa)} · prioridade ${(LEAD_PRIORIDADES.find(p=>p.key===l.prioridade)||{}).label||'—'}</div></div>
+      </div>
+      <button class="detail-close" onclick="closeLeadDetail()">✕</button>
+    </div>
+    <div class="detail-fields">
+      ${campo('Telefone',l.telefone)}
+      ${campo('Email',l.email)}
+      ${campo('Empresa',l.empresa)}
+      ${campo('CPF/CNPJ',l.documento)}
+      ${campo('Cidade/UF',[l.cidade,l.estado].filter(Boolean).join('/'))}
+      ${campo('Origem',l.origem)}
+      ${campo('Marketplace',l.marketplace)}
+      ${campo('Faturamento',l.faturamento)}
+      ${campo('Investimento',l.investimento)}
+      ${campo('Responsável',l.responsavel)}
+      ${campo('Próxima ação',[l.proximaAcao,l.proximaAcaoData?fmtDateBR(l.proximaAcaoData):''].filter(Boolean).join(' — '))}
+    </div>
+    ${l.objetivo?`<div class="detail-notes"><div class="dfield-label">Objetivo</div><div class="dfield-val">${l.objetivo}</div></div>`:''}
+    ${l.problemas?`<div class="detail-notes"><div class="dfield-label">Problemas</div><div class="dfield-val">${l.problemas}</div></div>`:''}
+    ${l.observacoes?`<div class="detail-notes"><div class="dfield-label">Observações</div><div class="dfield-val">${l.observacoes}</div></div>`:''}
+    ${l.links?`<div class="detail-notes"><div class="dfield-label">Links</div><div class="dfield-val">${l.links}</div></div>`:''}
+    <div class="field" style="margin-bottom:.875rem"><label>Mover para etapa</label>
+      <select id="ld-etapa-move" onchange="moverLeadEtapa('${l.id}',this.value)">${LEAD_ETAPAS.map(e=>`<option value="${e.key}" ${l.etapa===e.key?'selected':''}>${e.label}</option>`).join('')}</select>
+    </div>
+    <div id="ld-historico-${l.id}" style="font-size:11px;color:var(--text3);margin-bottom:.875rem">Carregando histórico...</div>
+    <div class="detail-btns">
+      <button class="btn-edit" onclick="openLeadForm('${l.id}')">Editar</button>
+      <button class="btn-del" onclick="delLead('${l.id}')">Excluir</button>
+    </div>
+  </div>`;
+  carregarHistoricoLead(l.id);
+}
+function closeLeadDetail(){
+  leadDetailId=null;
+  const a=document.getElementById('lead-detail-area');if(a)a.innerHTML='';
+  const b=document.getElementById('pipeline-lead-detail-area');if(b)b.innerHTML='';
+}
+function carregarHistoricoLead(id){
+  fetch(`${SB_URL}/rest/v1/lead_historico?lead_id=eq.${id}&order=created_at.desc&limit=8`,{headers:SBH})
+    .then(r=>r.ok?r.json():[])
+    .then(rows=>{
+      const el=document.getElementById('ld-historico-'+id);
+      if(!el)return;
+      if(!rows||!rows.length){el.textContent='Sem movimentações registradas ainda.';return;}
+      el.innerHTML='<div style="font-weight:700;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em;font-size:10px">Histórico de etapas</div>'+rows.map(h=>`<div>${new Date(h.created_at).toLocaleString('pt-BR')} — ${leadEtapaLabel(h.etapa_anterior)} → ${leadEtapaLabel(h.etapa_nova)}</div>`).join('');
+    }).catch(()=>{const el=document.getElementById('ld-historico-'+id);if(el)el.textContent='';});
+}
+function moverLeadEtapa(id,novaEtapa){
+  const idx=leads.findIndex(l=>l.id===id);
+  if(idx<0)return;
+  leads[idx].etapa=novaEtapa;
+  const item=leads[idx];
+  sbUpsert('leads',{id:item.id,nome:item.nome,telefone:item.telefone||'',email:item.email||'',empresa:item.empresa||'',documento:item.documento||'',cidade:item.cidade||'',estado:item.estado||'',origem:item.origem||'',marketplace:item.marketplace||'',faturamento:item.faturamento||'',investimento:item.investimento||'',objetivo:item.objetivo||'',problemas:item.problemas||'',observacoes:item.observacoes||'',links:item.links||'',responsavel:item.responsavel||'',etapa:item.etapa,prioridade:item.prioridade||'media',proxima_acao:item.proximaAcao||'',proxima_acao_data:item.proximaAcaoData||null});
+  renderLeadsPage();renderPipelinePage();atualizarSBBadges();
+  if(leadDetailId===id)openLeadDetail(id);
+  syncAndRefresh();
+}
+function delLead(id){
+  const l=leads.find(x=>x.id===id);
+  if(!l)return;
+  if(!confirm(`Excluir o lead "${l.nome}"? Essa ação não pode ser desfeita.`))return;
+  leads=leads.filter(x=>x.id!==id);
+  sbDelete('leads',id);
+  closeLeadDetail();
+  renderLeadsPage();renderPipelinePage();atualizarSBBadges();
+  syncAndRefresh();
+}
+
+// ============ PIPELINE (KANBAN) ============
+function renderPipelinePage(){
+  const board=document.getElementById('kanban-board');
+  if(!board)return;
+  board.innerHTML=LEAD_ETAPAS.map(et=>{
+    const itens=leads.filter(l=>l.etapa===et.key);
+    const cards=itens.length?itens.map(l=>`
+      <div class="kanban-card" draggable="true" data-id="${l.id}"
+        ondragstart="kbDragStart(event,'${l.id}')" ondragend="kbDragEnd(event)"
+        onclick="openLeadDetail('${l.id}')">
+        <div class="kanban-card-name">${l.nome||'(sem nome)'}</div>
+        <div class="kanban-card-sub">${[l.empresa,l.telefone].filter(Boolean).join(' · ')||'—'}</div>
+        <div class="kanban-card-tags"><span class="chip prio-${l.prioridade||'media'}" style="background:none;border:1px solid var(--border2)">${(LEAD_PRIORIDADES.find(p=>p.key===l.prioridade)||{}).label||''}</span></div>
+      </div>`).join(''):'<div class="kanban-empty-col">vazio</div>';
+    return `<div class="kanban-col" data-etapa="${et.key}" ondragover="kbDragOver(event)" ondragleave="kbDragLeave(event)" ondrop="kbDrop(event,'${et.key}')">
+      <div class="kanban-col-head"><span class="kanban-col-title">${et.label}</span><span class="kanban-col-count">${itens.length}</span></div>
+      <div class="kanban-col-body">${cards}</div>
+    </div>`;
+  }).join('');
+}
+function kbDragStart(ev,id){
+  leadDraggingId=id;
+  ev.target.classList.add('dragging');
+  ev.dataTransfer.effectAllowed='move';
+  try{ev.dataTransfer.setData('text/plain',id);}catch(e){}
+}
+function kbDragEnd(ev){ev.target.classList.remove('dragging');leadDraggingId=null;}
+function kbDragOver(ev){ev.preventDefault();ev.currentTarget.classList.add('drag-over');}
+function kbDragLeave(ev){ev.currentTarget.classList.remove('drag-over');}
+function kbDrop(ev,novaEtapa){
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('drag-over');
+  const id=leadDraggingId||ev.dataTransfer.getData('text/plain');
+  if(!id)return;
+  const l=leads.find(x=>x.id===id);
+  if(!l||l.etapa===novaEtapa)return;
+  moverLeadEtapa(id,novaEtapa);
+}
 
 // ============ AGENDA ============
 function getWeekStart(offset){
