@@ -666,7 +666,8 @@ function switchTabSB(name,el){
   filtroFollowup=false;
   const btn=document.getElementById('nav-followup');
   if(btn) btn.classList.remove('active');
-  renderTabByKey(name);
+  renderTabByKey(name); // resposta instantânea com dados já em memória
+  loadAll().then(()=>{try{renderTabByKey(name);}catch(e){}}); // depois atualiza com dados frescos do banco
 }
 function ativarFollowupSB(el){
   switchTabSB('agenda',document.getElementById('nav-agenda'));
@@ -841,7 +842,7 @@ function hideLoading(){const e=document.getElementById('loading-bar');if(e)e.sty
 // LOAD ALL
 function loadAll(){
   showLoading('Carregando dados...');
-  Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos')]).then(([rc,rct,rp,rn,ra])=>{
+  return Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos')]).then(([rc,rct,rp,rn,ra])=>{
     calls=(rc||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',data:r.data||'',hora:r.hora||'',obs:r.obs||'',done:!!r.done,lead:r.lead||'',vendedora:r.vendedora||'',closer:r.closer||'',statusFech:r.status_fech||'',obsFech:r.obs_fech||''}));
     calls.sort((a,b)=>a.data+a.hora>b.data+b.hora?1:-1);
     clientes=(rct||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',plano:r.plano||'',steps:r.steps||{},createdAt:r.created_at_custom||''}));
@@ -881,7 +882,7 @@ function loadAll(){
     try{renderVendas();}catch(e){console.error('renderVendas:',e);}
     try{atualizarSBBadges();}catch(e){console.error('badges:',e);}
     if(podeReceberAvisos()){try{verificarAvisos(ra||[]);}catch(e){}}
-    if(abaInicialPendente){try{renderTabByKey(abaInicialPendente);}catch(e){}}
+    if(abaInicialPendente){try{renderTabByKey(abaInicialPendente);}catch(e){}abaInicialPendente=null;}
   }).catch(e=>{
     console.error('loadAll erro:',e);
     hideLoading();
