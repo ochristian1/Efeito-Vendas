@@ -744,7 +744,7 @@ function atualizarSBBadges(){
   const pendentes=notas.filter(n=>!n.feita).length;
   const badgeN=document.getElementById('sb-badge-notas');
   if(badgeN) badgeN.textContent=pendentes>0?pendentes:'';
-  const followups=calls.filter(c=>c.statusFech==='nao_fechou').length;
+  const followups=calls.filter(c=>c.statusFech==='nao_fechou'||c.statusFech==='nao_compareceu').length;
   const badgeF=document.getElementById('sb-badge-followup');
   if(badgeF) badgeF.textContent=followups>0?followups:'';
   const leadsNovos=leads.filter(l=>l.etapa==='lead_novo').length;
@@ -1784,10 +1784,14 @@ function renderDetail(id){
           <div style="font-size:16px">❌</div>
           <div style="font-size:11px;font-weight:600;color:${statusFech==='nao_fechou'?'var(--red)':'var(--text2)'};margin-top:3px">Não fechou</div>
         </div>
+        <div id="btn-nao-compareceu" onclick="setStatusFech('${item.id}','nao_compareceu')" style="flex:1;padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:1px solid ${statusFech==='nao_compareceu'?'#f59e0b':'var(--border)'};background:${statusFech==='nao_compareceu'?'#2a1c00':'var(--bg3)'}">
+          <div style="font-size:16px">🚫</div>
+          <div style="font-size:11px;font-weight:600;color:${statusFech==='nao_compareceu'?'#f59e0b':'var(--text2)'};margin-top:3px">Não compareceu</div>
+        </div>
       </div>
-      ${statusFech==='nao_fechou'?`
+      ${statusFech==='nao_fechou'||statusFech==='nao_compareceu'?`
       <div id="fech-obs-area-${item.id}" style="margin-top:4px">
-        <textarea id="obs-fech-${item.id}" placeholder="Motivo (opcional): achou caro, vai pensar..." onblur="salvarObsFech('${item.id}')" style="width:100%;min-height:56px;font-size:12px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);resize:none;font-family:inherit;outline:none">${obsFech}</textarea>
+        <textarea id="obs-fech-${item.id}" placeholder="${statusFech==='nao_compareceu'?'Motivo (opcional): não atendeu, remarcou...':'Motivo (opcional): achou caro, vai pensar...'}" onblur="salvarObsFech('${item.id}')" style="width:100%;min-height:56px;font-size:12px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);resize:none;font-family:inherit;outline:none">${obsFech}</textarea>
         <div style="font-size:10px;color:var(--text3);margin-top:3px">Salva automaticamente ao sair do campo</div>
       </div>`:''}
     </div>
@@ -1891,13 +1895,19 @@ function toggleDone(id){
   renderDetail(id);renderList();renderStats();renderWeek();
 }
 function syncAndRefresh(){
-  loadAll().then(()=>{
-    const ativo=document.querySelector('.tab-pane.active');
-    if(ativo){
-      const key=ativo.id.replace('tab-','');
-      try{renderTabByKey(key);}catch(e){}
-    }
-  });
+  // pequeno atraso pra garantir que o upsert no Supabase (disparado sem await
+  // no ponto de chamada) já tenha sido commitado antes de recarregar — sem isso,
+  // o loadAll às vezes vence a corrida e sobrescreve o item recém-criado/editado
+  // localmente com dados antigos do servidor, fazendo ele "sumir" até dar refresh.
+  setTimeout(()=>{
+    loadAll().then(()=>{
+      const ativo=document.querySelector('.tab-pane.active');
+      if(ativo){
+        const key=ativo.id.replace('tab-','');
+        try{renderTabByKey(key);}catch(e){}
+      }
+    });
+  },600);
 }
 function delCall(id){
   const call=calls.find(x=>x.id===String(id));
@@ -1934,9 +1944,9 @@ function toggleFiltroFollowup(){
 }
 function renderList(){
   const hoje=todayStr();
-  // se filtro follow-up ativo, mostra só calls com statusFech=nao_fechou
+  // se filtro follow-up ativo, mostra calls com statusFech=nao_fechou ou nao_compareceu
   if(filtroFollowup){
-    const followups=calls.filter(i=>i.statusFech==='nao_fechou').sort((a,b)=>a.data+a.hora>b.data+b.hora?-1:1);
+    const followups=calls.filter(i=>i.statusFech==='nao_fechou'||i.statusFech==='nao_compareceu').sort((a,b)=>a.data+a.hora>b.data+b.hora?-1:1);
     let html='';
     if(followups.length){
       html+=`<div class="list-section"><div class="list-section-title" style="display:flex;align-items:center;gap:8px">❌ Follow-up <span style="background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);border-radius:6px;padding:1px 7px;font-size:10px;font-weight:700">${followups.length}</span></div>`;
@@ -1948,10 +1958,10 @@ function renderList(){
     document.getElementById('list-area').innerHTML=html;
     return;
   }
-  const today_items=calls.filter(i=>i.data===hoje&&i.statusFech!=='nao_fechou'&&i.statusFech!=='resolvido');
-  const late=calls.filter(i=>!i.done&&isPast(i)&&i.statusFech!=='nao_fechou'&&i.statusFech!=='resolvido');
-  const proximos=calls.filter(i=>!i.done&&!isPast(i)&&i.statusFech!=='nao_fechou'&&i.statusFech!=='resolvido');
-  const concluidasTodas=calls.filter(i=>i.done&&i.statusFech!=='nao_fechou'&&i.statusFech!=='resolvido').sort((a,b)=>a.data+a.hora>b.data+b.hora?-1:1);
+  const today_items=calls.filter(i=>i.data===hoje&&i.statusFech!=='nao_fechou'&&i.statusFech!=='nao_compareceu'&&i.statusFech!=='resolvido');
+  const late=calls.filter(i=>!i.done&&isPast(i)&&i.statusFech!=='nao_fechou'&&i.statusFech!=='nao_compareceu'&&i.statusFech!=='resolvido');
+  const proximos=calls.filter(i=>!i.done&&!isPast(i)&&i.statusFech!=='nao_fechou'&&i.statusFech!=='nao_compareceu'&&i.statusFech!=='resolvido');
+  const concluidasTodas=calls.filter(i=>i.done&&i.statusFech!=='nao_fechou'&&i.statusFech!=='nao_compareceu'&&i.statusFech!=='resolvido').sort((a,b)=>a.data+a.hora>b.data+b.hora?-1:1);
   const concluidas=concluidasTodas.filter(i=>i.data&&i.data.slice(0,7)===mesConcluidas);
   let html='';
   if(today_items.length){html+=`<div class="list-section"><div class="list-section-title">Hoje — ${fmtDateBR(hoje)}</div>`;today_items.forEach(i=>html+=listItem(i));html+=`</div>`;}
@@ -1987,7 +1997,7 @@ function listItem(i){
   const VEND_LABELS={PAULA:'Paula',EDUARDA:'Eduarda'};
   const leadBadge=i.lead&&LEAD_CORES[i.lead]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${LEAD_CORES[i.lead]};border:1px solid ${LEAD_CORES[i.lead]}50;margin-left:4px">${LEAD_LABELS[i.lead]}</span>`:'';
   const vendBadge=i.vendedora&&VEND_CORES[i.vendedora]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${VEND_CORES[i.vendedora]};border:1px solid ${VEND_CORES[i.vendedora]}50;margin-left:4px">${VEND_LABELS[i.vendedora]}</span>`:'';
-  const fechBadge=i.statusFech==='fechou'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);margin-left:4px">✅ Fechou</span>`:i.statusFech==='nao_fechou'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);margin-left:4px">❌ Follow-up</span>`:'';
+  const fechBadge=i.statusFech==='fechou'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);margin-left:4px">✅ Fechou</span>`:i.statusFech==='nao_fechou'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);margin-left:4px">❌ Follow-up</span>`:i.statusFech==='nao_compareceu'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:#2a1c00;color:#f59e0b;border:1px solid #f59e0b50;margin-left:4px">🚫 Não compareceu</span>`:'';
   const closerCores={CHRISTIAN:'var(--green)',EDUARDA:'#fb923c'};
   const closerLabels={CHRISTIAN:'👤 Christian',EDUARDA:'👤 Eduarda'};
   const closerBadge=i.closer&&closerCores[i.closer]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${closerCores[i.closer]};border:1px solid ${closerCores[i.closer]}50;margin-left:4px">${closerLabels[i.closer]}</span>`:'';
@@ -2024,9 +2034,12 @@ function listItem(i){
         <div onclick="setStatusFech('${i.id}','nao_fechou')" style="flex:1;padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:1px solid ${statusFech==='nao_fechou'?'var(--red-border)':'var(--border)'};background:${statusFech==='nao_fechou'?'var(--red-bg)':'var(--bg3)'}">
           <div style="font-size:16px">❌</div><div style="font-size:11px;font-weight:600;color:${statusFech==='nao_fechou'?'var(--red)':'var(--text2)'};margin-top:3px">Não fechou</div>
         </div>
+        <div onclick="setStatusFech('${i.id}','nao_compareceu')" style="flex:1;padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:1px solid ${statusFech==='nao_compareceu'?'#f59e0b':'var(--border)'};background:${statusFech==='nao_compareceu'?'#2a1c00':'var(--bg3)'}">
+          <div style="font-size:16px">🚫</div><div style="font-size:11px;font-weight:600;color:${statusFech==='nao_compareceu'?'#f59e0b':'var(--text2)'};margin-top:3px">Não compareceu</div>
+        </div>
       </div>
-      ${statusFech==='nao_fechou'?`<div id="fech-obs-area-${i.id}" style="margin-top:4px">
-        <textarea id="obs-fech-${i.id}" placeholder="Motivo (opcional): achou caro, vai pensar..." onblur="salvarObsFech('${i.id}')" style="width:100%;min-height:56px;font-size:12px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);resize:none;font-family:inherit;outline:none">${obsFech}</textarea>
+      ${statusFech==='nao_fechou'||statusFech==='nao_compareceu'?`<div id="fech-obs-area-${i.id}" style="margin-top:4px">
+        <textarea id="obs-fech-${i.id}" placeholder="${statusFech==='nao_compareceu'?'Motivo (opcional): não atendeu, remarcou...':'Motivo (opcional): achou caro, vai pensar...'}" onblur="salvarObsFech('${i.id}')" style="width:100%;min-height:56px;font-size:12px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);resize:none;font-family:inherit;outline:none">${obsFech}</textarea>
         <div style="font-size:10px;color:var(--text3);margin-top:3px">Salva automaticamente ao sair do campo</div>
       </div>`:''}
     </div>
@@ -2687,7 +2700,7 @@ function renderDashboardPage(){
   const hoje=todayStr();
   const callsHoje=calls.filter(c=>c.data===hoje).length;
   const callsConcluidasMes=calls.filter(c=>c.done&&c.data&&c.data.slice(0,7)===mesAtual).length;
-  const semAtendimento=calls.filter(c=>!c.done&&c.data<=hoje&&c.statusFech!=='nao_fechou'&&c.statusFech!=='resolvido').length;
+  const semAtendimento=calls.filter(c=>!c.done&&c.data<=hoje&&c.statusFech!=='nao_fechou'&&c.statusFech!=='nao_compareceu'&&c.statusFech!=='resolvido').length;
   const pagosMes=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesAtual);
   const faturamentoMes=pagosMes.reduce((s,p)=>s+(p.valor||0),0);
   const ticketMedio=pagosMes.length>0?faturamentoMes/pagosMes.length:0;
@@ -3002,7 +3015,7 @@ function excluirUsuario(id){
 function renderFollowupsPage(){
   const el=document.getElementById('pg-followups');if(!el)return;
   const hoje=new Date();hoje.setHours(0,0,0,0);
-  const pendentes=calls.filter(c=>c.statusFech==='nao_fechou').map(c=>{
+  const pendentes=calls.filter(c=>c.statusFech==='nao_fechou'||c.statusFech==='nao_compareceu').map(c=>{
     const dt=new Date(c.data+'T12:00:00');
     return{...c,dias:Math.max(0,Math.round((hoje-dt)/(1000*60*60*24)))};
   }).sort((a,b)=>b.dias-a.dias);
@@ -3036,11 +3049,13 @@ function cardFollowup(c,resolvido){
   const leadBadge=c.lead&&LEAD_LABELS[c.lead]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${LEAD_CORES[c.lead]};border:1px solid ${LEAD_CORES[c.lead]}50">${LEAD_LABELS[c.lead]}</span>`:'';
   const vendBadge=c.vendedora&&VEND_LABELS[c.vendedora]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${VEND_CORES[c.vendedora]};border:1px solid ${VEND_CORES[c.vendedora]}50">${VEND_LABELS[c.vendedora]}</span>`:'';
   const aberto=followupAberto===c.id;
+  const naoCompareceu=c.statusFech==='nao_compareceu';
+  const tipoBadge=naoCompareceu?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:#2a1c00;color:#f59e0b;border:1px solid #f59e0b50">🚫 Não compareceu</span>`:'';
   return`<div style="background:var(--bg2);border:1px solid ${aberto?cor:'var(--border)'};border-radius:10px;margin-bottom:8px;overflow:hidden;${resolvido?'opacity:.75':''}">
     <div onclick="toggleFollowup('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:14px;cursor:pointer">
-      <span style="font-size:18px">${emoji}</span>
+      <span style="font-size:18px">${naoCompareceu&&!resolvido?'🚫':emoji}</span>
       <div style="flex:1;min-width:0">
-        <div style="font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap">${c.nome} ${leadBadge} ${vendBadge}</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap">${c.nome} ${tipoBadge} ${leadBadge} ${vendBadge}</div>
         <div style="font-size:11px;color:${cor};margin-top:3px">${resolvido?'Concluído':c.dias+' dia'+(c.dias!==1?'s':'')+' atrás'} · call era ${fmtDateBR(c.data)} ${c.hora||''}</div>
       </div>
       <span style="font-size:11px;color:var(--text3)">${aberto?'▲':'▼'}</span>
@@ -3052,7 +3067,7 @@ function cardFollowup(c,resolvido){
         <span style="font-size:10px;color:var(--text3)">copiar</span>
       </div>`:''}
       ${c.obs?`<div style="font-size:12px;color:var(--text2);margin-bottom:8px;padding:8px 10px;background:var(--bg3);border-radius:8px;line-height:1.5"><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:3px">Anotações da call</span>${c.obs.replace(/\n/g,'<br>')}</div>`:''}
-      ${c.obsFech?`<div style="font-size:12px;color:var(--red);margin-bottom:8px;padding:8px 10px;background:var(--red-bg);border:1px solid var(--red-border);border-radius:8px"><span style="font-size:10px;opacity:.8;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:3px">Motivo de não fechar</span>${c.obsFech}</div>`:''}
+      ${c.obsFech?`<div style="font-size:12px;color:var(--red);margin-bottom:8px;padding:8px 10px;background:var(--red-bg);border:1px solid var(--red-border);border-radius:8px"><span style="font-size:10px;opacity:.8;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:3px">${naoCompareceu?'Observação':'Motivo de não fechar'}</span>${c.obsFech}</div>`:''}
       <div style="display:flex;gap:6px;margin-bottom:6px">
         ${fone.length>=8?`<a href="https://wa.me/55${fone}" target="_blank" style="flex:1;background:var(--green);border:none;border-radius:7px;padding:8px;font-size:12px;font-weight:700;color:#000;cursor:pointer;text-decoration:none;text-align:center">Abrir WhatsApp</a>`:''}
         <button onclick="openDetailFromFollowup('${c.id}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 14px;font-size:12px;color:var(--text2);cursor:pointer">Ver na agenda</button>
@@ -3069,8 +3084,9 @@ function cardFollowup(c,resolvido){
 function reabrirFollowup(id){
   const idx=calls.findIndex(x=>x.id===String(id));
   if(idx<0)return;
-  calls[idx].statusFech='nao_fechou';
-  sbUpsert('calls',{id:calls[idx].id,nome:calls[idx].nome,fone:calls[idx].fone||'',data:calls[idx].data,hora:calls[idx].hora,obs:calls[idx].obs||'',done:calls[idx].done,lead:calls[idx].lead||'',vendedora:calls[idx].vendedora||'',status_fech:'nao_fechou',obs_fech:calls[idx].obsFech||''});
+  const tipoOriginal=calls[idx]._tipoFollowupAntes||'nao_fechou';
+  calls[idx].statusFech=tipoOriginal;
+  sbUpsert('calls',{id:calls[idx].id,nome:calls[idx].nome,fone:calls[idx].fone||'',data:calls[idx].data,hora:calls[idx].hora,obs:calls[idx].obs||'',done:calls[idx].done,lead:calls[idx].lead||'',vendedora:calls[idx].vendedora||'',status_fech:tipoOriginal,obs_fech:calls[idx].obsFech||''});
   followupAberto=null;
   renderFollowupsPage();
   atualizarSBBadges();
@@ -3079,6 +3095,7 @@ function reabrirFollowup(id){
 function concluirFollowup(id){
   const idx=calls.findIndex(x=>x.id===String(id));
   if(idx<0)return;
+  calls[idx]._tipoFollowupAntes=calls[idx].statusFech;
   calls[idx].statusFech='resolvido';
   sbUpsert('calls',{id:calls[idx].id,nome:calls[idx].nome,fone:calls[idx].fone||'',data:calls[idx].data,hora:calls[idx].hora,obs:calls[idx].obs||'',done:calls[idx].done,lead:calls[idx].lead||'',vendedora:calls[idx].vendedora||'',status_fech:'resolvido',obs_fech:calls[idx].obsFech||''});
   followupAberto=null;
@@ -3234,7 +3251,7 @@ function renderMotivos(){
 function renderFollowups(){
   const el=document.getElementById('vendas-followups');if(!el)return;
   const hoje=new Date();hoje.setHours(0,0,0,0);
-  const followups=calls.filter(c=>c.statusFech==='nao_fechou').map(c=>{
+  const followups=calls.filter(c=>c.statusFech==='nao_fechou'||c.statusFech==='nao_compareceu').map(c=>{
     const dt=new Date(c.data+'T12:00:00');
     const dias=Math.max(0,Math.round((hoje-dt)/(1000*60*60*24)));
     return{...c,dias};
@@ -3273,8 +3290,8 @@ function renderHistoricoCall(item){
       <span style="font-size:10px;color:var(--text3)">${fmtDateBR(p.data)}</span>
     </div>`).join('')}
     ${historico.map(c=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border)">
-      <span style="font-size:12px">${c.statusFech==='fechou'?'✅':c.statusFech==='nao_fechou'?'❌':'📞'}</span>
-      <div style="flex:1;font-size:11px;color:var(--text2)">${c.statusFech==='fechou'?'Fechou':c.statusFech==='nao_fechou'?'Não fechou · '+(c.obsFech||''):'Call realizada'}</div>
+      <span style="font-size:12px">${c.statusFech==='fechou'?'✅':c.statusFech==='nao_fechou'?'❌':c.statusFech==='nao_compareceu'?'🚫':'📞'}</span>
+      <div style="flex:1;font-size:11px;color:var(--text2)">${c.statusFech==='fechou'?'Fechou':c.statusFech==='nao_fechou'?'Não fechou · '+(c.obsFech||''):c.statusFech==='nao_compareceu'?'Não compareceu · '+(c.obsFech||''):'Call realizada'}</div>
       <span style="font-size:10px;color:var(--text3)">${fmtDateBR(c.data)}</span>
     </div>`).join('')}
   </div>`;
