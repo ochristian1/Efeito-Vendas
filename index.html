@@ -3018,7 +3018,6 @@ function salvarEdicaoUsuario(id){
   const senha=document.getElementById('edit-senha-'+id).value.trim();
   const perms=Array.from(document.querySelectorAll(`.edit-usr-perm-${id}:checked`)).map(c=>c.value);
   if(!nome||!senha){alert('Preencha nome e senha.');return;}
-  if(senha!==u.senha&&(SENHAS[senha]||usuariosCustom.some(x=>x.id!==id&&x.senha===senha))){alert('Essa senha já está em uso. Escolha outra.');return;}
   u.nome=nome;u.cargo=cargo;u.senha=senha;u.permissoes=perms;
   sbUpsert('usuarios',{id:u.id,nome:u.nome,senha:u.senha,cargo:u.cargo,permissoes:JSON.stringify(u.permissoes),ativo:u.ativo});
   usuarioEditando=null;
@@ -3030,7 +3029,6 @@ function criarUsuario(){
   const senha=document.getElementById('nu-senha').value.trim();
   const perms=Array.from(document.querySelectorAll('.novo-usr-perm:checked')).map(c=>c.value);
   if(!nome||!senha){alert('Preencha nome e senha.');return;}
-  if(SENHAS[senha]||usuariosCustom.some(u=>u.senha===senha)){alert('Essa senha já está em uso. Escolha outra.');return;}
   const id='USR_'+Date.now();
   const novo={id,nome,senha,cargo,permissoes:perms,ativo:true};
   usuariosCustom.push(novo);
