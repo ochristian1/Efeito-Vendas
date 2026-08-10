@@ -478,19 +478,9 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
         <div class="plano-opt" id="pp-lead-ORGANICO" onclick="setPagoLead('ORGANICO')" style="border-color:var(--green-border)"><div class="plano-opt-name" style="color:var(--green)">Orgânico</div><div class="plano-opt-desc">Sem publicidade</div></div>
       </div>
       <div class="field" style="margin-bottom:10px;margin-top:12px"><label>Vendedora que agendou</label></div>
-      <div class="plano-options" style="grid-template-columns:repeat(3,1fr)">
-        <div class="plano-opt" id="pp-vend-PAULA" onclick="setPagoVendedora('PAULA')"><div class="plano-opt-name" style="color:#f472b6">Paula</div><div class="plano-opt-desc">SDR</div></div>
-        <div class="plano-opt" id="pp-vend-EDUARDA" onclick="setPagoVendedora('EDUARDA')"><div class="plano-opt-name" style="color:#fb923c">Eduarda</div><div class="plano-opt-desc">SDR</div></div>
-        <div class="plano-opt" id="pp-vend-NENHUMA" onclick="setPagoVendedora('NENHUMA')"><div class="plano-opt-name" style="color:var(--text2)">Nenhuma</div><div class="plano-opt-desc">Lead direto</div></div>
-      </div>
+      <div class="plano-options" id="pp-vend-options" style="grid-template-columns:repeat(3,1fr)"></div>
       <div class="field" style="margin-bottom:10px;margin-top:12px"><label>Quem fechou a venda</label></div>
-      <div class="plano-options" style="grid-template-columns:repeat(4,1fr)">
-        <div class="plano-opt" id="pp-fech-PAULA" onclick="setPagoFechamento('PAULA')"><div class="plano-opt-name" style="color:#f472b6">Paula fechou</div><div class="plano-opt-desc">8% comissão</div></div>
-        <div class="plano-opt" id="pp-fech-EDUARDA" onclick="setPagoFechamento('EDUARDA')"><div class="plano-opt-name" style="color:#fb923c">Eduarda fechou</div><div class="plano-opt-desc">8% comissão</div></div>
-        <div class="plano-opt" id="pp-fech-RECOMPRA_PAULA" onclick="setPagoFechamento('RECOMPRA_PAULA')"><div class="plano-opt-name" style="color:#f472b6">Paula - Recompra</div><div class="plano-opt-desc">4% comissão</div></div>
-        <div class="plano-opt" id="pp-fech-RECOMPRA_EDUARDA" onclick="setPagoFechamento('RECOMPRA_EDUARDA')"><div class="plano-opt-name" style="color:#fb923c">Eduarda - Recompra</div><div class="plano-opt-desc">4% comissão</div></div>
-        <div class="plano-opt" id="pp-fech-DONO" onclick="setPagoFechamento('DONO')"><div class="plano-opt-name" style="color:var(--green)">Você fechou</div><div class="plano-opt-desc">2% p/ quem agendou</div></div>
-      </div>
+      <div class="plano-options" id="pp-fech-options" style="grid-template-columns:repeat(4,1fr)"></div>
       <div class="form-row form-full" style="margin-top:10px">
         <div class="field"><label>Observação (opcional)</label><textarea id="pp-obs" placeholder="Ex: Plano diferenciado, desconto aplicado, combo..." style="min-height:52px"></textarea></div>
       </div>
@@ -652,7 +642,7 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
 </div><!-- fim app-root -->
 <script>
 // LOGIN E PERMISSÕES
-const SENHAS={'admin2026':'ADMIN','paula123':'PAULA','eduarda123':'EDUARDA'};
+const SENHAS={'admin2026':'ADMIN','eduarda123':'EDUARDA'};
 const SENHAS_VALUES=Object.values(SENHAS);
 let currentUser=sessionStorage.getItem('ev_user')||null;
 function logout(){
@@ -694,7 +684,7 @@ function entrarComoCustom(user){
   sessionStorage.setItem('ev_user_cargo',user.cargo||'Usuário');
   iniciarApp();
 }
-const USER_INFO={ADMIN:{nome:'Christian',role:'Administrador',av:'C'},PAULA:{nome:'Paula',role:'SDR',av:'P'},EDUARDA:{nome:'Eduarda',role:'SDR',av:'E'}};
+const USER_INFO={ADMIN:{nome:'Christian',role:'Administrador',av:'C'},EDUARDA:{nome:'Eduarda',role:'SDR',av:'E'}};
 function renderTabByKey(name){
   if(name==='agenda') renderAgenda();
   else if(name==='notas') renderNotas();
@@ -771,7 +761,7 @@ function iniciarApp(){
   if(podeReceberAvisos()) iniciarPollingAvisos();
 }
 function podeReceberAvisos(){
-  if(currentUser==='PAULA'||currentUser==='EDUARDA')return true;
+  if(isSDRUser(currentUser))return true;
   if(!SENHAS_VALUES.includes(currentUser))return currentUserPerms.includes('aviso');
   return false;
 }
@@ -926,8 +916,8 @@ const MOTIVOS_PERDA=[
   {key:'outro',label:'Outro'}
 ];
 function motivoPerdaLabel(k){return (MOTIVOS_PERDA.find(m=>m.key===k)||{}).label||k||'—';}
-const RESPONSAVEIS_EQUIPE=['CHRISTIAN','PAULA','EDUARDA'];
-function nomeResponsavel(r){return r==='CHRISTIAN'?'Christian':r==='PAULA'?'Paula':r==='EDUARDA'?'Eduarda':r;}
+function getResponsaveisEquipe(){return ['CHRISTIAN',...getSDRsAtivos().map(s=>s.key)];}
+function nomeResponsavel(r){return r==='CHRISTIAN'?'Christian':nomeVendedora(r);}
 function mesAtualStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
 // Fórmula oficial de comissão (fixa, não configurável): 8% quando fecha sozinha(o),
 // 4% em recompra, 2% quando agenda e outra pessoa/o dono fecha. Única fonte de verdade,
@@ -944,8 +934,7 @@ function calcularComissaoResponsavel(key,listaMes){
   const recompra=listaMes.filter(p=>p.fechamento==='RECOMPRA_'+key);
   const recRecompra=recompra.reduce((s,p)=>s+(p.valor||0),0);
   const comRecompra=recRecompra*0.04;
-  const outraSDR=key==='PAULA'?'EDUARDA':'PAULA';
-  const agendou=listaMes.filter(p=>p.vendedora===key&&(p.fechamento==='DONO'||p.fechamento===outraSDR));
+  const agendou=listaMes.filter(p=>p.vendedora===key&&p.fechamento&&p.fechamento!==key&&p.fechamento!=='RECOMPRA_'+key);
   const recAgendou=agendou.reduce((s,p)=>s+(p.valor||0),0);
   const comAgendou=recAgendou*0.02;
   return {bruto:recFechou+recRecompra,comissao:comFechou+comRecompra+comAgendou,totalVendas:fechou.length+recompra.length+agendou.length,
@@ -977,6 +966,55 @@ function carregarUsuariosCustom(){
 }
 carregarUsuariosCustom();
 
+// ============ SDRs dinâmicos (usuários com cargo "SDR" criados na aba Usuários) ============
+const SDR_PALETA=['#f472b6','#60a5fa','#c084fc','#facc15','#f87171','#818cf8','#2dd4bf'];
+function corParaUsuario(id){
+  let hash=0;for(let i=0;i<id.length;i++)hash=(hash*31+id.charCodeAt(i))>>>0;
+  return SDR_PALETA[hash%SDR_PALETA.length];
+}
+// gera um fundo escuro suave combinando com a cor da pessoa (pro card de comissões)
+function corBgSuave(hex){
+  if(!hex||hex[0]!=='#')return'#1a1a1a';
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},0.12)`;
+}
+function getSDRsAtivos(){
+  const fixos=[{key:'EDUARDA',label:'Eduarda',cor:'#fb923c'}];
+  const custom=usuariosCustom.filter(u=>u.ativo&&u.cargo&&/sdr/i.test(u.cargo)).map(u=>({key:u.id,label:u.nome,cor:corParaUsuario(u.id)}));
+  return fixos.concat(custom);
+}
+function nomeVendedora(key){
+  if(!key)return'';
+  if(key==='EDUARDA')return'Eduarda';
+  if(key==='DONO')return'Christian';
+  if(key==='PAULA')return'Paula'; // mantém histórico de registros antigos
+  const u=usuariosCustom.find(x=>x.id===key);
+  return u?u.nome:key;
+}
+function corVendedora(key){
+  if(key==='EDUARDA')return'#fb923c';
+  if(key==='DONO')return'var(--green)';
+  if(key==='PAULA')return'#f472b6';
+  const u=usuariosCustom.find(x=>x.id===key);
+  return u?corParaUsuario(u.id):'var(--text2)';
+}
+function isSDRUser(u){
+  return u==='EDUARDA'||usuariosCustom.some(x=>x.id===u&&x.cargo&&/sdr/i.test(x.cargo));
+}
+// Resolve o campo "fechamento" (que pode ser DONO, uma chave de SDR, ou RECOMPRA_<chave>) em nome/cor legível
+function resolveFechLabelSimples(key){
+  if(!key)return'';
+  if(key==='DONO')return'Christian';
+  if(key.startsWith('RECOMPRA_'))return nomeVendedora(key.slice(9));
+  return nomeVendedora(key);
+}
+function resolveFechCorSimples(key){
+  if(!key)return'var(--text2)';
+  if(key==='DONO')return'var(--green)';
+  if(key.startsWith('RECOMPRA_'))return corVendedora(key.slice(9));
+  return corVendedora(key);
+}
+
 // LOADING
 function showLoading(m){const e=document.getElementById('loading-bar');if(e){e.textContent=m;e.style.display='block';}}
 function hideLoading(){const e=document.getElementById('loading-bar');if(e)e.style.display='none';}
@@ -998,11 +1036,12 @@ function loadAll(){
       metaMes=metaLocal;
       if(metaLocal>0) sbUpsert('notas',{id:'meta_mes_config',titulo:'__meta_mes__',texto:String(metaLocal),data:'',feita:false});
     }
-    // carregar metas individuais das SDRs
-    const metaPaula=(rn||[]).find(r=>r.titulo==='__meta_sdr_PAULA__');
-    const metaEduarda=(rn||[]).find(r=>r.titulo==='__meta_sdr_EDUARDA__');
-    metasPorSDR.PAULA=metaPaula?parseFloat(metaPaula.texto)||0:0;
-    metasPorSDR.EDUARDA=metaEduarda?parseFloat(metaEduarda.texto)||0:0;
+    // carregar metas individuais das SDRs (dinâmico, funciona pra qualquer SDR cadastrada)
+    metasPorSDR={};
+    getSDRsAtivos().forEach(s=>{
+      const row=(rn||[]).find(r=>r.titulo==='__meta_sdr_'+s.key+'__');
+      metasPorSDR[s.key]=row?parseFloat(row.texto)||0:0;
+    });
     // data de início do onboarding (zera contagem, conta só clientes fechados a partir de hoje)
     const onbInicioRow=(rn||[]).find(r=>r.titulo==='__onb_inicio__');
     if(onbInicioRow){
@@ -1118,8 +1157,8 @@ function openLeadForm(id){
   const detArea=document.getElementById('lead-detail-area');if(detArea)detArea.innerHTML='';
   const pipeDetArea=document.getElementById('pipeline-lead-detail-area');if(pipeDetArea)pipeDetArea.innerHTML='';
   const ex=leadFormId?leads.find(l=>l.id===leadFormId):null;
-  const respOpts=['CHRISTIAN','PAULA','EDUARDA'];
-  const respLabels={CHRISTIAN:'Christian',PAULA:'Paula',EDUARDA:'Eduarda'};
+  const respOpts=getResponsaveisEquipe();
+  const respLabels=Object.fromEntries(respOpts.map(r=>[r,nomeResponsavel(r)]));
   const formHtml=`
     <div class="panel"><div class="panel-title">${ex?'Editar lead':'Novo lead'}</div>
     <div class="form-row">
@@ -1498,11 +1537,11 @@ function renderMetasPage(){
   const escopos=[
     {tipo:'empresa',responsavel:'',label:'Empresa'},
     {tipo:'equipe',responsavel:'',label:'Equipe (SDR + Closer)'},
-    ...RESPONSAVEIS_EQUIPE.map(r=>({tipo:'individual',responsavel:r,label:nomeResponsavel(r)}))
+    ...getResponsaveisEquipe().map(r=>({tipo:'individual',responsavel:r,label:nomeResponsavel(r)}))
   ];
   const cards=escopos.map(e=>{
     const meta=metas.find(m=>m.tipo===e.tipo&&(m.responsavel||'')===e.responsavel&&m.mes===mes);
-    const realizado=e.tipo==='empresa'?realizadoNoMes('',mes):(e.tipo==='equipe'?RESPONSAVEIS_EQUIPE.filter(r=>r!=='CHRISTIAN').reduce((s,r)=>s+realizadoNoMes(r,mes),0):realizadoNoMes(e.responsavel,mes));
+    const realizado=e.tipo==='empresa'?realizadoNoMes('',mes):(e.tipo==='equipe'?getResponsaveisEquipe().filter(r=>r!=='CHRISTIAN').reduce((s,r)=>s+realizadoNoMes(r,mes),0):realizadoNoMes(e.responsavel,mes));
     const valorMeta=meta?meta.valor:0;
     const pct=valorMeta>0?Math.min(100,Math.round((realizado/valorMeta)*100)):0;
     const falta=Math.max(0,valorMeta-realizado);
@@ -1542,7 +1581,7 @@ function openMetaForm(tipoPre,respPre){
         <option value="individual" ${tipo==='individual'?'selected':''}>Individual</option>
       </select></div>
       <div class="field" id="mf-resp-wrap" style="${tipo==='individual'?'':'display:none'}"><label>Responsável</label><select id="mf-responsavel">
-        ${RESPONSAVEIS_EQUIPE.map(r=>`<option value="${r}" ${responsavel===r?'selected':''}>${nomeResponsavel(r)}</option>`).join('')}
+        ${getResponsaveisEquipe().map(r=>`<option value="${r}" ${responsavel===r?'selected':''}>${nomeResponsavel(r)}</option>`).join('')}
       </select></div>
     </div>
     <div class="form-row">
@@ -1597,7 +1636,7 @@ function getMesSelecionadoComissoes(){
 function renderComissoesPage(){
   const mes=getMesSelecionadoComissoes();
   const listaMes=pagos.filter(p=>p.data&&p.data.slice(0,7)===mes);
-  const linhas=RESPONSAVEIS_EQUIPE.map(key=>({responsavel:key,...calcularComissaoResponsavel(key,listaMes)}));
+  const linhas=getResponsaveisEquipe().map(key=>({responsavel:key,...calcularComissaoResponsavel(key,listaMes)}));
   const sdrs=linhas.filter(l=>l.responsavel!=='CHRISTIAN');
   const totalComissoes=sdrs.reduce((s,l)=>s+(l.comissao||0),0);
   const totalVendidoGeral=linhas.reduce((s,l)=>s+(l.bruto||0),0);
@@ -1670,9 +1709,10 @@ function openForm(dateStr,id){
   const leadCores={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)'};
   const leadHtml=leadOpts.map(l=>`<div id="fl-${l}" onclick="setFormLead('${l}')" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;background:var(--bg3);transition:all .12s${leadAtual===l?`;border-color:${leadCores[l]};background:var(--bg2)`:''};"><div style="font-size:12px;font-weight:700;color:${leadCores[l]}">${leadLabels[l]}</div></div>`).join('');
   const vendAtual=ex?ex.vendedora||'':'';
-  const vendOpts=['PAULA','EDUARDA'];
-  const vendLabels={PAULA:'Paula',EDUARDA:'Eduarda'};
-  const vendCores={PAULA:'#f472b6',EDUARDA:'#fb923c'};
+  const sdrsAtivos=getSDRsAtivos();
+  const vendOpts=sdrsAtivos.map(s=>s.key);
+  const vendLabels=Object.fromEntries(sdrsAtivos.map(s=>[s.key,s.label]));
+  const vendCores=Object.fromEntries(sdrsAtivos.map(s=>[s.key,s.cor]));
   const vendHtml=vendOpts.map(v=>`<div id="fv-${v}" onclick="setFormVend('${v}')" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;background:var(--bg3);transition:all .12s${vendAtual===v?`;border-color:${vendCores[v]};background:var(--bg2)`:''};"><div style="font-size:12px;font-weight:700;color:${vendCores[v]}">${vendLabels[v]}</div></div>`).join('');
   const closerAtual=ex?ex.closer||'':'';
   const closerOpts=['CHRISTIAN','EDUARDA'];
@@ -1705,10 +1745,9 @@ function setFormCloser(v){
 function setFormVend(v){
   if(window._formVend===v){window._formVend='';document.getElementById('fv-'+v).style.borderColor='var(--border)';document.getElementById('fv-'+v).style.background='var(--bg3)';return;}
   window._formVend=v;
-  const cores={PAULA:'#f472b6',EDUARDA:'#fb923c'};
-  ['PAULA','EDUARDA'].forEach(k=>{
-    const el=document.getElementById('fv-'+k);
-    if(el){el.style.borderColor=k===v?cores[k]:'var(--border)';el.style.background=k===v?'var(--bg2)':'var(--bg3)';}
+  getSDRsAtivos().forEach(s=>{
+    const el=document.getElementById('fv-'+s.key);
+    if(el){el.style.borderColor=s.key===v?s.cor:'var(--border)';el.style.background=s.key===v?'var(--bg2)':'var(--bg3)';}
   });
 }
 function setFormLead(l){
@@ -1753,11 +1792,9 @@ function saveForm(){
 }
 function renderDetail(id){
   const item=calls.find(x=>x.id===String(id));if(!item)return;
-  const VEND_CORES2={PAULA:'#f472b6',EDUARDA:'#fb923c'};
-  const VEND_LABELS2={PAULA:'Paula',EDUARDA:'Eduarda'};
   const LEAD_CORES2={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)'};
   const LEAD_LABELS2={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico'};
-  const vendBadge2=item.vendedora&&VEND_CORES2[item.vendedora]?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--bg3);color:${VEND_CORES2[item.vendedora]};border:1px solid ${VEND_CORES2[item.vendedora]}50;margin-left:6px">${VEND_LABELS2[item.vendedora]}</span>`:'';
+  const vendBadge2=item.vendedora?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--bg3);color:${corVendedora(item.vendedora)};border:1px solid ${corVendedora(item.vendedora)}50;margin-left:6px">${nomeVendedora(item.vendedora)}</span>`:'';
   const leadBadge2=item.lead&&LEAD_CORES2[item.lead]?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--bg3);color:${LEAD_CORES2[item.lead]};border:1px solid ${LEAD_CORES2[item.lead]}50;margin-left:6px">${LEAD_LABELS2[item.lead]}</span>`:'';
   const statusFech=item.statusFech||'';
   const obsFech=item.obsFech||'';
@@ -1993,10 +2030,8 @@ function listItem(i){
   const isActive=detailId===i.id;
   const LEAD_CORES={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)'};
   const LEAD_LABELS={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico'};
-  const VEND_CORES={PAULA:'#f472b6',EDUARDA:'#fb923c'};
-  const VEND_LABELS={PAULA:'Paula',EDUARDA:'Eduarda'};
   const leadBadge=i.lead&&LEAD_CORES[i.lead]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${LEAD_CORES[i.lead]};border:1px solid ${LEAD_CORES[i.lead]}50;margin-left:4px">${LEAD_LABELS[i.lead]}</span>`:'';
-  const vendBadge=i.vendedora&&VEND_CORES[i.vendedora]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${VEND_CORES[i.vendedora]};border:1px solid ${VEND_CORES[i.vendedora]}50;margin-left:4px">${VEND_LABELS[i.vendedora]}</span>`:'';
+  const vendBadge=i.vendedora?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${corVendedora(i.vendedora)};border:1px solid ${corVendedora(i.vendedora)}50;margin-left:4px">${nomeVendedora(i.vendedora)}</span>`:'';
   const fechBadge=i.statusFech==='fechou'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);margin-left:4px">✅ Fechou</span>`:i.statusFech==='nao_fechou'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);margin-left:4px">❌ Follow-up</span>`:i.statusFech==='nao_compareceu'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:#2a1c00;color:#f59e0b;border:1px solid #f59e0b50;margin-left:4px">🚫 Não compareceu</span>`:'';
   const closerCores={CHRISTIAN:'var(--green)',EDUARDA:'#fb923c'};
   const closerLabels={CHRISTIAN:'👤 Christian',EDUARDA:'👤 Eduarda'};
@@ -2007,11 +2042,9 @@ function listItem(i){
   // renderizar detalhe inline
   const statusFech=i.statusFech||'';
   const obsFech=i.obsFech||'';
-  const VEND_CORES2={PAULA:'#f472b6',EDUARDA:'#fb923c'};
-  const VEND_LABELS2={PAULA:'Paula',EDUARDA:'Eduarda'};
   const LEAD_CORES2={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)'};
   const LEAD_LABELS2={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico'};
-  const vendBadge2=i.vendedora&&VEND_CORES2[i.vendedora]?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--bg3);color:${VEND_CORES2[i.vendedora]};border:1px solid ${VEND_CORES2[i.vendedora]}50;margin-left:6px">${VEND_LABELS2[i.vendedora]}</span>`:'';
+  const vendBadge2=i.vendedora?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--bg3);color:${corVendedora(i.vendedora)};border:1px solid ${corVendedora(i.vendedora)}50;margin-left:6px">${nomeVendedora(i.vendedora)}</span>`:'';
   const leadBadge2=i.lead&&LEAD_CORES2[i.lead]?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--bg3);color:${LEAD_CORES2[i.lead]};border:1px solid ${LEAD_CORES2[i.lead]}50;margin-left:6px">${LEAD_LABELS2[i.lead]}</span>`:'';
   const inline=`<div id="detail-inline-${i.id}" class="detail-panel" style="margin-bottom:8px">
     <div class="detail-header" onclick="closeDetail()">
@@ -2136,12 +2169,28 @@ function navegarMes(dir){
 function renderTermometro(){}
 function editarMeta(){}
 function salvarMeta(){}
+function renderPagoVendFechOptions(){
+  const sdrs=getSDRsAtivos();
+  const vendEl=document.getElementById('pp-vend-options');
+  if(vendEl){
+    vendEl.innerHTML=[...sdrs.map(s=>({id:s.key,label:s.label,cor:s.cor,desc:'SDR'})),{id:'NENHUMA',label:'Nenhuma',cor:'var(--text2)',desc:'Lead direto'}]
+      .map(o=>`<div class="plano-opt" id="pp-vend-${o.id}" onclick="setPagoVendedora('${o.id}')"><div class="plano-opt-name" style="color:${o.cor}">${o.label}</div><div class="plano-opt-desc">${o.desc}</div></div>`).join('');
+  }
+  const fechEl=document.getElementById('pp-fech-options');
+  if(fechEl){
+    const opts=[...sdrs.map(s=>({id:s.key,label:s.label+' fechou',cor:s.cor,desc:'8% comissão'})),
+      ...sdrs.map(s=>({id:'RECOMPRA_'+s.key,label:s.label+' - Recompra',cor:s.cor,desc:'4% comissão'})),
+      {id:'DONO',label:'Você fechou',cor:'var(--green)',desc:'2% p/ quem agendou'}];
+    fechEl.innerHTML=opts.map(o=>`<div class="plano-opt" id="pp-fech-${o.id}" onclick="setPagoFechamento('${o.id}')"><div class="plano-opt-name" style="color:${o.cor}">${o.label}</div><div class="plano-opt-desc">${o.desc}</div></div>`).join('');
+  }
+}
 function toggleNovoPago(){
   novoPagoOpen=!novoPagoOpen;
   const el=document.getElementById('novo-pago-form');
   el.style.display=novoPagoOpen?'block':'none';
   if(novoPagoOpen){
     novoPagoPlano=null;novoPagoLead=null;novoPagoVendedora=null;novoPagoFechamento=null;
+    renderPagoVendFechOptions();
     document.getElementById('pp-nome').value='';
     document.getElementById('pp-fone').value='';
     document.getElementById('pp-data').value=todayStr();
@@ -2149,7 +2198,7 @@ function toggleNovoPago(){
     document.getElementById('pp-obs').value='';
     document.querySelectorAll('[id^="pp-opt-"],[id^="pp-lead-"],[id^="pp-vend-"],[id^="pp-fech-"]').forEach(o=>o.classList.remove('selected'));
     // Se for SDR, pré-seleciona ela mesma como vendedora e quem fechou
-    if(currentUser==='PAULA'||currentUser==='EDUARDA'){
+    if(isSDRUser(currentUser)){
       novoPagoVendedora=currentUser;
       novoPagoFechamento=currentUser;
       const elV=document.getElementById('pp-vend-'+currentUser);
@@ -2251,10 +2300,10 @@ function salvarValor(id){
 function setEditVend(id,v){
   const c=pagos.find(x=>x.id===String(id));if(!c)return;
   c._editVend=v;
-  ['PAULA','EDUARDA','NENHUMA'].forEach(k=>{
+  [...getSDRsAtivos().map(s=>s.key),'NENHUMA'].forEach(k=>{
     const el=document.getElementById(`ev-${id}-${k}`);
     if(!el)return;
-    const cor=k==='PAULA'?'#f472b6':k==='EDUARDA'?'#fb923c':'var(--border2)';
+    const cor=k==='NENHUMA'?'var(--border2)':corVendedora(k);
     el.style.borderColor=k===v?cor:'var(--border)';
     el.style.background=k===v?'var(--bg2)':'var(--bg3)';
   });
@@ -2262,10 +2311,10 @@ function setEditVend(id,v){
 function setEditFech(id,f){
   const c=pagos.find(x=>x.id===String(id));if(!c)return;
   c._editFech=f;
-  ['PAULA','EDUARDA','RECOMPRA_PAULA','RECOMPRA_EDUARDA','DONO'].forEach(k=>{
+  [...getSDRsAtivos().flatMap(s=>[s.key,'RECOMPRA_'+s.key]),'DONO'].forEach(k=>{
     const el=document.getElementById(`ef-${id}-${k}`);
     if(!el)return;
-    const cor=k.includes('PAULA')?'#f472b6':k.includes('EDUARDA')?'#fb923c':'var(--green-border)';
+    const cor=resolveFechCorSimples(k);
     el.style.borderColor=k===f?cor:'var(--border)';
     el.style.background=k===f?'var(--bg2)':'var(--bg3)';
   });
@@ -2307,7 +2356,7 @@ function renderPagos(){
   const labelEl=document.getElementById('pagos-mes-label');
   if(labelEl) labelEl.textContent=`${MONTHS_PT[mes-1].charAt(0).toUpperCase()+MONTHS_PT[mes-1].slice(1)} ${ano}`;
   let list=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesSelecionado);
-  if(currentUser==='PAULA'||currentUser==='EDUARDA') list=list.filter(p=>p.vendedora===currentUser||p.fechamento===currentUser||p.fechamento==='RECOMPRA_'+currentUser);
+  if(isSDRUser(currentUser)) list=list.filter(p=>p.vendedora===currentUser||p.fechamento===currentUser||p.fechamento==='RECOMPRA_'+currentUser);
   if(['E2','E3','E4','E5'].includes(pagoFiltro)) list=list.filter(p=>p.plano===pagoFiltro);
   else if(pagoFiltro==='AVISO_APP'||pagoFiltro==='PN'||pagoFiltro==='ORGANICO') list=list.filter(p=>p.lead===pagoFiltro);
   list=[...list].sort((a,b)=>Number(b.id)-Number(a.id));
@@ -2319,10 +2368,8 @@ function renderPagos(){
     const leadInfo2=c.lead&&LEAD_BADGE2[c.lead]
       ?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:${LEAD_BADGE2[c.lead].bg};color:${LEAD_BADGE2[c.lead].cor};border:1px solid ${LEAD_BADGE2[c.lead].cor}40">${LEAD_BADGE2[c.lead].label}</span>`
       :`<span onclick="editarLead('${c.id}')" style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--bg3);color:var(--text3);border:1px solid var(--border);cursor:pointer">+ lead</span>`;
-    const VEND_BADGE={PAULA:{label:'Paula',cor:'#f472b6'},EDUARDA:{label:'Eduarda',cor:'#fb923c'}};
-    const FECH_BADGE={PAULA:{label:'Paula fechou',cor:'#f472b6'},EDUARDA:{label:'Eduarda fechou',cor:'#fb923c'},RECOMPRA_PAULA:{label:'Paula - Recompra 4%',cor:'#f472b6'},RECOMPRA_EDUARDA:{label:'Eduarda - Recompra 4%',cor:'#fb923c'},DONO:{label:'Você fechou',cor:'var(--green)'}};
-    const vendInfo=c.vendedora&&VEND_BADGE[c.vendedora]?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--bg3);color:${VEND_BADGE[c.vendedora].cor};border:1px solid ${VEND_BADGE[c.vendedora].cor}40">📋 ${VEND_BADGE[c.vendedora].label}</span>`:'';
-    const fechInfo=c.fechamento&&FECH_BADGE[c.fechamento]?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--bg3);color:${FECH_BADGE[c.fechamento].cor};border:1px solid ${FECH_BADGE[c.fechamento].cor}40">🤝 ${FECH_BADGE[c.fechamento].label}</span>`:'';
+    const vendInfo=c.vendedora?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--bg3);color:${corVendedora(c.vendedora)};border:1px solid ${corVendedora(c.vendedora)}40">📋 ${nomeVendedora(c.vendedora)}</span>`:'';
+    const fechInfo=c.fechamento?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--bg3);color:${resolveFechCorSimples(c.fechamento)};border:1px solid ${resolveFechCorSimples(c.fechamento)}40">🤝 ${resolveFechLabelSimples(c.fechamento)}</span>`:'';
     return`<div class="pago-card">
       <div class="pago-av">${initials(c.nome)}</div>
       <div class="pago-info">
@@ -2352,17 +2399,17 @@ function renderPagos(){
       </div>
       <div class="field" style="margin-bottom:8px"><label>Vendedora que agendou</label>
         <div style="display:flex;gap:8px;margin-top:6px">
-          ${['PAULA','EDUARDA','NENHUMA'].map(v=>`<div onclick="setEditVend('${c.id}','${v}')" id="ev-${c.id}-${v}" style="flex:1;padding:7px;border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;background:${c.vendedora===v?'var(--bg2)':'var(--bg3)'};border-color:${c.vendedora===v?(v==='PAULA'?'#f472b6':v==='EDUARDA'?'#fb923c':'var(--border2)'):'var(--border)'}">
-            <div style="font-size:12px;font-weight:700;color:${v==='PAULA'?'#f472b6':v==='EDUARDA'?'#fb923c':'var(--text2)'}">${v==='NENHUMA'?'Nenhuma':v.charAt(0)+v.slice(1).toLowerCase()}</div>
+          ${[...getSDRsAtivos().map(s=>s.key),'NENHUMA'].map(v=>`<div onclick="setEditVend('${c.id}','${v}')" id="ev-${c.id}-${v}" style="flex:1;padding:7px;border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;background:${c.vendedora===v?'var(--bg2)':'var(--bg3)'};border-color:${c.vendedora===v?(v==='NENHUMA'?'var(--border2)':corVendedora(v)):'var(--border)'}">
+            <div style="font-size:12px;font-weight:700;color:${v==='NENHUMA'?'var(--text2)':corVendedora(v)}">${v==='NENHUMA'?'Nenhuma':nomeVendedora(v)}</div>
           </div>`).join('')}
         </div>
       </div>
       <div class="field" style="margin-bottom:10px"><label>Quem fechou a venda</label>
         <div style="display:flex;gap:8px;margin-top:6px">
-          ${['PAULA','EDUARDA','RECOMPRA_PAULA','RECOMPRA_EDUARDA','DONO'].map(f=>{
-        const label={PAULA:'Paula fechou',EDUARDA:'Eduarda fechou',RECOMPRA_PAULA:'Paula - Recompra',RECOMPRA_EDUARDA:'Eduarda - Recompra',DONO:'Você fechou'}[f];
-        const desc={PAULA:'8%',EDUARDA:'8%',RECOMPRA_PAULA:'4%',RECOMPRA_EDUARDA:'4%',DONO:'2%'}[f];
-        const cor=f.includes('PAULA')?'#f472b6':f.includes('EDUARDA')?'#fb923c':'var(--green)';
+          ${[...getSDRsAtivos().flatMap(s=>[s.key,'RECOMPRA_'+s.key]),'DONO'].map(f=>{
+        const label=f==='DONO'?'Você fechou':(f.startsWith('RECOMPRA_')?nomeVendedora(f.slice(9))+' - Recompra':nomeVendedora(f)+' fechou');
+        const desc=f==='DONO'?'2%':(f.startsWith('RECOMPRA_')?'4%':'8%');
+        const cor=resolveFechCorSimples(f);
         const sel=c.fechamento===f;
         return`<div onclick="setEditFech('${c.id}','${f}')" id="ef-${c.id}-${f}" style="flex:1;padding:7px;border:1px solid ${sel?cor:'var(--border)'};border-radius:8px;text-align:center;cursor:pointer;background:${sel?'var(--bg2)':'var(--bg3)'}">
           <div style="font-size:11px;font-weight:700;color:${cor}">${label}</div>
@@ -2392,7 +2439,7 @@ if(currentUser){
 
 // ============ PÁGINAS DE ANÁLISE ============
 let mesConversao=mesSelecionado;
-let metasPorSDR={PAULA:0,EDUARDA:0};
+let metasPorSDR={};
 let followupAberto=null;
 function navegarMesConversao(dir){
   const [ano,mes]=mesConversao.split('-').map(Number);
@@ -2463,9 +2510,9 @@ function renderConversaoPage(listaMes){
 }
 function renderMetaIndPage(listaMes){
   const el=document.getElementById('pg-meta-ind');if(!el)return;
-  let SDRS=[{key:'PAULA',label:'Paula',cor:'#f472b6'},{key:'EDUARDA',label:'Eduarda',cor:'#fb923c'}];
+  let SDRS=getSDRsAtivos();
   // SDR vê só a própria meta
-  if(currentUser==='PAULA'||currentUser==='EDUARDA') SDRS=SDRS.filter(s=>s.key===currentUser);
+  if(isSDRUser(currentUser)) SDRS=SDRS.filter(s=>s.key===currentUser);
   const podeEditar=currentUser==='ADMIN';
   el.innerHTML=SDRS.map(s=>{
     const meta=metasPorSDR[s.key]||0;
@@ -2556,10 +2603,9 @@ function renderOnboardingPage(){
   if(onboardingFiltro==='pendentes') lista=comProgresso.filter(p=>p.pct<100);
   if(onboardingFiltro==='concluidos') lista=comProgresso.filter(p=>p.pct===100);
   if(!lista.length){el.innerHTML=`<div style="text-align:center;padding:30px;color:var(--text3)">Nenhum cliente ${onboardingFiltro==='pendentes'?'pendente':onboardingFiltro==='concluidos'?'concluído':'ainda'}.</div>`;return;}
-  const VEND_LABELS={PAULA:'Paula',EDUARDA:'Eduarda',DONO:'Christian'};
   el.innerHTML=lista.map(p=>{
     const cor=p.pct===100?'var(--green)':p.pct>=34?'#f59e0b':'var(--red)';
-    const vend=VEND_LABELS[p.fechamento]||VEND_LABELS[p.vendedora]||'';
+    const vend=resolveFechLabelSimples(p.fechamento)||nomeVendedora(p.vendedora)||'';
     return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
         <div style="width:32px;height:32px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text2);flex-shrink:0">${initials(p.nome)}</div>
@@ -2632,7 +2678,7 @@ function renderDesempenhoPage(){
   const granHtml=gran.map(c=>`<span onclick="despSetTipo('${c.k}')" style="font-size:11px;padding:5px 11px;border-radius:7px;cursor:pointer;${despTipo===c.k?'background:var(--green-bg);border:1px solid var(--green-border);color:var(--green)':'background:var(--bg3);border:1px solid var(--border);color:var(--text2)'}">${c.l}</span>`).join('');
 
   // agendamentos por SDR
-  const SDRS=[{key:'PAULA',label:'Paula',cor:'#f472b6'},{key:'EDUARDA',label:'Eduarda',cor:'#fb923c'}];
+  const SDRS=getSDRsAtivos();
   const agendCards=SDRS.map(s=>{
     const n=callsPeriodo.filter(c=>c.vendedora===s.key).length;
     return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center">
@@ -2657,7 +2703,7 @@ function renderDesempenhoPage(){
   }).join('');
 
   // fechamentos por pessoa
-  const FECH_MAP=[{keys:['DONO'],label:'Christian',cor:'var(--green)'},{keys:['PAULA','RECOMPRA_PAULA'],label:'Paula',cor:'#f472b6'},{keys:['EDUARDA','RECOMPRA_EDUARDA'],label:'Eduarda',cor:'#fb923c'}];
+  const FECH_MAP=[{keys:['DONO'],label:'Christian',cor:'var(--green)'},...getSDRsAtivos().map(s=>({keys:[s.key,'RECOMPRA_'+s.key],label:s.label,cor:s.cor}))];
   const fechCards=FECH_MAP.map(f=>{
     const lista=pagosPeriodo.filter(p=>f.keys.includes(p.fechamento));
     const valor=lista.reduce((s,p)=>s+(p.valor||0),0);
@@ -2746,15 +2792,12 @@ function renderComissoesPagePage(){
     labelEl.textContent=`${MONTHS_PT[mesL-1].charAt(0).toUpperCase()+MONTHS_PT[mesL-1].slice(1)} ${anoL}`;
   }
   const listaMes=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesStr);
-  const PESSOAS=[
-    {key:'PAULA',label:'Paula',cor:'#f472b6',bg:'#2a0d1e'},
-    {key:'EDUARDA',label:'Eduarda',cor:'#fb923c',bg:'#2a1500'},
-  ];
+  const PESSOAS=getSDRsAtivos().map(s=>({key:s.key,label:s.label,cor:s.cor,bg:corBgSuave(s.cor)}));
   const dados=PESSOAS.map(p=>({...p,...calcularComissaoResponsavel(p.key,listaMes)}));
   const totalGeral=dados.reduce((s,d)=>s+(d.comissao||0),0);
   el.innerHTML=`
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px">
-      ${dados.map(d=>`
+    <div style="display:grid;grid-template-columns:repeat(${Math.max(dados.length,1)},1fr);gap:10px;margin-bottom:16px">
+      ${dados.length?dados.map(d=>`
         <div style="background:${d.bg};border:1px solid ${d.cor}40;border-radius:12px;padding:16px;text-align:center">
           <div style="font-size:13px;font-weight:700;color:${d.cor};margin-bottom:8px">${d.label}</div>
           <div style="font-size:24px;font-weight:800;color:${d.cor}">R$ ${(d.comissao||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
@@ -2773,7 +2816,7 @@ function renderComissoesPagePage(){
               <span style="color:${d.cor};font-weight:600">R$ ${(d.comAgendou||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
             </div>
           </div>
-        </div>`).join('')}
+        </div>`).join(''):`<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text3);font-size:12px">Nenhuma SDR ativa cadastrada. Crie uma na aba Usuários com cargo "SDR".</div>`}
     </div>
     <div style="background:var(--green-bg);border:1px solid var(--green-border);border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:13px;font-weight:600;color:var(--text)">Total a pagar no mês</span>
@@ -2808,7 +2851,7 @@ function renderCentralIAPage(){
   }
 
   // meta individual das SDRs
-  ['PAULA','EDUARDA'].forEach(key=>{
+  getSDRsAtivos().forEach(({key,label:nome})=>{
     const meta=metasPorSDR[key];
     if(!meta)return;
     const vendido=pagosAtual.filter(p=>p.fechamento===key||p.fechamento==='RECOMPRA_'+key).reduce((s,p)=>s+(p.valor||0),0);
@@ -2817,7 +2860,6 @@ function renderCentralIAPage(){
     const pctEsperado=(diaAtual/diasNoMes)*100;
     const pctReal=meta>0?(vendido/meta)*100:0;
     if(pctReal<pctEsperado-15){
-      const nome=key==='PAULA'?'Paula':'Eduarda';
       alertas.push({tipo:'alerta',icone:'⚠️',titulo:`${nome} abaixo do ritmo da meta`,texto:`Está em ${pctReal.toFixed(0)}% da meta individual, mas já eram esperados ~${pctEsperado.toFixed(0)}% do mês. Vale conversar sobre o volume de agendamentos.`});
     }
   });
@@ -2870,20 +2912,17 @@ function renderUsuariosPage(){
   const el=document.getElementById('pg-usuarios');if(!el)return;
   const fixosHtml=`
     <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Usuários fixos do sistema</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px">
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px">
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
         <div style="font-size:13px;font-weight:700;color:var(--green)">Christian</div>
         <div style="font-size:11px;color:var(--text3)">Administrador · acesso total</div>
       </div>
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
-        <div style="font-size:13px;font-weight:700;color:#f472b6">Paula</div>
-        <div style="font-size:11px;color:var(--text3)">SDR · acesso padrão</div>
-      </div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
         <div style="font-size:13px;font-weight:700;color:#fb923c">Eduarda</div>
         <div style="font-size:11px;color:var(--text3)">SDR/Closer · acesso padrão</div>
       </div>
-    </div>`;
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin:-14px 0 24px;line-height:1.5">💡 Pra criar uma nova SDR (que aparece automaticamente nos agendamentos e comissões), preencha o campo <b>Cargo</b> abaixo com a palavra "SDR" (ex: "SDR", "SDR/Closer").</div>`;
 
   const permsCheckboxes=PERMS.map(p=>`
     <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border-radius:7px;cursor:pointer;font-size:12px;color:var(--text2)">
@@ -3043,11 +3082,9 @@ function cardFollowup(c,resolvido){
   const cor=resolvido?'var(--green)':c.dias>=7?'var(--red)':c.dias>=3?'#fb923c':'var(--green)';
   const fone=(c.fone||'').replace(/\D/g,'');
   const LEAD_LABELS={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico'};
-  const VEND_LABELS={PAULA:'Paula',EDUARDA:'Eduarda'};
   const LEAD_CORES={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)'};
-  const VEND_CORES={PAULA:'#f472b6',EDUARDA:'#fb923c'};
   const leadBadge=c.lead&&LEAD_LABELS[c.lead]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${LEAD_CORES[c.lead]};border:1px solid ${LEAD_CORES[c.lead]}50">${LEAD_LABELS[c.lead]}</span>`:'';
-  const vendBadge=c.vendedora&&VEND_LABELS[c.vendedora]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${VEND_CORES[c.vendedora]};border:1px solid ${VEND_CORES[c.vendedora]}50">${VEND_LABELS[c.vendedora]}</span>`:'';
+  const vendBadge=c.vendedora?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${corVendedora(c.vendedora)};border:1px solid ${corVendedora(c.vendedora)}50">${nomeVendedora(c.vendedora)}</span>`:'';
   const aberto=followupAberto===c.id;
   const naoCompareceu=c.statusFech==='nao_compareceu';
   const tipoBadge=naoCompareceu?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:#2a1c00;color:#f59e0b;border:1px solid #f59e0b50">🚫 Não compareceu</span>`:'';
@@ -3198,7 +3235,7 @@ function renderMetaIndividual(listaMes){
   const el=document.getElementById('vendas-meta-individual');if(!el)return;
   const metaTotal=metaMes||0;
   const metaIndiv=metaTotal>0?Math.round(metaTotal/2):0;
-  const SDRS=[{key:'PAULA',label:'Paula',cor:'#f472b6'},{key:'EDUARDA',label:'Eduarda',cor:'#fb923c'}];
+  const SDRS=getSDRsAtivos();
   if(metaTotal===0){
     el.innerHTML=`<div style="text-align:center;padding:12px;color:var(--text3);font-size:12px">Defina a meta do mês no topo para ver a meta individual.</div>`;
     return;
@@ -3350,14 +3387,10 @@ function renderVendas(){
   const recentes=[...listaMes].sort((a,b)=>a.data>b.data?-1:1).slice(0,8);
   const LEAD_COR={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)'};
   const LEAD_LABEL={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico'};
-  const VEND_COR={PAULA:'#f472b6',EDUARDA:'#fb923c',DONO:'var(--green)'};
-  const VEND_LABEL={PAULA:'Paula',EDUARDA:'Eduarda',DONO:'Você'};
-
   // RANKING UNIFICADO
   let TODOS=[
     {key:'CHRISTIAN',label:'Christian',cor:'#22c55e',corClara:'#4ade80',bg:'#0d2a1a',avatar:'👑',isChristian:true},
-    {key:'PAULA',label:'Paula',cor:'#f472b6',corClara:'#fbb6ce',bg:'#2a0d1e',avatar:'P',isChristian:false},
-    {key:'EDUARDA',label:'Eduarda',cor:'#fb923c',corClara:'#fdba74',bg:'#2a1500',avatar:'E',isChristian:false},
+    ...getSDRsAtivos().map(s=>({key:s.key,label:s.label,cor:s.cor,corClara:s.cor,bg:corBgSuave(s.cor),avatar:(s.label[0]||'?').toUpperCase(),isChristian:false})),
   ];
   const rankingComDados=TODOS.map(v=>{
     const r=calcularComissaoResponsavel(v.key,listaMes);
