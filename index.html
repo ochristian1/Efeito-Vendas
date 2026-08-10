@@ -254,10 +254,11 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
 <div id="login-screen" style="max-width:380px;margin:4rem auto;text-align:center;padding:0 1rem">
   <div class="brand" style="justify-content:center;border-bottom:none;margin-bottom:2rem"><div class="brand-dot"></div><span class="brand-name">Efeito Vendas</span></div>
   <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.5rem">
-    <div style="font-size:14px;color:var(--text2);margin-bottom:1rem">Digite sua senha de acesso</div>
-    <input id="login-senha" type="password" placeholder="Senha" style="width:100%;font-size:15px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);outline:none;margin-bottom:10px;text-align:center" onkeydown="if(event.key==='Enter')fazerLogin()">
+    <div style="font-size:14px;color:var(--text2);margin-bottom:1rem">Entre com seu usuário e senha</div>
+    <input id="login-usuario" type="text" placeholder="Usuário" autocomplete="username" style="width:100%;font-size:15px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);outline:none;margin-bottom:10px;text-align:center" onkeydown="if(event.key==='Enter')document.getElementById('login-senha').focus()">
+    <input id="login-senha" type="password" placeholder="Senha" autocomplete="current-password" style="width:100%;font-size:15px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);outline:none;margin-bottom:10px;text-align:center" onkeydown="if(event.key==='Enter')fazerLogin()">
     <button onclick="fazerLogin()" style="width:100%;background:var(--green);border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:700;color:#000;cursor:pointer;font-family:inherit">Entrar</button>
-    <div id="login-erro" style="display:none;color:var(--red);font-size:12px;margin-top:10px">Senha incorreta</div>
+    <div id="login-erro" style="display:none;color:var(--red);font-size:12px;margin-top:10px">Usuário ou senha incorretos</div>
   </div>
 </div>
 
@@ -652,26 +653,31 @@ function logout(){
   sessionStorage.removeItem('ev_user_cargo');
   location.reload();
 }
+const LOGIN_FIXOS={christian:{senha:'admin2026',user:'ADMIN'},eduarda:{senha:'eduarda123',user:'EDUARDA'}};
 function fazerLogin(){
+  const usuario=(document.getElementById('login-usuario').value||'').trim().toLowerCase();
   const senha=document.getElementById('login-senha').value.trim();
-  if(SENHAS[senha]){
-    currentUser=SENHAS[senha];
+  document.getElementById('login-erro').style.display='none';
+  if(!usuario||!senha){document.getElementById('login-erro').textContent='Preencha usuário e senha.';document.getElementById('login-erro').style.display='block';return;}
+  const fixo=LOGIN_FIXOS[usuario];
+  if(fixo&&fixo.senha===senha){
+    currentUser=fixo.user;
     currentUserPerms=[];
     sessionStorage.setItem('ev_user',currentUser);
     sessionStorage.removeItem('ev_user_perms');
     iniciarApp();
     return;
   }
-  const custom=usuariosCustom.find(u=>u.senha===senha&&u.ativo);
+  const custom=usuariosCustom.find(u=>u.nome.trim().toLowerCase()===usuario&&u.senha===senha&&u.ativo);
   if(custom){
     entrarComoCustom(custom);
     return;
   }
   // pode ser que a lista de usuários ainda não tenha carregado — tenta buscar de novo
   carregarUsuariosCustom().then(()=>{
-    const c2=usuariosCustom.find(u=>u.senha===senha&&u.ativo);
+    const c2=usuariosCustom.find(u=>u.nome.trim().toLowerCase()===usuario&&u.senha===senha&&u.ativo);
     if(c2){entrarComoCustom(c2);}
-    else{document.getElementById('login-erro').style.display='block';}
+    else{document.getElementById('login-erro').textContent='Usuário ou senha incorretos';document.getElementById('login-erro').style.display='block';}
   });
 }
 function entrarComoCustom(user){
@@ -2915,11 +2921,11 @@ function renderUsuariosPage(){
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px">
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
         <div style="font-size:13px;font-weight:700;color:var(--green)">Christian</div>
-        <div style="font-size:11px;color:var(--text3)">Administrador · acesso total</div>
+        <div style="font-size:11px;color:var(--text3)">Administrador · usuário: christian</div>
       </div>
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">
         <div style="font-size:13px;font-weight:700;color:#fb923c">Eduarda</div>
-        <div style="font-size:11px;color:var(--text3)">SDR/Closer · acesso padrão</div>
+        <div style="font-size:11px;color:var(--text3)">SDR/Closer · usuário: eduarda</div>
       </div>
     </div>
     <div style="font-size:11px;color:var(--text3);margin:-14px 0 24px;line-height:1.5">💡 Pra criar uma nova SDR (que aparece automaticamente nos agendamentos e comissões), preencha o campo <b>Cargo</b> abaixo com a palavra "SDR" (ex: "SDR", "SDR/Closer").</div>`;
@@ -2935,7 +2941,7 @@ function renderUsuariosPage(){
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
         <div>
-          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Nome</label>
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Nome (também será o usuário de login)</label>
           <input id="nu-nome" type="text" placeholder="Ex: Roberto" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;font-family:inherit">
         </div>
         <div>
@@ -2993,7 +2999,7 @@ function renderUsuariosPage(){
           <div style="width:32px;height:32px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text2)">${(u.nome[0]||'?').toUpperCase()}</div>
           <div style="flex:1;min-width:120px">
             <div style="font-size:13px;font-weight:600;color:var(--text)">${u.nome} ${u.ativo?'':'<span style="font-size:10px;color:var(--red);font-weight:700">· INATIVO</span>'}</div>
-            <div style="font-size:11px;color:var(--text3)">${u.cargo||'Sem cargo'} · senha: ${u.senha}</div>
+            <div style="font-size:11px;color:var(--text3)">${u.cargo||'Sem cargo'} · usuário: ${u.nome.trim().toLowerCase()} · senha: ${u.senha}</div>
           </div>
           <button onclick="usuarioEditando='${u.id}';renderUsuariosPage();" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text2);cursor:pointer">Editar</button>
           <button onclick="toggleAtivoUsuario('${u.id}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--text2);cursor:pointer">${u.ativo?'Desativar':'Ativar'}</button>
