@@ -2599,6 +2599,17 @@ function toggleOnbEtapa(pagoId,etapa){
   sbUpsert('notas',{id:'onb_'+pagoId,titulo:'__onb_'+pagoId+'__',texto:JSON.stringify(onboardingData[pagoId]),data:'',feita:false});
   renderOnboardingPage();
 }
+let onbObsAberto=null;
+function salvarOnbObs(pagoId){
+  const idx=pagos.findIndex(x=>x.id===String(pagoId));
+  if(idx<0)return;
+  const texto=document.getElementById('onb-obs-'+pagoId)?.value.trim()||'';
+  pagos[idx].obs=texto;
+  sbUpsert('pagos',{id:pagos[idx].id,nome:pagos[idx].nome,fone:pagos[idx].fone||'',plano:pagos[idx].plano||'',data:pagos[idx].data,valor:pagos[idx].valor,obs:texto,lead:pagos[idx].lead||'',vendedora:pagos[idx].vendedora||'',fechamento:pagos[idx].fechamento||''});
+  onbObsAberto=null;
+  renderOnboardingPage();
+  syncAndRefresh();
+}
 function renderOnboardingPage(){
   const el=document.getElementById('pg-onboarding');if(!el)return;
   const badge=document.getElementById('sb-badge-onb');
@@ -2628,7 +2639,19 @@ function renderOnboardingPage(){
         </div>
         <span style="font-size:12px;font-weight:700;color:${cor}">${p.pct}%</span>
       </div>
-      ${p.obs?`<div style="font-size:11.5px;color:var(--text2);background:var(--bg3);border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.5"><span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:3px">📝 Resumo da call</span>${p.obs.replace(/\n/g,'<br>')}</div>`:''}
+      ${onbObsAberto===p.id?`<div style="margin-bottom:10px">
+        <textarea id="onb-obs-${p.id}" placeholder="O que foi alinhado na call: pontos combinados, promessas feitas, contexto do cliente pro onboarding..." style="width:100%;min-height:80px;font-size:12px;padding:8px;border-radius:8px;border:1px solid var(--green-border);background:var(--bg3);color:var(--text);resize:none;font-family:inherit;outline:none">${p.obs||''}</textarea>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button onclick="salvarOnbObs('${p.id}')" style="flex:1;background:var(--green);border:none;border-radius:7px;padding:6px;font-size:11px;font-weight:700;color:#000;cursor:pointer">Salvar</button>
+          <button onclick="onbObsAberto=null;renderOnboardingPage();" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:6px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer">Cancelar</button>
+        </div>
+      </div>`:`<div style="font-size:11.5px;color:var(--text2);background:var(--bg3);border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.5;position:relative">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+          <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">📝 Resumo da call</span>
+          <span onclick="onbObsAberto='${p.id}';renderOnboardingPage();" style="font-size:10px;color:var(--green);cursor:pointer;font-weight:600">✏️ editar</span>
+        </div>
+        ${p.obs?p.obs.replace(/\n/g,'<br>'):'<span style="color:var(--text3);font-style:italic">Nenhum resumo ainda — clique em editar pra adicionar.</span>'}
+      </div>`}
       <div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:10px">
         <div style="height:100%;width:${p.pct}%;background:${cor};border-radius:3px;transition:width .4s"></div>
       </div>
