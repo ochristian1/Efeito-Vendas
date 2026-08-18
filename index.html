@@ -255,7 +255,7 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
   <div class="brand" style="justify-content:center;border-bottom:none;margin-bottom:2rem"><div class="brand-dot"></div><span class="brand-name">Efeito Vendas</span></div>
   <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.5rem">
     <div style="font-size:14px;color:var(--text2);margin-bottom:1rem">Entre com seu usuário e senha</div>
-    <input id="login-usuario" type="text" placeholder="Usuário" autocomplete="username" style="width:100%;font-size:15px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);outline:none;margin-bottom:10px;text-align:center" onkeydown="if(event.key==='Enter')document.getElementById('login-senha').focus()">
+    <input id="login-usuario" type="text" placeholder="Usuário (ex: christian, eduarda)" autocomplete="username" style="width:100%;font-size:15px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);outline:none;margin-bottom:10px;text-align:center" onkeydown="if(event.key==='Enter')document.getElementById('login-senha').focus()">
     <input id="login-senha" type="password" placeholder="Senha" autocomplete="current-password" style="width:100%;font-size:15px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);outline:none;margin-bottom:10px;text-align:center" onkeydown="if(event.key==='Enter')fazerLogin()">
     <button onclick="fazerLogin()" style="width:100%;background:var(--green);border:none;border-radius:8px;padding:10px;font-size:14px;font-weight:700;color:#000;cursor:pointer;font-family:inherit">Entrar</button>
     <div id="login-erro" style="display:none;color:var(--red);font-size:12px;margin-top:10px">Usuário ou senha incorretos</div>
@@ -653,7 +653,7 @@ function logout(){
   sessionStorage.removeItem('ev_user_cargo');
   location.reload();
 }
-const LOGIN_FIXOS={christian:{senha:'admin2026',user:'ADMIN'},eduarda:{senha:'eduarda123',user:'EDUARDA'}};
+const LOGIN_FIXOS={christian:{senha:'admin2026',user:'ADMIN'},admin:{senha:'admin2026',user:'ADMIN'},eduarda:{senha:'eduarda123',user:'EDUARDA'}};
 function fazerLogin(){
   const usuario=(document.getElementById('login-usuario').value||'').trim().toLowerCase();
   const senha=document.getElementById('login-senha').value.trim();
