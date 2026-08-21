@@ -1007,6 +1007,13 @@ function corVendedora(key){
 function isSDRUser(u){
   return u==='EDUARDA'||usuariosCustom.some(x=>x.id===u&&x.cargo&&/sdr/i.test(x.cargo));
 }
+// Checa se uma call que fechou já tem um registro correspondente em Clientes pagos (por telefone)
+function jaTemPagoParaCall(call){
+  if(!call||!call.fone)return false;
+  const foneCall=call.fone.replace(/\D/g,'');
+  if(!foneCall)return false;
+  return pagos.some(p=>p.fone&&p.fone.replace(/\D/g,'')===foneCall);
+}
 // Resolve o campo "fechamento" (que pode ser DONO, uma chave de SDR, ou RECOMPRA_<chave>) em nome/cor legível
 function resolveFechLabelSimples(key){
   if(!key)return'';
@@ -1837,7 +1844,8 @@ function renderDetail(id){
         <div style="font-size:11px;font-weight:600;color:${statusFech==='fechou'?'var(--green)':'var(--text2)'};margin-bottom:4px">${statusFech==='fechou'?'📝 Resumo pra Onboarding':'Motivo / observação'}</div>
         <textarea id="obs-fech-${item.id}" placeholder="${statusFech==='fechou'?'O que foi alinhado na call: pontos combinados, promessas feitas, contexto do cliente pro onboarding...':statusFech==='nao_compareceu'?'Motivo (opcional): não atendeu, remarcou...':'Motivo (opcional): achou caro, vai pensar...'}" onblur="salvarObsFech('${item.id}')" style="width:100%;min-height:${statusFech==='fechou'?'80':'56'}px;font-size:12px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);resize:none;font-family:inherit;outline:none">${obsFech}</textarea>
         <div style="font-size:10px;color:var(--text3);margin-top:3px">Salva automaticamente ao sair do campo</div>
-      </div>`:''}
+      </div>
+      ${statusFech==='fechou'?(jaTemPagoParaCall(item)?`<div style="margin-top:8px;padding:8px 10px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px;font-size:11px;color:var(--green);display:flex;align-items:center;gap:6px">✅ Já cadastrado em Clientes pagos / Onboarding</div>`:`<button onclick="abrirPagoPreenchido(calls.find(c=>c.id==='${item.id}'))" style="width:100%;margin-top:8px;padding:10px;background:var(--green);border:none;border-radius:8px;font-size:12px;font-weight:700;color:#000;cursor:pointer">💰 Cadastrar em Clientes pagos → enviar pro Onboarding</button>`):''}`:''}
     </div>
     </div>`;
 }
@@ -1875,13 +1883,6 @@ function setStatusFech(id,status){
   renderList();
   atualizarSBBadges();
   syncAndRefresh();
-  // Ao marcar como "fechou", oferece já criar o registro em Clientes pagos (e assim entrar no Onboarding)
-  if(status==='fechou'&&calls[idx].statusFech==='fechou'){
-    const jaTemPago=pagos.some(p=>p.fone&&calls[idx].fone&&p.fone.replace(/\D/g,'')===calls[idx].fone.replace(/\D/g,'')&&p.data===todayStr());
-    if(!jaTemPago&&confirm(`🎉 ${calls[idx].nome} fechou!\n\nQuer já cadastrar em Clientes pagos agora? (isso faz ele entrar automaticamente no Onboarding)`)){
-      abrirPagoPreenchido(calls[idx]);
-    }
-  }
 }
 function abrirPagoPreenchido(call){
   switchTabSB('pagos',document.getElementById('nav-pagos'));
@@ -2044,7 +2045,7 @@ function listItem(i){
   const LEAD_LABELS={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico'};
   const leadBadge=i.lead&&LEAD_CORES[i.lead]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${LEAD_CORES[i.lead]};border:1px solid ${LEAD_CORES[i.lead]}50;margin-left:4px">${LEAD_LABELS[i.lead]}</span>`:'';
   const vendBadge=i.vendedora?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${corVendedora(i.vendedora)};border:1px solid ${corVendedora(i.vendedora)}50;margin-left:4px">${nomeVendedora(i.vendedora)}</span>`:'';
-  const fechBadge=i.statusFech==='fechou'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);margin-left:4px">✅ Fechou</span>`:i.statusFech==='nao_fechou'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);margin-left:4px">❌ Follow-up</span>`:i.statusFech==='nao_compareceu'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:#2a1c00;color:#f59e0b;border:1px solid #f59e0b50;margin-left:4px">🚫 Não compareceu</span>`:'';
+  const fechBadge=i.statusFech==='fechou'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);margin-left:4px">✅ Fechou</span>${!jaTemPagoParaCall(i)?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:#2a1c00;color:#f59e0b;border:1px solid #f59e0b50;margin-left:4px">⚠️ Falta cadastrar em pagos</span>`:''}`:i.statusFech==='nao_fechou'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);margin-left:4px">❌ Follow-up</span>`:i.statusFech==='nao_compareceu'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:#2a1c00;color:#f59e0b;border:1px solid #f59e0b50;margin-left:4px">🚫 Não compareceu</span>`:'';
   const closerCores={CHRISTIAN:'var(--green)',EDUARDA:'#fb923c'};
   const closerLabels={CHRISTIAN:'👤 Christian',EDUARDA:'👤 Eduarda'};
   const closerBadge=i.closer&&closerCores[i.closer]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${closerCores[i.closer]};border:1px solid ${closerCores[i.closer]}50;margin-left:4px">${closerLabels[i.closer]}</span>`:'';
@@ -2087,7 +2088,8 @@ function listItem(i){
         <div style="font-size:11px;font-weight:600;color:${statusFech==='fechou'?'var(--green)':'var(--text2)'};margin-bottom:4px">${statusFech==='fechou'?'📝 Resumo pra Onboarding':'Motivo / observação'}</div>
         <textarea id="obs-fech-${i.id}" placeholder="${statusFech==='fechou'?'O que foi alinhado na call: pontos combinados, promessas feitas, contexto do cliente pro onboarding...':statusFech==='nao_compareceu'?'Motivo (opcional): não atendeu, remarcou...':'Motivo (opcional): achou caro, vai pensar...'}" onblur="salvarObsFech('${i.id}')" style="width:100%;min-height:${statusFech==='fechou'?'80':'56'}px;font-size:12px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);resize:none;font-family:inherit;outline:none">${obsFech}</textarea>
         <div style="font-size:10px;color:var(--text3);margin-top:3px">Salva automaticamente ao sair do campo</div>
-      </div>`:''}
+      </div>
+      ${statusFech==='fechou'?(jaTemPagoParaCall(i)?`<div style="margin-top:8px;padding:8px 10px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px;font-size:11px;color:var(--green);display:flex;align-items:center;gap:6px">✅ Já cadastrado em Clientes pagos / Onboarding</div>`:`<button onclick="abrirPagoPreenchido(calls.find(c=>c.id==='${i.id}'))" style="width:100%;margin-top:8px;padding:10px;background:var(--green);border:none;border-radius:8px;font-size:12px;font-weight:700;color:#000;cursor:pointer">💰 Cadastrar em Clientes pagos → enviar pro Onboarding</button>`):''}`:''}
     </div>
   </div>`;
   return card+inline;
