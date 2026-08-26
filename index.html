@@ -2374,16 +2374,11 @@ function delPago(id){
 }
 // Excluir cliente da tela de Onboarding. Por padrão remove só daqui, mantendo o registro em Clientes pagos.
 function excluirDoOnboarding(id,nome){
-  if(!confirm(`Remover "${nome}" da tela de Onboarding?\n\nEle continua normalmente em Clientes pagos.`))return;
+  if(!confirm(`Remover "${nome}" da tela de Onboarding?\n\nEle continua normalmente em Clientes pagos — pra apagar de lá também, use o botão de excluir na aba Clientes pagos.`))return;
   onboardingOcultos[id]=true;
   sbUpsert('notas',{id:'onbhide_'+id,titulo:'__onbhide_'+id+'__',texto:'true',data:'',feita:false});
   renderOnboardingPage();
   atualizarSBBadges();
-  if(confirm(`Quer também excluir "${nome}" de Clientes pagos? (ação irreversível)`)){
-    delete onboardingData[id];
-    sbDelete('notas','onb_'+id);
-    delPago(id);
-  }
 }
 function renderPagos(){
   const [ano,mes]=mesSelecionado.split('-').map(Number);
