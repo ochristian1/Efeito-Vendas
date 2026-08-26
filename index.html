@@ -1069,7 +1069,13 @@ function loadAll(){
       const m=String(r.titulo).match(/^__onb_(.+)__$/);
       if(m){try{onboardingData[m[1]]=JSON.parse(r.texto);}catch(e){}}
     });
-    notas=(rn||[]).filter(r=>r.titulo!=='__meta_mes__'&&!String(r.titulo).startsWith('__meta_sdr_')&&!String(r.titulo).startsWith('__onb_')).map(r=>({id:String(r.id),titulo:r.titulo||'',texto:r.texto||'',data:r.data||'',feita:!!r.feita}));
+    // carregar clientes removidos da tela de Onboarding (mas que continuam em Clientes pagos)
+    onboardingOcultos={};
+    (rn||[]).filter(r=>String(r.titulo).startsWith('__onbhide_')).forEach(r=>{
+      const m=String(r.titulo).match(/^__onbhide_(.+)__$/);
+      if(m) onboardingOcultos[m[1]]=true;
+    });
+    notas=(rn||[]).filter(r=>r.titulo!=='__meta_mes__'&&!String(r.titulo).startsWith('__meta_sdr_')&&!String(r.titulo).startsWith('__onb_')&&!String(r.titulo).startsWith('__onbhide_')).map(r=>({id:String(r.id),titulo:r.titulo||'',texto:r.texto||'',data:r.data||'',feita:!!r.feita}));
     hideLoading();
     try{renderAgenda();}catch(e){console.error('renderAgenda:',e);}
     try{renderPagos();}catch(e){console.error('renderPagos:',e);}
@@ -2366,13 +2372,18 @@ function delPago(id){
   }
   syncAndRefresh();
 }
-// Excluir cliente direto da tela de Onboarding (reaproveita a mesma exclusão de Clientes pagos)
+// Excluir cliente da tela de Onboarding. Por padrão remove só daqui, mantendo o registro em Clientes pagos.
 function excluirDoOnboarding(id,nome){
-  if(!confirm(`Excluir "${nome}" do Onboarding?\n\nIsso remove o registro de Clientes pagos também. Essa ação não pode ser desfeita.`))return;
-  delete onboardingData[id];
-  sbDelete('notas','onb_'+id);
-  delPago(id);
+  if(!confirm(`Remover "${nome}" da tela de Onboarding?\n\nEle continua normalmente em Clientes pagos.`))return;
+  onboardingOcultos[id]=true;
+  sbUpsert('notas',{id:'onbhide_'+id,titulo:'__onbhide_'+id+'__',texto:'true',data:'',feita:false});
   renderOnboardingPage();
+  atualizarSBBadges();
+  if(confirm(`Quer também excluir "${nome}" de Clientes pagos? (ação irreversível)`)){
+    delete onboardingData[id];
+    sbDelete('notas','onb_'+id);
+    delPago(id);
+  }
 }
 function renderPagos(){
   const [ano,mes]=mesSelecionado.split('-').map(Number);
@@ -2590,6 +2601,7 @@ function renderMotivosPage(){
 }
 // ============ ONBOARDING DE CLIENTES ============
 let onboardingData={}; // {pagoId: {acesso:bool, whatsapp:bool, diagnostico:bool}}
+let onboardingOcultos={}; // {pagoId: true} — clientes removidos da tela de Onboarding, mas que continuam em Clientes pagos
 let onboardingInicio=null; // data a partir da qual o onboarding conta (salva no Supabase)
 let onboardingFiltro='todos';
 const ONB_ETAPAS=[{key:'acesso',label:'Acesso de conta'},{key:'whatsapp',label:'Grupo WhatsApp'},{key:'diagnostico',label:'Diagnóstico'}];
@@ -2624,7 +2636,7 @@ function renderOnboardingPage(){
   const el=document.getElementById('pg-onboarding');if(!el)return;
   const badge=document.getElementById('sb-badge-onb');
   const inicio=onboardingInicio||todayStr();
-  const todosPagos=[...pagos].filter(p=>p.data&&p.data>=inicio).sort((a,b)=>(b.id>a.id?1:-1));
+  const todosPagos=[...pagos].filter(p=>p.data&&p.data>=inicio&&!onboardingOcultos[p.id]).sort((a,b)=>(b.id>a.id?1:-1));
   const comProgresso=todosPagos.map(p=>{
     const prog=onboardingData[p.id]||{acesso:false,whatsapp:false,diagnostico:false};
     const feitas=ONB_ETAPAS.filter(e=>prog[e.key]).length;
