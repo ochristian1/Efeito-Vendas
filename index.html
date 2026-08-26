@@ -2366,6 +2366,14 @@ function delPago(id){
   }
   syncAndRefresh();
 }
+// Excluir cliente direto da tela de Onboarding (reaproveita a mesma exclusão de Clientes pagos)
+function excluirDoOnboarding(id,nome){
+  if(!confirm(`Excluir "${nome}" do Onboarding?\n\nIsso remove o registro de Clientes pagos também. Essa ação não pode ser desfeita.`))return;
+  delete onboardingData[id];
+  sbDelete('notas','onb_'+id);
+  delPago(id);
+  renderOnboardingPage();
+}
 function renderPagos(){
   const [ano,mes]=mesSelecionado.split('-').map(Number);
   const labelEl=document.getElementById('pagos-mes-label');
@@ -2650,7 +2658,10 @@ function renderOnboardingPage(){
       </div>`:`<div style="font-size:11.5px;color:var(--text2);background:var(--bg3);border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.5;position:relative">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
           <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">📝 Resumo da call</span>
-          <span onclick="onbObsAberto='${p.id}';renderOnboardingPage();" style="font-size:10px;color:var(--green);cursor:pointer;font-weight:600">✏️ editar</span>
+          <span style="display:flex;gap:10px">
+            <span onclick="onbObsAberto='${p.id}';renderOnboardingPage();" style="font-size:10px;color:var(--green);cursor:pointer;font-weight:600">✏️ editar</span>
+            <span onclick="excluirDoOnboarding('${p.id}','${(p.nome||'').replace(/'/g,"\\'")}')" style="font-size:10px;color:var(--red);cursor:pointer;font-weight:600">🗑️ excluir</span>
+          </span>
         </div>
         ${p.obs?p.obs.replace(/\n/g,'<br>'):'<span style="color:var(--text3);font-style:italic">Nenhum resumo ainda — clique em editar pra adicionar.</span>'}
       </div>`}
