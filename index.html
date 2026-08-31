@@ -319,6 +319,11 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
       <span>Agenda</span>
       <span class="sb-badge" id="sb-badge-agenda"></span>
     </div>
+    <div class="sb-nav-item" id="nav-leads" onclick="switchTabSB('funil-sdr',this)">
+      <i class="ti ti-phone-outgoing" style="font-size:16px;color:#fbbf24" aria-hidden="true"></i>
+      <span style="color:#fbbf24">Funil SDR</span>
+      <span class="sb-badge" id="sb-badge-funil"></span>
+    </div>
     <div class="sb-nav-item" id="nav-notas" onclick="switchTabSB('notas',this)">
       <i class="ti ti-notebook" style="font-size:16px" aria-hidden="true"></i>
       <span>Bloco de notas</span>
@@ -411,6 +416,11 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
   <div id="form-area"></div>
   <div id="detail-area"></div>
   <div id="list-area"></div>
+</div>
+
+<div id="tab-funil-sdr" class="tab-pane">
+  <div class="fluxo-top"><span class="fluxo-title">📞 Funil SDR</span></div>
+  <div id="pg-funil-sdr"></div>
 </div>
 
 <div id="tab-notas" class="tab-pane">
@@ -714,6 +724,7 @@ function renderTabByKey(name){
   else if(name==='dashboard') renderDashboardPage();
   else if(name==='comissoes-page') renderComissoesPagePage();
   else if(name==='central-ia') renderCentralIAPage();
+  else if(name==='funil-sdr') renderFunilSDRPage();
 }
 function switchTabSB(name,el){
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
@@ -746,6 +757,9 @@ function atualizarSBBadges(){
   const leadsNovos=leads.filter(l=>l.etapa==='lead_novo').length;
   const badgeL=document.getElementById('sb-badge-leads');
   if(badgeL) badgeL.textContent=leadsNovos>0?leadsNovos:'';
+  const aguardandoResposta=leads.filter(l=>!l.respondeu&&(l.createdAt||'').slice(0,10)===todayStr()).length;
+  const badgeFunil=document.getElementById('sb-badge-funil');
+  if(badgeFunil) badgeFunil.textContent=aguardandoResposta>0?aguardandoResposta:'';
   const propostasAbertas=propostas.filter(p=>p.status==='enviada'||p.status==='visualizada').length;
   const badgeP=document.getElementById('sb-badge-propostas');
   if(badgeP) badgeP.textContent=propostasAbertas>0?propostasAbertas:'';
@@ -821,7 +835,7 @@ function iniciarPollingAvisos(){
 }
 const PERMS=[
   {key:'agenda',navId:'nav-agenda',label:'Agenda'},
-  {key:'leads',navId:'nav-leads',label:'Leads'},
+  {key:'leads',navId:'nav-leads',label:'Funil SDR'},
   {key:'pipeline',navId:'nav-pipeline',label:'Pipeline'},
   {key:'propostas',navId:'nav-propostas',label:'Propostas'},
   {key:'metas',navId:'nav-metas',label:'Metas'},
@@ -950,7 +964,7 @@ let weekOffset=0, editId=null, detailId=null, mostrarConcluidas=false, filtroFol
 let novoPagoOpen=false, novoPagoPlano=null, novoPagoLead=null, pagoFiltro='todos';
 let novaNotaOpen=false, notaFiltro='todas';
 let fluxoDetailId=null;
-let metaMes=0;
+let metasPorMes={}; // {'AAAA-MM': valor} — cada mês guarda sua própria meta
 const _hoje=new Date();
 let mesSelecionado=`${_hoje.getFullYear()}-${String(_hoje.getMonth()+1).padStart(2,'0')}`;
 
@@ -1014,6 +1028,149 @@ function jaTemPagoParaCall(call){
   if(!foneCall)return false;
   return pagos.some(p=>p.fone&&p.fone.replace(/\D/g,'')===foneCall);
 }
+// ============ FUNIL SDR ============
+let funilPeriodo='semana'; // 'hoje'|'semana'|'mes'
+let funilSDRFiltro='TODOS';
+const FUNIL_ORIGENS=['Instagram','WhatsApp','Indicação','Anúncio','Outro'];
+
+function funilPeriodoRange(){
+  const hoje=todayStr();
+  if(funilPeriodo==='hoje') return{ini:hoje,fim:hoje};
+  if(funilPeriodo==='semana'){
+    const d=new Date(hoje+'T12:00:00');
+    const diaSemana=d.getDay();
+    const ini=new Date(d);ini.setDate(d.getDate()-diaSemana);
+    const fim=new Date(ini);fim.setDate(ini.getDate()+6);
+    return{ini:ini.toISOString().slice(0,10),fim:fim.toISOString().slice(0,10)};
+  }
+  return{ini:hoje.slice(0,7)+'-01',fim:hoje};
+}
+function abrirNovoContatoFunil(){
+  const el=document.getElementById('funil-novo-form');
+  if(el) el.style.display=el.style.display==='none'?'block':'none';
+}
+function salvarNovoContatoFunil(){
+  const nome=(document.getElementById('fn-nome').value||'').trim();
+  const telefone=(document.getElementById('fn-telefone').value||'').trim();
+  const origem=document.getElementById('fn-origem').value||'';
+  if(!nome){alert('Digite o nome do lead.');return;}
+  const id='LEAD_'+Date.now();
+  const novo={id,nome,telefone,origem,responsavel:currentUser,etapa:'tentativa_contato',respondeu:false,createdAt:new Date().toISOString(),observacoes:''};
+  leads.unshift(novo);
+  sbUpsert('leads',{id,nome,telefone:telefone||'',email:'',empresa:'',documento:'',cidade:'',estado:'',origem:origem||'',marketplace:'',faturamento:'',investimento:'',objetivo:'',problemas:'',observacoes:'',links:'',responsavel:currentUser,etapa:'tentativa_contato',prioridade:'media',proxima_acao:'',proxima_acao_data:null,motivo_perda:null,respondeu:false});
+  document.getElementById('fn-nome').value='';
+  document.getElementById('fn-telefone').value='';
+  document.getElementById('funil-novo-form').style.display='none';
+  renderFunilSDRPage();
+  syncAndRefresh();
+}
+function toggleRespondeuFunil(id){
+  const idx=leads.findIndex(l=>l.id===id);
+  if(idx<0)return;
+  leads[idx].respondeu=!leads[idx].respondeu;
+  if(leads[idx].respondeu&&leads[idx].etapa==='tentativa_contato') leads[idx].etapa='em_contato';
+  sbUpsert('leads',{id:leads[idx].id,nome:leads[idx].nome,telefone:leads[idx].telefone||'',respondeu:leads[idx].respondeu,etapa:leads[idx].etapa,responsavel:leads[idx].responsavel||'',origem:leads[idx].origem||'',prioridade:'media'});
+  renderFunilSDRPage();
+  syncAndRefresh();
+}
+function excluirLeadFunil(id,nome){
+  if(!confirm(`Excluir o contato "${nome}"?`))return;
+  leads=leads.filter(l=>l.id!==id);
+  sbDelete('leads',id);
+  renderFunilSDRPage();
+  syncAndRefresh();
+}
+function setFunilPeriodo(p){funilPeriodo=p;renderFunilSDRPage();}
+function setFunilSDR(v){funilSDRFiltro=v;renderFunilSDRPage();}
+function jaTemCallParaLead(lead){
+  if(!lead.telefone)return null;
+  const foneLead=lead.telefone.replace(/\D/g,'');
+  if(!foneLead)return null;
+  return calls.find(c=>c.fone&&c.fone.replace(/\D/g,'')===foneLead)||null;
+}
+function renderFunilSDRPage(){
+  const el=document.getElementById('pg-funil-sdr');if(!el)return;
+  const{ini,fim}=funilPeriodoRange();
+  const sdrs=getSDRsAtivos();
+  let leadsPeriodo=leads.filter(l=>{
+    const d=(l.createdAt||'').slice(0,10);
+    return d>=ini&&d<=fim;
+  });
+  if(funilSDRFiltro!=='TODOS') leadsPeriodo=leadsPeriodo.filter(l=>l.responsavel===funilSDRFiltro);
+  const chamados=leadsPeriodo.length;
+  const responderam=leadsPeriodo.filter(l=>l.respondeu).length;
+  const comCall=leadsPeriodo.map(l=>({lead:l,call:jaTemCallParaLead(l)})).filter(x=>x.call);
+  const agendados=comCall.length;
+  const compareceram=comCall.filter(x=>x.call.done&&x.call.statusFech!=='nao_compareceu').length;
+  const noshow=comCall.filter(x=>x.call.statusFech==='nao_compareceu').length;
+  const pctResp=chamados>0?Math.round(responderam/chamados*100):0;
+  const pctAgend=responderam>0?Math.round(agendados/responderam*100):0;
+  const pctCompareceu=agendados>0?Math.round(compareceram/agendados*100):0;
+  const recentes=[...leads].filter(l=>funilSDRFiltro==='TODOS'||l.responsavel===funilSDRFiltro).sort((a,b)=>(b.createdAt>a.createdAt?1:-1)).slice(0,30);
+  el.innerHTML=`
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+      <div style="display:flex;gap:6px">
+        ${[{k:'hoje',l:'Hoje'},{k:'semana',l:'Esta semana'},{k:'mes',l:'Este mês'}].map(p=>`<button onclick="setFunilPeriodo('${p.k}')" style="padding:6px 12px;border-radius:8px;border:1px solid ${funilPeriodo===p.k?'var(--green)':'var(--border)'};background:${funilPeriodo===p.k?'var(--green-bg)':'var(--bg3)'};color:${funilPeriodo===p.k?'var(--green)':'var(--text2)'};font-size:12px;font-weight:600;cursor:pointer">${p.l}</button>`).join('')}
+      </div>
+      <select onchange="setFunilSDR(this.value)" style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:12px;outline:none">
+        <option value="TODOS" ${funilSDRFiltro==='TODOS'?'selected':''}>Todas as SDRs</option>
+        ${sdrs.map(s=>`<option value="${s.key}" ${funilSDRFiltro===s.key?'selected':''}>${s.label}</option>`).join('')}
+      </select>
+      <button onclick="abrirNovoContatoFunil()" style="margin-left:auto;padding:8px 16px;border-radius:8px;border:none;background:var(--green);color:#000;font-size:13px;font-weight:700;cursor:pointer">+ Registrar contato</button>
+    </div>
+    <div id="funil-novo-form" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+        <div><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Nome do lead</label><input id="fn-nome" type="text" placeholder="Ex: João Silva" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;font-family:inherit"></div>
+        <div><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Telefone (opcional)</label><input id="fn-telefone" type="text" placeholder="Ex: 11 99999-9999" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;font-family:inherit"></div>
+        <div><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Origem</label><select id="fn-origem" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:13px;color:var(--text);outline:none;font-family:inherit">${FUNIL_ORIGENS.map(o=>`<option value="${o}">${o}</option>`).join('')}</select></div>
+      </div>
+      <button onclick="salvarNovoContatoFunil()" style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--green);color:#000;font-size:13px;font-weight:700;cursor:pointer">Salvar contato</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:26px;font-weight:800;color:var(--text)">${chamados}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">📞 Chamados</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:26px;font-weight:800;color:#60a5fa">${responderam}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">💬 Responderam</div>
+        <div style="font-size:10px;color:#60a5fa;margin-top:2px">${pctResp}% dos chamados</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:26px;font-weight:800;color:var(--green)">${agendados}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">📅 Agendaram</div>
+        <div style="font-size:10px;color:var(--green);margin-top:2px">${pctAgend}% de quem respondeu</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:26px;font-weight:800;color:var(--green)">${compareceram}<span style="font-size:14px;color:#f59e0b"> / ${noshow}</span></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">✅ Compareceu / 🚫 No-show</div>
+        <div style="font-size:10px;color:var(--green);margin-top:2px">${pctCompareceu}% de quem agendou compareceu</div>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Contatos recentes</div>
+    <div>
+      ${recentes.length?recentes.map(l=>{
+        const call=jaTemCallParaLead(l);
+        let statusTag='';
+        if(call){
+          if(call.statusFech==='nao_compareceu') statusTag=`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:#2a1c00;color:#f59e0b;border:1px solid #f59e0b50">🚫 No-show</span>`;
+          else if(call.statusFech==='fechou') statusTag=`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)">✅ Fechou</span>`;
+          else if(call.done) statusTag=`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:var(--text2);border:1px solid var(--border)">✅ Compareceu</span>`;
+          else statusTag=`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:var(--text2);border:1px solid var(--border)">📅 Agendado</span>`;
+        }
+        return`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:6px">
+          <div style="width:30px;height:30px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text2);flex-shrink:0">${(l.nome[0]||'?').toUpperCase()}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap">${l.nome} ${statusTag}</div>
+            <div style="font-size:11px;color:var(--text3)">${nomeVendedora(l.responsavel)||l.responsavel} · ${l.origem||'sem origem'} · ${(l.createdAt||'').slice(0,10).split('-').reverse().join('/')}</div>
+          </div>
+          <button onclick="toggleRespondeuFunil('${l.id}')" style="padding:6px 12px;border-radius:7px;border:1px solid ${l.respondeu?'#60a5fa':'var(--border)'};background:${l.respondeu?'#0d1f3a':'var(--bg3)'};color:${l.respondeu?'#60a5fa':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${l.respondeu?'💬 Respondeu':'Marcar respondeu'}</button>
+          <span onclick="excluirLeadFunil('${l.id}','${l.nome.replace(/'/g,"\\'")}')" style="font-size:14px;color:var(--text3);cursor:pointer;padding:4px">🗑️</span>
+        </div>`;
+      }).join(''):'<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Nenhum contato registrado ainda. Clique em "+ Registrar contato" pra começar.</div>'}
+    </div>
+  `;
+}
 // Resolve o campo "fechamento" (que pode ser DONO, uma chave de SDR, ou RECOMPRA_<chave>) em nome/cor legível
 function resolveFechLabelSimples(key){
   if(!key)return'';
@@ -1035,19 +1192,27 @@ function hideLoading(){const e=document.getElementById('loading-bar');if(e)e.sty
 // LOAD ALL
 function loadAll(){
   showLoading('Carregando dados...');
-  return Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos')]).then(([rc,rct,rp,rn,ra])=>{
+  return Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos'),sbGet('leads')]).then(([rc,rct,rp,rn,ra,rl])=>{
     
     calls=(rc||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',data:r.data||'',hora:r.hora||'',obs:r.obs||'',done:!!r.done,lead:r.lead||'',vendedora:r.vendedora||'',closer:r.closer||'',statusFech:r.status_fech||'',obsFech:r.obs_fech||''}));
     calls.sort((a,b)=>a.data+a.hora>b.data+b.hora?1:-1);
     clientes=(rct||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',plano:r.plano||'',steps:r.steps||{},createdAt:r.created_at_custom||''}));
     pagos=(rp||[]).map(r=>({id:String(r.id||''),nome:r.nome||'',fone:r.fone||'',plano:r.plano||'',data:r.data||'',valor:parseFloat(r.valor)||0,obs:r.obs||'',lead:r.lead||'',vendedora:r.vendedora||'',fechamento:r.fechamento||''}));
-    const metaRow=(rn||[]).find(r=>r.titulo==='__meta_mes__');
-    if(metaRow){
-      metaMes=parseFloat(metaRow.texto)||0;
-    } else {
-      const metaLocal=parseFloat(localStorage.getItem('meta_mes')||'0');
-      metaMes=metaLocal;
-      if(metaLocal>0) sbUpsert('notas',{id:'meta_mes_config',titulo:'__meta_mes__',texto:String(metaLocal),data:'',feita:false});
+    leads=(rl||[]).map(r=>({id:String(r.id),nome:r.nome||'',telefone:r.telefone||'',origem:r.origem||'',responsavel:r.responsavel||'',etapa:r.etapa||'lead_novo',respondeu:!!r.respondeu,createdAt:r.created_at||'',observacoes:r.observacoes||''}));
+    // metas mensais: uma por mês (chave __meta_mes_<AAAA-MM>__), pra editar um mês não mudar os outros
+    metasPorMes={};
+    (rn||[]).filter(r=>String(r.titulo).startsWith('__meta_mes_')&&r.titulo!=='__meta_mes__').forEach(r=>{
+      const m=String(r.titulo).match(/^__meta_mes_(\d{4}-\d{2})__$/);
+      if(m) metasPorMes[m[1]]=parseFloat(r.texto)||0;
+    });
+    // migração única: se existir a antiga meta única (global, sem mês), aproveita o valor pro mês atual e não usa mais essa chave
+    const metaRowLegado=(rn||[]).find(r=>r.titulo==='__meta_mes__');
+    if(metaRowLegado&&!(todayStr().slice(0,7) in metasPorMes)){
+      const v=parseFloat(metaRowLegado.texto)||0;
+      if(v>0){
+        metasPorMes[todayStr().slice(0,7)]=v;
+        sbUpsert('notas',{id:'meta_mes_'+todayStr().slice(0,7),titulo:'__meta_mes_'+todayStr().slice(0,7)+'__',texto:String(v),data:'',feita:false});
+      }
     }
     // carregar metas individuais das SDRs (dinâmico, funciona pra qualquer SDR cadastrada)
     metasPorSDR={};
@@ -1075,7 +1240,7 @@ function loadAll(){
       const m=String(r.titulo).match(/^__onbhide_(.+)__$/);
       if(m) onboardingOcultos[m[1]]=true;
     });
-    notas=(rn||[]).filter(r=>r.titulo!=='__meta_mes__'&&!String(r.titulo).startsWith('__meta_sdr_')&&!String(r.titulo).startsWith('__onb_')&&!String(r.titulo).startsWith('__onbhide_')).map(r=>({id:String(r.id),titulo:r.titulo||'',texto:r.texto||'',data:r.data||'',feita:!!r.feita}));
+    notas=(rn||[]).filter(r=>r.titulo!=='__meta_mes__'&&!String(r.titulo).startsWith('__meta_mes_')&&!String(r.titulo).startsWith('__meta_sdr_')&&!String(r.titulo).startsWith('__onb_')&&!String(r.titulo).startsWith('__onbhide_')).map(r=>({id:String(r.id),titulo:r.titulo||'',texto:r.texto||'',data:r.data||'',feita:!!r.feita}));
     hideLoading();
     try{renderAgenda();}catch(e){console.error('renderAgenda:',e);}
     try{renderPagos();}catch(e){console.error('renderPagos:',e);}
@@ -2807,7 +2972,7 @@ function renderDashboardPage(){
   const pagosMes=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesAtual);
   const faturamentoMes=pagosMes.reduce((s,p)=>s+(p.valor||0),0);
   const ticketMedio=pagosMes.length>0?faturamentoMes/pagosMes.length:0;
-  const pctMeta=metaMes>0?Math.round((faturamentoMes/metaMes)*100):0;
+  const pctMeta=(metasPorMes[mesAtual]||0)>0?Math.round((faturamentoMes/metasPorMes[mesAtual])*100):0;
   const agendamentosMes=calls.filter(c=>c.data&&c.data.slice(0,7)===mesAtual).length;
   const txConversao=agendamentosMes>0?Math.round((pagosMes.length/agendamentosMes)*100):0;
   const naoFecharam=calls.filter(c=>c.statusFech==='nao_fechou').length;
@@ -2819,7 +2984,7 @@ function renderDashboardPage(){
     {label:'Calls concluídas (mês)',val:callsConcluidasMes,cor:'var(--green)'},
     {label:'Follow-up pendente',val:naoFecharam,cor:'var(--red)'},
     {label:'Faturamento no mês',val:`R$ ${faturamentoMes.toLocaleString('pt-BR',{minimumFractionDigits:2})}`,cor:'var(--green)'},
-    {label:'Da meta da empresa',val:metaMes>0?pctMeta+'%':'—',cor:pctMeta>=100?'var(--green)':pctMeta>=50?'#f59e0b':'var(--red)'},
+    {label:'Da meta da empresa',val:(metasPorMes[mesAtual]||0)>0?pctMeta+'%':'—',cor:pctMeta>=100?'var(--green)':pctMeta>=50?'#f59e0b':'var(--red)'},
     {label:'Ticket médio',val:`R$ ${ticketMedio.toLocaleString('pt-BR',{minimumFractionDigits:2})}`,cor:'var(--text)'},
     {label:'Conversão geral',val:txConversao+'%',cor:'var(--green)'},
   ];
@@ -3288,7 +3453,7 @@ function renderConversao(listaMes){
 // ============ META INDIVIDUAL ============
 function renderMetaIndividual(listaMes){
   const el=document.getElementById('vendas-meta-individual');if(!el)return;
-  const metaTotal=metaMes||0;
+  const metaTotal=metasPorMes[mesVendas]||0;
   const metaIndiv=metaTotal>0?Math.round(metaTotal/2):0;
   const SDRS=getSDRsAtivos();
   if(metaTotal===0){
@@ -3397,12 +3562,13 @@ function navegarMesVendas(dir){
 }
 function editarMetaVendas(){
   document.getElementById('meta-edit-vendas').style.display='block';
-  document.getElementById('meta-input-vendas').value=metaMes||'';
+  document.getElementById('meta-input-vendas').value=metasPorMes[mesVendas]||'';
   document.getElementById('meta-input-vendas').focus();
 }
 function salvarMetaVendas(){
-  metaMes=parseFloat(document.getElementById('meta-input-vendas').value)||0;
-  sbUpsert('notas',{id:'meta_mes_config',titulo:'__meta_mes__',texto:String(metaMes),data:'',feita:false});
+  const valor=parseFloat(document.getElementById('meta-input-vendas').value)||0;
+  metasPorMes[mesVendas]=valor;
+  sbUpsert('notas',{id:'meta_mes_'+mesVendas,titulo:'__meta_mes_'+mesVendas+'__',texto:String(valor),data:'',feita:false});
   document.getElementById('meta-edit-vendas').style.display='none';
   renderVendas();renderPagos();
 }
@@ -3414,14 +3580,15 @@ function renderVendas(){
   const total=listaMes.length;
   const hoje=listaMes.filter(p=>p.data===todayStr()).length;
   const ticket=total>0?receita/total:0;
-  const pct=metaMes>0?Math.min(Math.round((receita/metaMes)*100),100):0;
+  const metaDoMes=metasPorMes[mesVendas]||0;
+  const pct=metaDoMes>0?Math.min(Math.round((receita/metaDoMes)*100),100):0;
   const cor=pct>=100?'#22c55e':pct>=70?'#84cc16':pct>=40?'#f59e0b':'var(--red)';
-  document.getElementById('vendas-meta-pct').textContent=metaMes>0?pct+'%':'—';
+  document.getElementById('vendas-meta-pct').textContent=metaDoMes>0?pct+'%':'—';
   document.getElementById('vendas-meta-pct').style.color=cor;
   document.getElementById('vendas-meta-barra').style.width=pct+'%';
   document.getElementById('vendas-meta-barra').style.background=cor;
-  document.getElementById('vendas-meta-sub').textContent=metaMes>0
-    ?`R$ ${receita.toLocaleString('pt-BR',{minimumFractionDigits:2})} de R$ ${metaMes.toLocaleString('pt-BR',{minimumFractionDigits:2})}`
+  document.getElementById('vendas-meta-sub').textContent=metaDoMes>0
+    ?`R$ ${receita.toLocaleString('pt-BR',{minimumFractionDigits:2})} de R$ ${metaDoMes.toLocaleString('pt-BR',{minimumFractionDigits:2})}`
     :`R$ ${receita.toLocaleString('pt-BR',{minimumFractionDigits:2})} faturado`;
   document.getElementById('vendas-receita').textContent=`R$ ${receita.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
   document.getElementById('vendas-receita').style.color=cor;
