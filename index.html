@@ -1064,6 +1064,27 @@ function salvarNovoContatoFunil(){
   renderFunilSDRPage();
   syncAndRefresh();
 }
+// Mapeia a origem do lead (Funil SDR) pra origem do agendamento (Agenda)
+function mapOrigemParaLeadCall(origem){
+  if(origem==='Anúncio')return'PN';
+  if(origem==='Shopee Trends')return'AVISO_APP';
+  return'ORGANICO'; // Instagram, WhatsApp, Indicação, Outro, sem origem
+}
+// Abre o formulário de novo agendamento na Agenda, já preenchido com nome/telefone/origem do lead
+function abrirAgendamentoDoFunil(id){
+  const lead=leads.find(l=>l.id===id);
+  if(!lead)return;
+  switchTabSB('agenda',document.getElementById('nav-agenda'));
+  setTimeout(()=>{
+    openForm(todayStr(),null);
+    const nomeEl=document.getElementById('f-nome');
+    const foneEl=document.getElementById('f-fone');
+    if(nomeEl) nomeEl.value=lead.nome||'';
+    if(foneEl) foneEl.value=lead.telefone||'';
+    window._formLead='';
+    setFormLead(mapOrigemParaLeadCall(lead.origem));
+  },150);
+}
 function toggleRespondeuFunil(id){
   const idx=leads.findIndex(l=>l.id===id);
   if(idx<0)return;
@@ -1153,22 +1174,25 @@ function renderFunilSDRPage(){
       </div>
       <button onclick="salvarNovoContatoFunil()" style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--green);color:#000;font-size:13px;font-weight:700;cursor:pointer">Salvar contato</button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+    <div style="display:flex;align-items:stretch;gap:6px;margin-bottom:20px">
+      <div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
         <div style="font-size:26px;font-weight:800;color:var(--text)">${chamados}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px">📞 Chamados</div>
       </div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+      <div style="display:flex;align-items:center;color:var(--text3);font-size:16px">→</div>
+      <div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
         <div style="font-size:26px;font-weight:800;color:#60a5fa">${responderam}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px">💬 Responderam</div>
         <div style="font-size:10px;color:#60a5fa;margin-top:2px">${pctResp}% dos chamados</div>
       </div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+      <div style="display:flex;align-items:center;color:var(--text3);font-size:16px">→</div>
+      <div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
         <div style="font-size:26px;font-weight:800;color:var(--green)">${agendados}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px">📅 Agendaram</div>
         <div style="font-size:10px;color:var(--green);margin-top:2px">${pctAgend}% de quem respondeu</div>
       </div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+      <div style="display:flex;align-items:center;color:var(--text3);font-size:16px">→</div>
+      <div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
         <div style="font-size:26px;font-weight:800;color:var(--green)">${compareceram}<span style="font-size:14px;color:#f59e0b"> / ${noshow}</span></div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px">✅ Compareceu / 🚫 No-show</div>
         <div style="font-size:10px;color:var(--green);margin-top:2px">${pctCompareceu}% de quem agendou compareceu</div>
@@ -1220,6 +1244,7 @@ function renderFunilSDRPage(){
               <div style="font-size:11px;color:var(--text3)">${nomeVendedora(l.responsavel)||l.responsavel} · ${l.origem||'sem origem'}${l.telefone?' · '+l.telefone:''} · ${(l.createdAt||'').slice(0,10).split('-').reverse().join('/')}</div>
             </div>
             <button onclick="toggleRespondeuFunil('${l.id}')" style="padding:6px 12px;border-radius:7px;border:1px solid ${l.respondeu?'#60a5fa':'var(--border)'};background:${l.respondeu?'#0d1f3a':'var(--bg3)'};color:${l.respondeu?'#60a5fa':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${l.respondeu?'💬 Respondeu':'Marcar respondeu'}</button>
+            ${!call?`<button onclick="abrirAgendamentoDoFunil('${l.id}')" style="padding:6px 12px;border-radius:7px;border:none;background:var(--green);color:#000;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">📅 Agendar</button>`:''}
             <span onclick="abrirEditarLeadFunil('${l.id}')" style="font-size:12px;color:var(--green);cursor:pointer;padding:4px;white-space:nowrap">✏️ editar</span>
             <span onclick="excluirLeadFunil('${l.id}','${l.nome.replace(/'/g,"\\'")}')" style="font-size:14px;color:var(--text3);cursor:pointer;padding:4px">🗑️</span>
           </div>
