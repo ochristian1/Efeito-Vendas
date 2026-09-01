@@ -1031,7 +1031,7 @@ function jaTemPagoParaCall(call){
 // ============ FUNIL SDR ============
 let funilPeriodo='semana'; // 'hoje'|'semana'|'mes'
 let funilSDRFiltro='TODOS';
-const FUNIL_ORIGENS=['Instagram','WhatsApp','Indicação','Anúncio','Outro'];
+const FUNIL_ORIGENS=['Instagram','WhatsApp','Indicação','Anúncio','Shopee Trends','Outro'];
 
 function funilPeriodoRange(){
   const hoje=todayStr();
@@ -1132,7 +1132,7 @@ function renderFunilSDRPage(){
   });
   const porOrigem=Object.entries(porOrigemMap).sort((a,b)=>b[1]-a[1]);
   const maxOrigem=porOrigem.length?porOrigem[0][1]:0;
-  const ORIGEM_CORES={'Instagram':'#e1306c','WhatsApp':'#25d366','Indicação':'#60a5fa','Anúncio':'#facc15','Outro':'var(--text3)','Sem origem':'var(--text3)'};
+  const ORIGEM_CORES={'Instagram':'#e1306c','WhatsApp':'#25d366','Indicação':'#60a5fa','Anúncio':'#facc15','Shopee Trends':'#ee4d2d','Outro':'var(--text3)','Sem origem':'var(--text3)'};
   const recentes=[...leads].filter(l=>funilSDRFiltro==='TODOS'||l.responsavel===funilSDRFiltro).sort((a,b)=>(b.createdAt>a.createdAt?1:-1)).slice(0,30);
   el.innerHTML=`
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
