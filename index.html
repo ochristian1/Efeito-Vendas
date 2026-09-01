@@ -1082,6 +1082,24 @@ function excluirLeadFunil(id,nome){
 }
 function setFunilPeriodo(p){funilPeriodo=p;renderFunilSDRPage();}
 function setFunilSDR(v){funilSDRFiltro=v;renderFunilSDRPage();}
+let funilEditando=null;
+function abrirEditarLeadFunil(id){funilEditando=id;renderFunilSDRPage();}
+function cancelarEdicaoLeadFunil(){funilEditando=null;renderFunilSDRPage();}
+function salvarEdicaoLeadFunil(id){
+  const idx=leads.findIndex(l=>l.id===id);
+  if(idx<0)return;
+  const nome=(document.getElementById('fe-nome-'+id).value||'').trim();
+  const telefone=(document.getElementById('fe-telefone-'+id).value||'').trim();
+  const origem=document.getElementById('fe-origem-'+id).value||'';
+  if(!nome){alert('Digite o nome do lead.');return;}
+  leads[idx].nome=nome;
+  leads[idx].telefone=telefone;
+  leads[idx].origem=origem;
+  sbUpsert('leads',{id:leads[idx].id,nome,telefone:telefone||'',origem:origem||'',respondeu:leads[idx].respondeu,etapa:leads[idx].etapa||'tentativa_contato',responsavel:leads[idx].responsavel||'',prioridade:'media'});
+  funilEditando=null;
+  renderFunilSDRPage();
+  syncAndRefresh();
+}
 function jaTemCallParaLead(lead){
   if(!lead.telefone)return null;
   const foneLead=lead.telefone.replace(/\D/g,'');
@@ -1106,6 +1124,15 @@ function renderFunilSDRPage(){
   const pctResp=chamados>0?Math.round(responderam/chamados*100):0;
   const pctAgend=responderam>0?Math.round(agendados/responderam*100):0;
   const pctCompareceu=agendados>0?Math.round(compareceram/agendados*100):0;
+  // métrica por origem do lead
+  const porOrigemMap={};
+  leadsPeriodo.forEach(l=>{
+    const o=l.origem||'Sem origem';
+    porOrigemMap[o]=(porOrigemMap[o]||0)+1;
+  });
+  const porOrigem=Object.entries(porOrigemMap).sort((a,b)=>b[1]-a[1]);
+  const maxOrigem=porOrigem.length?porOrigem[0][1]:0;
+  const ORIGEM_CORES={'Instagram':'#e1306c','WhatsApp':'#25d366','Indicação':'#60a5fa','Anúncio':'#facc15','Outro':'var(--text3)','Sem origem':'var(--text3)'};
   const recentes=[...leads].filter(l=>funilSDRFiltro==='TODOS'||l.responsavel===funilSDRFiltro).sort((a,b)=>(b.createdAt>a.createdAt?1:-1)).slice(0,30);
   el.innerHTML=`
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
@@ -1147,6 +1174,22 @@ function renderFunilSDRPage(){
         <div style="font-size:10px;color:var(--green);margin-top:2px">${pctCompareceu}% de quem agendou compareceu</div>
       </div>
     </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">📊 Chamados por origem</div>
+      ${porOrigem.length?porOrigem.map(([origem,qtd])=>{
+        const pct=maxOrigem>0?Math.round(qtd/maxOrigem*100):0;
+        const cor=ORIGEM_CORES[origem]||'var(--green)';
+        return`<div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+            <span style="color:var(--text2)">${origem}</span>
+            <span style="color:${cor};font-weight:700">${qtd}</span>
+          </div>
+          <div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${cor};border-radius:3px"></div>
+          </div>
+        </div>`;
+      }).join(''):'<div style="font-size:11px;color:var(--text3)">Nenhum contato no período selecionado</div>'}
+    </div>
     <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Contatos recentes</div>
     <div>
       ${recentes.length?recentes.map(l=>{
@@ -1158,14 +1201,29 @@ function renderFunilSDRPage(){
           else if(call.done) statusTag=`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:var(--text2);border:1px solid var(--border)">✅ Compareceu</span>`;
           else statusTag=`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:var(--text2);border:1px solid var(--border)">📅 Agendado</span>`;
         }
-        return`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:6px">
-          <div style="width:30px;height:30px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text2);flex-shrink:0">${(l.nome[0]||'?').toUpperCase()}</div>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap">${l.nome} ${statusTag}</div>
-            <div style="font-size:11px;color:var(--text3)">${nomeVendedora(l.responsavel)||l.responsavel} · ${l.origem||'sem origem'} · ${(l.createdAt||'').slice(0,10).split('-').reverse().join('/')}</div>
+        return`<div style="padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:6px">
+        ${funilEditando===l.id?`
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+            <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">Nome</label><input id="fe-nome-${l.id}" type="text" value="${(l.nome||'').replace(/"/g,'&quot;')}" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--text);outline:none;font-family:inherit"></div>
+            <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">Telefone</label><input id="fe-telefone-${l.id}" type="text" value="${(l.telefone||'').replace(/"/g,'&quot;')}" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--text);outline:none;font-family:inherit"></div>
+            <div><label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">Origem</label><select id="fe-origem-${l.id}" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--text);outline:none;font-family:inherit">${FUNIL_ORIGENS.map(o=>`<option value="${o}" ${l.origem===o?'selected':''}>${o}</option>`).join('')}</select></div>
           </div>
-          <button onclick="toggleRespondeuFunil('${l.id}')" style="padding:6px 12px;border-radius:7px;border:1px solid ${l.respondeu?'#60a5fa':'var(--border)'};background:${l.respondeu?'#0d1f3a':'var(--bg3)'};color:${l.respondeu?'#60a5fa':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${l.respondeu?'💬 Respondeu':'Marcar respondeu'}</button>
-          <span onclick="excluirLeadFunil('${l.id}','${l.nome.replace(/'/g,"\\'")}')" style="font-size:14px;color:var(--text3);cursor:pointer;padding:4px">🗑️</span>
+          <div style="display:flex;gap:6px">
+            <button onclick="salvarEdicaoLeadFunil('${l.id}')" style="flex:1;background:var(--green);border:none;border-radius:7px;padding:6px;font-size:11px;font-weight:700;color:#000;cursor:pointer">Salvar</button>
+            <button onclick="cancelarEdicaoLeadFunil()" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:6px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer">Cancelar</button>
+          </div>
+        `:`
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:30px;height:30px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text2);flex-shrink:0">${(l.nome[0]||'?').toUpperCase()}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap">${l.nome} ${statusTag}</div>
+              <div style="font-size:11px;color:var(--text3)">${nomeVendedora(l.responsavel)||l.responsavel} · ${l.origem||'sem origem'}${l.telefone?' · '+l.telefone:''} · ${(l.createdAt||'').slice(0,10).split('-').reverse().join('/')}</div>
+            </div>
+            <button onclick="toggleRespondeuFunil('${l.id}')" style="padding:6px 12px;border-radius:7px;border:1px solid ${l.respondeu?'#60a5fa':'var(--border)'};background:${l.respondeu?'#0d1f3a':'var(--bg3)'};color:${l.respondeu?'#60a5fa':'var(--text2)'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">${l.respondeu?'💬 Respondeu':'Marcar respondeu'}</button>
+            <span onclick="abrirEditarLeadFunil('${l.id}')" style="font-size:12px;color:var(--green);cursor:pointer;padding:4px;white-space:nowrap">✏️ editar</span>
+            <span onclick="excluirLeadFunil('${l.id}','${l.nome.replace(/'/g,"\\'")}')" style="font-size:14px;color:var(--text3);cursor:pointer;padding:4px">🗑️</span>
+          </div>
+        `}
         </div>`;
       }).join(''):'<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Nenhum contato registrado ainda. Clique em "+ Registrar contato" pra começar.</div>'}
     </div>
