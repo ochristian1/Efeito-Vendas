@@ -737,6 +737,25 @@ function switchTabSB(name,el){
   if(btn) btn.classList.remove('active');
   renderTabByKey(name); // resposta instantânea com dados já em memória
   loadAll().then(()=>{try{renderTabByKey(name);}catch(e){}}); // depois atualiza com dados frescos do banco
+  if(name==='funil-sdr') iniciarFunilPolling(); else pararFunilPolling();
+}
+let funilPollTimer=null;
+function iniciarFunilPolling(){
+  pararFunilPolling();
+  // enquanto a aba Funil SDR estiver aberta, busca dados novos no banco a cada 8s
+  // (assim números atualizados por outra pessoa da equipe aparecem sem precisar trocar de aba)
+  funilPollTimer=setInterval(()=>{
+    loadAll().then(()=>{
+      const ativo=document.getElementById('tab-funil-sdr');
+      if(!ativo||!ativo.classList.contains('active'))return;
+      const formAberto=document.getElementById('funil-novo-form');
+      const digitandoAlgo=(formAberto&&formAberto.style.display==='block')||funilEditando!==null;
+      if(!digitandoAlgo) renderFunilSDRPage(); // não atualiza a tela se alguém estiver digitando, pra não perder o que já foi escrito
+    });
+  },8000);
+}
+function pararFunilPolling(){
+  if(funilPollTimer){clearInterval(funilPollTimer);funilPollTimer=null;}
 }
 function ativarFollowupSB(el){
   switchTabSB('agenda',document.getElementById('nav-agenda'));
