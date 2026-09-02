@@ -749,7 +749,8 @@ function iniciarFunilPolling(){
       const ativo=document.getElementById('tab-funil-sdr');
       if(!ativo||!ativo.classList.contains('active'))return;
       const formAberto=document.getElementById('funil-novo-form');
-      const digitandoAlgo=(formAberto&&formAberto.style.display==='block')||funilEditando!==null;
+      const buscaFocada=document.activeElement&&document.activeElement.id==='funil-busca';
+      const digitandoAlgo=(formAberto&&formAberto.style.display==='block')||funilEditando!==null||buscaFocada;
       if(!digitandoAlgo) renderFunilSDRPage(); // não atualiza a tela se alguém estiver digitando, pra não perder o que já foi escrito
     });
   },8000);
@@ -1049,6 +1050,7 @@ function jaTemPagoParaCall(call){
 }
 // ============ FUNIL SDR ============
 let funilPeriodo='semana'; // 'hoje'|'semana'|'mes'
+let funilBusca='';
 let funilSDRFiltro='TODOS';
 const FUNIL_ORIGENS=['Instagram','WhatsApp','Indicação','Anúncio','Shopee Trends','Outro'];
 
@@ -1173,7 +1175,6 @@ function renderFunilSDRPage(){
   const porOrigem=Object.entries(porOrigemMap).sort((a,b)=>b[1]-a[1]);
   const maxOrigem=porOrigem.length?porOrigem[0][1]:0;
   const ORIGEM_CORES={'Instagram':'#e1306c','WhatsApp':'#25d366','Indicação':'#60a5fa','Anúncio':'#facc15','Shopee Trends':'#ee4d2d','Outro':'var(--text3)','Sem origem':'var(--text3)'};
-  const recentes=[...leads].filter(l=>funilSDRFiltro==='TODOS'||l.responsavel===funilSDRFiltro).sort((a,b)=>(b.createdAt>a.createdAt?1:-1)).slice(0,30);
   el.innerHTML=`
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
       <div style="display:flex;gap:6px">
@@ -1233,8 +1234,37 @@ function renderFunilSDRPage(){
         </div>`;
       }).join(''):'<div style="font-size:11px;color:var(--text3)">Nenhum contato no período selecionado</div>'}
     </div>
-    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Contatos recentes</div>
-    <div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Contatos</div>
+      <div style="position:relative;flex:1;max-width:280px">
+        <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--text3);pointer-events:none">🔍</span>
+        <input id="funil-busca" type="text" value="${funilBusca.replace(/"/g,'&quot;')}" oninput="onFunilBuscaInput(this.value)" placeholder="Pesquisar por nome ou telefone..." style="width:100%;padding:7px 10px 7px 30px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:12px;outline:none;font-family:inherit">
+      </div>
+    </div>
+    <div id="funil-lista-contatos"></div>
+  `;
+  renderFunilContatosList();
+}
+function onFunilBuscaInput(v){
+  funilBusca=v;
+  renderFunilContatosList(); // só atualiza a lista, sem redesenhar a página inteira (senão perde o foco do campo de busca)
+}
+function renderFunilContatosList(){
+  const el=document.getElementById('funil-lista-contatos');if(!el)return;
+  let lista=[...leads].filter(l=>funilSDRFiltro==='TODOS'||l.responsavel===funilSDRFiltro);
+  const q=funilBusca.trim().toLowerCase();
+  if(q){
+    const qNum=q.replace(/\D/g,'');
+    lista=lista.filter(l=>(l.nome||'').toLowerCase().includes(q)||(qNum&&(l.telefone||'').replace(/\D/g,'').includes(qNum)));
+  } else {
+    // sem busca: mostra tudo desde ontem até hoje (não limita mais a 30 registros)
+    const ontem=new Date(todayStr()+'T12:00:00');ontem.setDate(ontem.getDate()-1);
+    const iniStr=ontem.toISOString().slice(0,10);
+    lista=lista.filter(l=>(l.createdAt||'').slice(0,10)>=iniStr);
+  }
+  lista.sort((a,b)=>(b.createdAt>a.createdAt?1:-1));
+  const recentes=lista;
+  el.innerHTML=`
       ${recentes.length?recentes.map(l=>{
         const call=jaTemCallParaLead(l);
         let statusTag='';
@@ -1269,8 +1299,7 @@ function renderFunilSDRPage(){
           </div>
         `}
         </div>`;
-      }).join(''):'<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">Nenhum contato registrado ainda. Clique em "+ Registrar contato" pra começar.</div>'}
-    </div>
+      }).join(''):`<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px">${q?'Nenhum contato encontrado pra essa busca.':'Nenhum contato desde ontem. Use a busca acima pra achar contatos mais antigos.'}</div>`}
   `;
 }
 // Resolve o campo "fechamento" (que pode ser DONO, uma chave de SDR, ou RECOMPRA_<chave>) em nome/cor legível
