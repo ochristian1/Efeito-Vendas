@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copiloto SDR — Método SINAL</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0c0e;
+    --surface:#17161a;
+    --surface2:#201e23;
+    --line:#2b292f;
+    --text:#eeecea;
+    --muted:#93909a;
+    --blue:#2f6fb0;
+    --blue-dim:#1e4a75;
+    --gold:#b8862e;
+    --gold-dim:#7a5c1f;
+    --green:#3c8f5c;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:'Inter',-apple-system,Segoe UI,Roboto,sans-serif;
+    display:flex;flex-direction:column;min-height:100vh;
+  }
+  h1,h2,h3,.display{font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:0.03em;}
+
+  .topbar{
+    padding:16px 24px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;
+    background:linear-gradient(180deg, #121114, #0c0c0e);
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:34px;height:34px;border-radius:4px;
+    background:linear-gradient(135deg, var(--blue), var(--blue-dim));
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Oswald',sans-serif;font-weight:700;font-size:14px;color:#fff;flex-shrink:0;
+  }
+  .brand-text{font-size:17px;font-weight:600;letter-spacing:0.05em;}
+  .brand-sub{font-size:11px;color:var(--muted);letter-spacing:0.06em;margin-top:-2px;text-transform:none;font-family:'Inter',sans-serif;}
+
+  .tabs{display:flex;gap:4px;}
+  .tab-btn{
+    background:transparent;border:1px solid var(--line);color:var(--muted);
+    padding:9px 16px;border-radius:6px;font-family:'Oswald',sans-serif;font-size:12px;
+    letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;transition:all 0.15s ease;
+  }
+  .tab-btn:hover{border-color:var(--blue-dim);}
+  .tab-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;}
+
+  .main{flex:1;display:flex;justify-content:center;overflow:hidden;}
+  .container{width:100%;max-width:820px;display:flex;flex-direction:column;height:100%;}
+
+  /* ATENDIMENTO VIEW */
+  .view{display:none;flex-direction:column;height:100%;overflow:hidden;}
+  .view.active{display:flex;}
+
+  .lead-bar{
+    padding:10px 20px;border-bottom:1px solid var(--line);background:var(--surface);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .lead-bar-label{font-size:12px;color:var(--muted);}
+  .new-atendimento-btn{
+    background:transparent;border:1px solid var(--line);color:var(--muted);
+    padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;
+  }
+  .new-atendimento-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
+
+  .messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;}
+  .empty-hint{
+    align-self:center;text-align:center;color:var(--muted);font-size:13.5px;
+    max-width:420px;line-height:1.6;margin-top:40px;
+  }
+
+  .msg-block{max-width:88%;align-self:flex-start;}
+  .client-msg{
+    background:var(--surface2);border:1px solid var(--line);border-left:3px solid var(--muted);
+    border-radius:4px 10px 10px 10px;padding:11px 14px;font-size:14px;line-height:1.5;white-space:pre-wrap;
+  }
+  .client-msg img{
+    max-width:260px;border-radius:8px;display:block;margin-bottom:8px;border:1px solid var(--line);
+  }
+  .msg-label{
+    display:block;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:0.06em;
+    text-transform:uppercase;margin-bottom:5px;color:var(--muted);
+  }
+
+  .suggestion-block{
+    background:var(--surface);border:1px solid var(--blue-dim);border-left:3px solid var(--blue);
+    border-radius:4px 10px 10px 10px;padding:13px 15px;margin-top:6px;
+  }
+  .suggestion-block .msg-label{color:var(--blue);display:flex;align-items:center;justify-content:space-between;}
+  .suggestion-text{font-size:14.5px;line-height:1.55;white-space:pre-wrap;margin-top:4px;}
+  .copy-btn{
+    background:var(--surface2);border:1px solid var(--line);color:var(--text);
+    font-size:10px;padding:4px 10px;border-radius:12px;cursor:pointer;
+    font-family:'Inter',sans-serif;text-transform:none;letter-spacing:0;
+  }
+  .copy-btn:hover{border-color:var(--blue);color:var(--blue);}
+  .copy-btn.copied{border-color:var(--green);color:var(--green);}
+  .dica-text{
+    margin-top:10px;padding-top:10px;border-top:1px solid var(--line);
+    font-size:12px;color:var(--muted);line-height:1.5;
+  }
+  .dica-text b{color:var(--gold);font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:0.05em;text-transform:uppercase;}
+
+  .stage-pill{
+    align-self:flex-start;display:inline-flex;align-items:center;gap:6px;background:var(--surface2);
+    border:1px solid var(--blue-dim);border-radius:20px;padding:5px 12px;
+    font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--blue);
+  }
+  .stage-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--blue);}
+
+  .system-note{align-self:center;color:var(--muted);font-size:12px;font-style:italic;max-width:90%;text-align:center;}
+  .typing{align-self:flex-start;color:var(--muted);font-size:13px;padding:4px 4px;font-style:italic;}
+
+  .input-bar{
+    border-top:1px solid var(--line);padding:14px 20px 18px 20px;background:var(--surface);
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .attach-preview{
+    display:none;flex-wrap:wrap;gap:8px;align-self:flex-start;
+  }
+  .attach-preview.show{display:flex;}
+  .attach-chip{
+    display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--line);
+    border-radius:8px;padding:6px 8px;
+  }
+  .attach-chip img{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--line);}
+  .attach-chip .attach-remove{
+    background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 4px;
+  }
+  .attach-chip .attach-remove:hover{color:#e0666b;}
+  .attach-add-more{
+    display:flex;align-items:center;justify-content:center;width:44px;height:44px;
+    background:var(--surface2);border:1px dashed var(--line);border-radius:8px;color:var(--muted);
+    cursor:pointer;font-size:18px;
+  }
+  .attach-add-more:hover{border-color:var(--blue);color:var(--blue);}
+  .input-row{display:flex;gap:10px;align-items:flex-end;}
+  .attach-btn{
+    background:var(--surface2);border:1px solid var(--line);color:var(--muted);width:44px;height:44px;
+    border-radius:8px;cursor:pointer;flex-shrink:0;font-size:18px;display:flex;align-items:center;justify-content:center;
+    transition:all 0.15s ease;
+  }
+  .attach-btn:hover{border-color:var(--blue);color:var(--blue);}
+  .input-bar textarea{
+    flex:1;background:var(--surface2);border:1px solid var(--line);color:var(--text);
+    padding:11px 13px;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;
+    resize:none;max-height:140px;min-height:44px;
+  }
+  .input-bar textarea:focus{outline:none;border-color:var(--blue);}
+  .send-btn{
+    background:var(--blue);border:none;color:#fff;width:44px;height:44px;border-radius:8px;
+    cursor:pointer;flex-shrink:0;font-size:16px;display:flex;align-items:center;justify-content:center;
+    transition:background 0.15s ease;
+  }
+  .send-btn:hover{background:#255a8f;}
+  .send-btn:disabled{background:#3a373d;cursor:not-allowed;}
+
+  /* KNOWLEDGE VIEW */
+  .kb-view{padding:24px;overflow-y:auto;}
+  .kb-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:24px;}
+  .kb-title{font-size:18px;margin:0 0 6px 0;}
+  .kb-desc{color:var(--muted);font-size:13px;line-height:1.5;margin:0 0 16px 0;}
+  .kb-meta{font-size:11px;color:var(--muted);margin-bottom:14px;}
+  .kb-textarea{
+    width:100%;min-height:420px;background:var(--surface2);border:1px solid var(--line);
+    color:var(--text);padding:14px;border-radius:8px;font-family:'Inter',sans-serif;
+    font-size:13.5px;line-height:1.6;resize:vertical;
+  }
+  .kb-textarea:focus{outline:none;border-color:var(--blue);}
+  .kb-actions{display:flex;gap:10px;margin-top:14px;align-items:center;}
+  .kb-save-btn{
+    background:var(--blue);border:none;color:#fff;padding:11px 22px;border-radius:6px;
+    font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:0.05em;text-transform:uppercase;
+    cursor:pointer;transition:background 0.15s ease;
+  }
+  .kb-save-btn:hover{background:#255a8f;}
+  .kb-save-status{font-size:12px;color:var(--green);opacity:0;transition:opacity 0.3s ease;}
+  .kb-save-status.show{opacity:1;}
+
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">SD</div>
+    <div>
+      <div class="brand-text">COPILOTO SDR</div>
+      <div class="brand-sub">Método SINAL — resposta sugerida em tempo real</div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" id="tabAtendimento">Atendimento</button>
+    <button class="tab-btn" id="tabKb">Base de Conhecimento</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="container">
+
+    <!-- ATENDIMENTO -->
+    <div class="view active" id="viewAtendimento">
+      <div class="lead-bar">
+        <span class="lead-bar-label" id="leadBarLabel">Novo atendimento — cole a primeira mensagem do cliente</span>
+        <button class="new-atendimento-btn" id="newAtendimentoBtn">Novo atendimento</button>
+      </div>
+      <div class="messages" id="messages">
+        <div class="empty-hint">Cole aqui a mensagem do cliente, ou anexe um print da conversa (WhatsApp, etc.), e receba a resposta sugerida seguindo o método SINAL, pronta pra copiar e enviar.</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" multiple style="display:none;">
+      <div class="input-bar">
+        <div class="attach-preview" id="attachPreview"></div>
+        <div class="input-row">
+          <button class="attach-btn" id="attachBtn" title="Anexar print da conversa">📎</button>
+          <textarea id="userInput" placeholder="Cole a mensagem do cliente aqui, ou anexe um print da conversa..." rows="1"></textarea>
+          <button class="send-btn" id="sendBtn" title="Gerar sugestão">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KNOWLEDGE BASE -->
+    <div class="view kb-view" id="viewKb">
+      <div class="kb-card">
+        <h2 class="kb-title">Base de Conhecimento</h2>
+        <p class="kb-desc">Esse texto é usado pela IA em toda sugestão de resposta, pra todo o time. Qualquer SDR pode editar e salvar — a atualização vale pra todo mundo que usar a ferramenta a partir de agora.</p>
+        <div class="kb-meta" id="kbMeta">Carregando...</div>
+        <textarea class="kb-textarea" id="kbTextarea" placeholder="Carregando base de conhecimento..."></textarea>
+        <div class="kb-actions">
+          <button class="kb-save-btn" id="kbSaveBtn">Salvar base de conhecimento</button>
+          <span class="kb-save-status" id="kbSaveStatus">Salvo!</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://hjagjrysotydcfbaojjn.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqYWdqcnlzb3R5ZGNmYmFvampuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3ODE0NTQsImV4cCI6MjEwMTM1NzQ1NH0.fC9-SXH2h-PUmxOUos1IuzSuzJOJx4JXYT8acTEEiUM';
+const KB_FN_URL = SUPABASE_URL + '/functions/v1/sdr-kb';
+const CHAT_FN_URL = SUPABASE_URL + '/functions/v1/sdr-copilot';
+
+const DEFAULT_KB = `MÉTODO SINAL — framework de qualificação da Efeito Vendas para SDR:
+
+S — SITUAÇÃO: entender o cenário atual da loja do lead (marketplaces em que vende, faturamento aproximado, se tem equipe, quem cuida de quê hoje).
+
+I — INVESTIMENTO: entender se o lead tem predisposição real de investir pra resolver o problema, SEM falar valor do produto da Efeito Vendas. Nunca revele preço nessa fase — preço é assunto do closer, na call.
+
+N — NECESSIDADE: identificar a dor real por trás do contato — o que está travando o crescimento, o que já tentou, o que não está funcionando.
+
+A — AUTORIDADE: descobrir se o lead decide sozinho ou precisa validar com sócio/esposa/financeiro.
+
+L — LARGADA: se o lead for qualificado (situação real, alguma predisposição de investimento, dor genuína, autoridade ou caminho claro pra decisão), conduzir para o agendamento da call com o closer — propor dia/horário, buscar compromisso claro.
+
+REGRAS GERAIS:
+- O SDR nunca vende nem apresenta a solução em detalhe — isso é trabalho do closer.
+- Se o lead perguntar preço, redirecionar educadamente: "essa parte a gente trata com o especialista na call" — e voltar pra qualificação.
+- Objeções nessa fase são leves (ceticismo com contato frio: "do que se trata", "quem é você", "não tenho tempo agora"). Trabalhar com pergunta curta que reengaja, sem parecer script decorado.
+- Tom humano, natural, de WhatsApp — frases curtas, sem parecer robótico ou "IA".
+- Se o lead não tiver situação, necessidade ou predisposição mínima, não forçar agendamento — encerrar educadamente.
+
+(Time: adicione aqui scripts de abertura testados, respostas que funcionaram bem em objeções específicas, erros comuns a evitar, e qualquer outro aprendizado do dia a dia.)`;
+
+let conversation = [];
+let currentStage = null;
+
+const tabAtendimento = document.getElementById('tabAtendimento');
+const tabKb = document.getElementById('tabKb');
+const viewAtendimento = document.getElementById('viewAtendimento');
+const viewKb = document.getElementById('viewKb');
+const messagesEl = document.getElementById('messages');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+const attachBtn = document.getElementById('attachBtn');
+const fileInput = document.getElementById('fileInput');
+const attachPreview = document.getElementById('attachPreview');
+const newAtendimentoBtn = document.getElementById('newAtendimentoBtn');
+const leadBarLabel = document.getElementById('leadBarLabel');
+const kbTextarea = document.getElementById('kbTextarea');
+const kbMeta = document.getElementById('kbMeta');
+const kbSaveBtn = document.getElementById('kbSaveBtn');
+const kbSaveStatus = document.getElementById('kbSaveStatus');
+
+let knowledgeBase = DEFAULT_KB;
+let pendingImages = []; // [{ mediaType, base64, previewUrl }]
+
+function compressImage(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX_DIM = 1400;
+        let { width, height } = img;
+        if(width > MAX_DIM || height > MAX_DIM){
+          const scale = MAX_DIM / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        const base64 = dataUrl.split(',')[1];
+        resolve({ mediaType: 'image/jpeg', base64, previewUrl: dataUrl });
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderAttachPreview(){
+  attachPreview.innerHTML = '';
+  if(pendingImages.length === 0){
+    attachPreview.classList.remove('show');
+    return;
+  }
+  attachPreview.classList.add('show');
+  pendingImages.forEach((img, idx) => {
+    const chip = document.createElement('div');
+    chip.className = 'attach-chip';
+    const thumb = document.createElement('img');
+    thumb.src = img.previewUrl;
+    chip.appendChild(thumb);
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'attach-remove';
+    removeBtn.textContent = '✕';
+    removeBtn.title = 'Remover';
+    removeBtn.addEventListener('click', () => {
+      pendingImages.splice(idx, 1);
+      renderAttachPreview();
+    });
+    chip.appendChild(removeBtn);
+    attachPreview.appendChild(chip);
+  });
+  const addMore = document.createElement('div');
+  addMore.className = 'attach-add-more';
+  addMore.textContent = '+';
+  addMore.title = 'Anexar mais prints';
+  addMore.addEventListener('click', () => fileInput.click());
+  attachPreview.appendChild(addMore);
+}
+
+async function addPendingImageFromFile(file){
+  if(!file || !file.type.startsWith('image/')) return;
+  try{
+    const compressed = await compressImage(file);
+    pendingImages.push(compressed);
+    renderAttachPreview();
+  } catch(err){
+    addNote('Não consegui processar essa imagem. Tente outro print.');
+  }
+}
+
+attachBtn.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', async (e) => {
+  if(e.target.files && e.target.files.length){
+    for(const file of Array.from(e.target.files)){
+      await addPendingImageFromFile(file);
+    }
+  }
+  fileInput.value = '';
+});
+
+tabAtendimento.addEventListener('click', () => switchTab('atendimento'));
+tabKb.addEventListener('click', () => switchTab('kb'));
+
+function switchTab(which){
+  tabAtendimento.classList.toggle('active', which === 'atendimento');
+  tabKb.classList.toggle('active', which === 'kb');
+  viewAtendimento.classList.toggle('active', which === 'atendimento');
+  viewKb.classList.toggle('active', which === 'kb');
+}
+
+async function loadKnowledgeBase(){
+  kbMeta.textContent = 'Carregando...';
+  try{
+    const resp = await fetch(KB_FN_URL, {
+      method: 'GET',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY }
+    });
+    const data = await resp.json();
+    if(!resp.ok || !data.content){
+      throw new Error(data.error || 'resposta vazia');
+    }
+    knowledgeBase = data.content;
+    kbMeta.textContent = 'Base compartilhada com todo o time. Carregada agora.';
+  } catch(err){
+    knowledgeBase = DEFAULT_KB;
+    kbMeta.textContent = 'Não foi possível carregar do servidor — usando base padrão local.';
+  }
+  kbTextarea.value = knowledgeBase;
+}
+
+kbSaveBtn.addEventListener('click', async () => {
+  const newText = kbTextarea.value.trim();
+  if(!newText) return;
+  kbSaveBtn.disabled = true;
+  try{
+    const resp = await fetch(KB_FN_URL, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ content: newText })
+    });
+    const data = await resp.json();
+    if(!resp.ok || !data.success){
+      throw new Error(data.error || 'falha ao salvar');
+    }
+    knowledgeBase = newText;
+    kbSaveStatus.classList.add('show');
+    setTimeout(() => kbSaveStatus.classList.remove('show'), 2500);
+    kbMeta.textContent = 'Salvo com sucesso — já vale pra todo o time a partir de agora.';
+  } catch(err){
+    kbMeta.textContent = 'Erro ao salvar: ' + (err && err.message ? err.message : 'tente novamente.');
+  }
+  kbSaveBtn.disabled = false;
+});
+
+function buildSystemPrompt(){
+  return `Você é um copiloto de vendas para SDRs (Sales Development Representatives) da Efeito Vendas, uma empresa de gestão de conta de marketplace (Shopee e Mercado Livre). O SDR está numa conversa real com um lead (dono de loja de marketplace), geralmente por WhatsApp. O SDR vai colar aqui o que o lead acabou de responder — em texto ou em print de tela da conversa — e você deve sugerir a PRÓXIMA mensagem que o SDR deve enviar.
+
+Quando receber uma ou mais imagens (prints de conversa de WhatsApp ou similar): leia todas as mensagens visíveis em todas as imagens, na ordem em que foram enviadas, para entender o contexto completo da conversa. Se houver múltiplos prints, trate-os como continuação uns dos outros (a conversa pode ter sido dividida em várias telas). Identifique qual foi a mensagem mais recente do CLIENTE (não do SDR) e baseie sua sugestão nela. Use todo esse histórico visível para calibrar em que etapa do SINAL a conversa está.
+
+BASE DE CONHECIMENTO ATUAL DA EQUIPE (siga rigorosamente):
+${knowledgeBase}
+
+FORMATO DE RESPOSTA OBRIGATÓRIO, nesta ordem exata:
+[STAGE:X]
+onde X é a etapa do SINAL que essa resposta está trabalhando: S, I, N, A ou L.
+
+[SUGESTAO]
+o texto pronto, no tom de WhatsApp natural, que o SDR deve copiar e enviar ao lead. Curto, humano, sem parecer script. Nunca inclua saudação redundante se já houver conversa em andamento.
+
+[DICA]
+uma frase curta (uma linha) explicando o raciocínio por trás da sugestão ou um alerta rápido pro SDR (ex: "cuidado, isso é objeção de investimento — não fale preço ainda").
+
+Nunca pule nenhuma das três tags. Nunca escreva nada fora desse formato.`;
+}
+
+function addClientMessage(text, imageUrls){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-block';
+  const label = document.createElement('span');
+  label.className = 'msg-label';
+  label.textContent = 'Cliente disse';
+  wrap.appendChild(label);
+  const bubble = document.createElement('div');
+  bubble.className = 'client-msg';
+  if(imageUrls && imageUrls.length){
+    const imgRow = document.createElement('div');
+    imgRow.style.display = 'flex';
+    imgRow.style.flexWrap = 'wrap';
+    imgRow.style.gap = '6px';
+    imgRow.style.marginBottom = text ? '8px' : '0';
+    imageUrls.forEach(url => {
+      const img = document.createElement('img');
+      img.src = url;
+      img.style.marginBottom = '0';
+      img.style.maxWidth = imageUrls.length > 1 ? '160px' : '260px';
+      imgRow.appendChild(img);
+    });
+    bubble.appendChild(imgRow);
+  }
+  if(text){
+    const textNode = document.createElement('div');
+    textNode.textContent = text;
+    bubble.appendChild(textNode);
+  }
+  wrap.appendChild(bubble);
+  messagesEl.appendChild(wrap);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function addStagePill(stage){
+  const labels = {S:'Situação', I:'Investimento', N:'Necessidade', A:'Autoridade', L:'Largada'};
+  const pill = document.createElement('div');
+  pill.className = 'stage-pill';
+  const dot = document.createElement('span');
+  dot.className = 'dot';
+  pill.appendChild(dot);
+  const label = document.createElement('span');
+  label.textContent = stage + ' — ' + (labels[stage] || stage);
+  pill.appendChild(label);
+  messagesEl.appendChild(pill);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function addSuggestion(suggestionText, dicaText){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-block';
+  const block = document.createElement('div');
+  block.className = 'suggestion-block';
+
+  const labelRow = document.createElement('div');
+  labelRow.className = 'msg-label';
+  const labelText = document.createElement('span');
+  labelText.textContent = 'Sugestão pra enviar';
+  labelRow.appendChild(labelText);
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'copy-btn';
+  copyBtn.textContent = 'Copiar';
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(suggestionText).then(() => {
+      copyBtn.textContent = 'Copiado!';
+      copyBtn.classList.add('copied');
+      setTimeout(() => {
+        copyBtn.textContent = 'Copiar';
+        copyBtn.classList.remove('copied');
+      }, 1800);
+    });
+  });
+  labelRow.appendChild(copyBtn);
+  block.appendChild(labelRow);
+
+  const text = document.createElement('div');
+  text.className = 'suggestion-text';
+  text.textContent = suggestionText;
+  block.appendChild(text);
+
+  if(dicaText){
+    const dica = document.createElement('div');
+    dica.className = 'dica-text';
+    const b = document.createElement('b');
+    b.textContent = 'Dica ';
+    dica.appendChild(b);
+    dica.appendChild(document.createTextNode(dicaText));
+    block.appendChild(dica);
+  }
+
+  wrap.appendChild(block);
+  messagesEl.appendChild(wrap);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function addNote(text){
+  const div = document.createElement('div');
+  div.className = 'system-note';
+  div.textContent = text;
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function showTyping(){
+  const div = document.createElement('div');
+  div.className = 'typing';
+  div.id = 'typingIndicator';
+  div.textContent = 'gerando sugestão...';
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+function hideTyping(){
+  const t = document.getElementById('typingIndicator');
+  if(t) t.remove();
+}
+
+async function callClaude(messages){
+  const response = await fetch(CHAT_FN_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": "Bearer " + SUPABASE_ANON_KEY
+    },
+    body: JSON.stringify({
+      max_tokens: 1000,
+      system: buildSystemPrompt(),
+      messages: messages
+    })
+  });
+
+  let data;
+  try{
+    data = await response.json();
+  } catch(parseErr){
+    throw new Error('Resposta inválida do servidor (status ' + response.status + ')');
+  }
+
+  if(!response.ok){
+    const apiMsg = (data && data.error) ? data.error : ('HTTP ' + response.status);
+    throw new Error(apiMsg);
+  }
+
+  const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text);
+  if(textBlocks.length === 0){
+    throw new Error('Resposta vazia da IA');
+  }
+  return textBlocks.join('\n');
+}
+
+function parseAndRenderSuggestion(raw){
+  let remaining = raw;
+
+  const stageMatch = remaining.match(/\[STAGE:([A-Z])\]/);
+  const stage = stageMatch ? stageMatch[1] : null;
+
+  const sugMatch = remaining.match(/\[SUGESTAO\]\s*([\s\S]*?)(?=\[DICA\]|$)/);
+  const suggestion = sugMatch ? sugMatch[1].trim() : remaining.trim();
+
+  const dicaMatch = remaining.match(/\[DICA\]\s*([\s\S]*)$/);
+  const dica = dicaMatch ? dicaMatch[1].trim() : '';
+
+  if(stage) addStagePill(stage);
+  addSuggestion(suggestion, dica);
+}
+
+async function handleSend(){
+  const text = userInput.value.trim();
+  if(!text && pendingImages.length === 0) return;
+
+  const firstMsg = messagesEl.querySelector('.empty-hint');
+  if(firstMsg) firstMsg.remove();
+
+  addClientMessage(text, pendingImages.map(img => img.previewUrl));
+
+  if(pendingImages.length > 0){
+    const contentBlocks = pendingImages.map(img => (
+      { type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.base64 } }
+    ));
+    const defaultCaption = pendingImages.length > 1
+      ? 'Seguem prints da conversa com o cliente (WhatsApp), em ordem. Leia toda a conversa visível nas imagens, identifique a mensagem mais recente do cliente e sugira a próxima resposta do SDR.'
+      : 'Segue um print da conversa com o cliente (WhatsApp). Leia toda a conversa visível na imagem, identifique a mensagem mais recente do cliente e sugira a próxima resposta do SDR.';
+    contentBlocks.push({ type: 'text', text: text ? text : defaultCaption });
+    conversation.push({role:'user', content: contentBlocks});
+  } else {
+    conversation.push({role:'user', content: 'O cliente disse: "' + text + '"'});
+  }
+
+  userInput.value = '';
+  userInput.style.height = 'auto';
+  pendingImages = [];
+  renderAttachPreview();
+  leadBarLabel.textContent = 'Atendimento em andamento';
+
+  sendBtn.disabled = true;
+  showTyping();
+  try{
+    const raw = await callClaude(conversation);
+    hideTyping();
+    parseAndRenderSuggestion(raw);
+    conversation.push({role:'assistant', content: raw});
+  } catch(err){
+    hideTyping();
+    addNote('Erro: ' + (err && err.message ? err.message : 'falha desconhecida ao conectar.'));
+  }
+  sendBtn.disabled = false;
+}
+
+sendBtn.addEventListener('click', handleSend);
+userInput.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    handleSend();
+  }
+});
+userInput.addEventListener('input', () => {
+  userInput.style.height = 'auto';
+  userInput.style.height = Math.min(userInput.scrollHeight, 140) + 'px';
+});
+userInput.addEventListener('paste', (e) => {
+  const items = e.clipboardData && e.clipboardData.items;
+  if(!items) return;
+  for(const item of items){
+    if(item.type.startsWith('image/')){
+      const file = item.getAsFile();
+      if(file){
+        e.preventDefault();
+        addPendingImageFromFile(file);
+      }
+    }
+  }
+});
+
+newAtendimentoBtn.addEventListener('click', () => {
+  conversation = [];
+  pendingImages = [];
+  renderAttachPreview();
+  messagesEl.innerHTML = '<div class="empty-hint">Cole aqui a mensagem do cliente, ou anexe um print da conversa (WhatsApp, etc.), e receba a resposta sugerida seguindo o método SINAL, pronta pra copiar e enviar.</div>';
+  leadBarLabel.textContent = 'Novo atendimento — cole a primeira mensagem do cliente';
+});
+
+loadKnowledgeBase();
+</script>
+
+</body>
+</html>
