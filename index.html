@@ -3145,9 +3145,12 @@ function renderComissoesPagePage(){
     labelEl.textContent=`${MONTHS_PT[mesL-1].charAt(0).toUpperCase()+MONTHS_PT[mesL-1].slice(1)} ${anoL}`;
   }
   const listaMes=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesStr);
-  const PESSOAS=getSDRsAtivos().map(s=>({key:s.key,label:s.label,cor:s.cor,bg:corBgSuave(s.cor)}));
+  let PESSOAS=getSDRsAtivos().map(s=>({key:s.key,label:s.label,cor:s.cor,bg:corBgSuave(s.cor)}));
+  // cada login individual só vê a própria comissão — admin continua vendo de todo mundo
+  if(isSDRUser(currentUser)) PESSOAS=PESSOAS.filter(p=>p.key===currentUser);
   const dados=PESSOAS.map(p=>({...p,...calcularComissaoResponsavel(p.key,listaMes)}));
   const totalGeral=dados.reduce((s,d)=>s+(d.comissao||0),0);
+  const souSDR=isSDRUser(currentUser);
   el.innerHTML=`
     <div style="display:grid;grid-template-columns:repeat(${Math.max(dados.length,1)},1fr);gap:10px;margin-bottom:16px">
       ${dados.length?dados.map(d=>`
@@ -3171,10 +3174,10 @@ function renderComissoesPagePage(){
           </div>
         </div>`).join(''):`<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text3);font-size:12px">Nenhuma SDR ativa cadastrada. Crie uma na aba Usuários com cargo "SDR".</div>`}
     </div>
-    <div style="background:var(--green-bg);border:1px solid var(--green-border);border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center">
+    ${!souSDR?`<div style="background:var(--green-bg);border:1px solid var(--green-border);border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:13px;font-weight:600;color:var(--text)">Total a pagar no mês</span>
       <span style="font-size:22px;font-weight:800;color:var(--green)">R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
-    </div>`;
+    </div>`:''}`;
 }
 
 // ============ CENTRAL DE INTELIGÊNCIA (alertas automáticos, sem custo de IA) ============
