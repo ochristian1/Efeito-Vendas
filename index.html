@@ -1043,10 +1043,14 @@ function isSDRUser(u){
 }
 // Checa se uma call que fechou já tem um registro correspondente em Clientes pagos (por telefone)
 function jaTemPagoParaCall(call){
-  if(!call||!call.fone)return false;
-  const foneCall=call.fone.replace(/\D/g,'');
-  if(!foneCall)return false;
-  return pagos.some(p=>p.fone&&p.fone.replace(/\D/g,'')===foneCall);
+  if(!call)return false;
+  const foneCall=(call.fone||'').replace(/\D/g,'');
+  if(foneCall){
+    return pagos.some(p=>p.fone&&p.fone.replace(/\D/g,'')===foneCall);
+  }
+  // sem telefone cadastrado: usa nome (exato, sem diferenciar maiúscula/minúscula) + mesma data da call como alternativa
+  if(!call.nome)return false;
+  return pagos.some(p=>p.nome&&p.nome.trim().toLowerCase()===call.nome.trim().toLowerCase()&&p.data===call.data);
 }
 // ============ FUNIL SDR ============
 let funilPeriodo='semana'; // 'hoje'|'semana'|'mes'
@@ -1144,10 +1148,13 @@ function salvarEdicaoLeadFunil(id){
   syncAndRefresh();
 }
 function jaTemCallParaLead(lead){
-  if(!lead.telefone)return null;
-  const foneLead=lead.telefone.replace(/\D/g,'');
-  if(!foneLead)return null;
-  return calls.find(c=>c.fone&&c.fone.replace(/\D/g,'')===foneLead)||null;
+  const foneLead=(lead.telefone||'').replace(/\D/g,'');
+  if(foneLead){
+    return calls.find(c=>c.fone&&c.fone.replace(/\D/g,'')===foneLead)||null;
+  }
+  // sem telefone cadastrado no lead: usa nome (exato, sem diferenciar maiúscula/minúscula) como alternativa
+  if(!lead.nome)return null;
+  return calls.find(c=>c.nome&&c.nome.trim().toLowerCase()===lead.nome.trim().toLowerCase())||null;
 }
 function renderFunilSDRPage(){
   const el=document.getElementById('pg-funil-sdr');if(!el)return;
