@@ -2945,8 +2945,8 @@ function salvarOnbObs(pagoId){
 function renderOnboardingPage(){
   const el=document.getElementById('pg-onboarding');if(!el)return;
   const badge=document.getElementById('sb-badge-onb');
-  const inicio=onboardingInicio||todayStr();
-  const todosPagos=[...pagos].filter(p=>p.data&&p.data>=inicio&&!onboardingOcultos[p.id]).sort((a,b)=>(b.id>a.id?1:-1));
+  // mostra todo o histórico de clientes pagos (sem trava de data de início)
+  const todosPagos=[...pagos].filter(p=>p.data&&!onboardingOcultos[p.id]).sort((a,b)=>(b.id>a.id?1:-1));
   const comProgresso=todosPagos.map(p=>{
     const prog=onboardingData[p.id]||{acesso:false,whatsapp:false,diagnostico:false};
     const feitas=ONB_ETAPAS.filter(e=>prog[e.key]).length;
