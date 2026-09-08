@@ -1325,10 +1325,12 @@ function renderFunilContatosList(){
     const qNum=q.replace(/\D/g,'');
     lista=lista.filter(l=>(l.nome||'').toLowerCase().includes(q)||(qNum&&(l.telefone||'').replace(/\D/g,'').includes(qNum)));
   } else if(funilStatusResp==='TODOS'){
-    // sem busca e sem filtro de status: mostra tudo desde ontem até hoje (não limita mais a 30 registros)
-    const ontem=new Date(todayStr()+'T12:00:00');ontem.setDate(ontem.getDate()-1);
-    const iniStr=ontem.toISOString().slice(0,10);
-    lista=lista.filter(l=>(l.createdAt||'').slice(0,10)>=iniStr);
+    // sem busca e sem filtro de status: segue o mesmo período selecionado no topo (Hoje/Esta semana/Este mês)
+    const{ini,fim}=funilPeriodoRange();
+    lista=lista.filter(l=>{
+      const d=(l.createdAt||'').slice(0,10);
+      return d>=ini&&d<=fim;
+    });
   }
   lista.sort((a,b)=>(b.createdAt>a.createdAt?1:-1));
   const recentes=lista;
