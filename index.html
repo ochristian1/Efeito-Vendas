@@ -1020,7 +1020,11 @@ function corBgSuave(hex){
 }
 function getSDRsAtivos(){
   const fixos=[{key:'EDUARDA',label:'Eduarda',cor:'#fb923c'}];
-  const custom=usuariosCustom.filter(u=>u.ativo&&u.cargo&&/sdr|closer/i.test(u.cargo)).map(u=>({key:u.id,label:u.nome,cor:corParaUsuario(u.id)}));
+  const nomesFixos=fixos.map(f=>f.label.trim().toLowerCase());
+  // cargo "SDR" continua sendo o critério pra aparecer como card novo no ranking/comissões —
+  // "Closer" é reconhecido em isSDRUser() (pra restringir a visão dela aos próprios dados),
+  // mas não cria um card duplicado aqui quando já existe um fixo com o mesmo nome (ex: Eduarda)
+  const custom=usuariosCustom.filter(u=>u.ativo&&u.cargo&&/sdr/i.test(u.cargo)&&!nomesFixos.includes(u.nome.trim().toLowerCase())).map(u=>({key:u.id,label:u.nome,cor:corParaUsuario(u.id)}));
   return fixos.concat(custom);
 }
 function nomeVendedora(key){
