@@ -1020,7 +1020,7 @@ function corBgSuave(hex){
 }
 function getSDRsAtivos(){
   const fixos=[{key:'EDUARDA',label:'Eduarda',cor:'#fb923c'}];
-  const custom=usuariosCustom.filter(u=>u.ativo&&u.cargo&&/sdr/i.test(u.cargo)).map(u=>({key:u.id,label:u.nome,cor:corParaUsuario(u.id)}));
+  const custom=usuariosCustom.filter(u=>u.ativo&&u.cargo&&/sdr|closer/i.test(u.cargo)).map(u=>({key:u.id,label:u.nome,cor:corParaUsuario(u.id)}));
   return fixos.concat(custom);
 }
 function nomeVendedora(key){
@@ -1039,7 +1039,27 @@ function corVendedora(key){
   return u?corParaUsuario(u.id):'var(--text2)';
 }
 function isSDRUser(u){
-  return u==='EDUARDA'||usuariosCustom.some(x=>x.id===u&&x.cargo&&/sdr/i.test(x.cargo));
+  return u==='EDUARDA'||usuariosCustom.some(x=>x.id===u&&x.cargo&&/sdr|closer/i.test(x.cargo));
+}
+// Retorna todas as "chaves" (contas/logins) que representam a mesma pessoa que está logada —
+// cobre o caso de alguém ter uma conta antiga (fixa) e uma conta nova (customizada) com o mesmo nome,
+// pra vendas antigas registradas numa chave continuarem reconhecidas como "minhas" na conta nova.
+function minhasChaves(){
+  if(currentUser==='ADMIN')return null; // null = sem restrição, admin vê tudo
+  const chaves=[currentUser];
+  const meuNome=(nomeVendedora(currentUser)||'').trim().toLowerCase();
+  if(meuNome){
+    if(meuNome==='eduarda'&&currentUser!=='EDUARDA') chaves.push('EDUARDA');
+    usuariosCustom.forEach(u=>{
+      if(u.id!==currentUser&&u.nome.trim().toLowerCase()===meuNome) chaves.push(u.id);
+    });
+  }
+  return chaves;
+}
+function isMinhaChave(key){
+  const minhas=minhasChaves();
+  if(minhas===null)return true;
+  return minhas.includes(key);
 }
 // Checa se uma call que fechou já tem um registro correspondente em Clientes pagos (por telefone)
 function jaTemPagoParaCall(call){
@@ -2756,7 +2776,7 @@ function renderPagos(){
   const labelEl=document.getElementById('pagos-mes-label');
   if(labelEl) labelEl.textContent=`${MONTHS_PT[mes-1].charAt(0).toUpperCase()+MONTHS_PT[mes-1].slice(1)} ${ano}`;
   let list=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesSelecionado);
-  if(isSDRUser(currentUser)) list=list.filter(p=>p.vendedora===currentUser||p.fechamento===currentUser||p.fechamento==='RECOMPRA_'+currentUser);
+  if(isSDRUser(currentUser)) list=list.filter(p=>isMinhaChave(p.vendedora)||isMinhaChave(p.fechamento)||p.fechamento==='RECOMPRA_'+currentUser||isMinhaChave((p.fechamento||'').replace('RECOMPRA_','')));
   if(['E2','E3','E4','E5'].includes(pagoFiltro)) list=list.filter(p=>p.plano===pagoFiltro);
   else if(pagoFiltro==='AVISO_APP'||pagoFiltro==='PN'||pagoFiltro==='ORGANICO') list=list.filter(p=>p.lead===pagoFiltro);
   list=[...list].sort((a,b)=>Number(b.id)-Number(a.id));
@@ -2912,7 +2932,7 @@ function renderMetaIndPage(listaMes){
   const el=document.getElementById('pg-meta-ind');if(!el)return;
   let SDRS=getSDRsAtivos();
   // SDR vê só a própria meta
-  if(isSDRUser(currentUser)) SDRS=SDRS.filter(s=>s.key===currentUser);
+  if(isSDRUser(currentUser)) SDRS=SDRS.filter(s=>isMinhaChave(s.key));
   const podeEditar=currentUser==='ADMIN';
   el.innerHTML=SDRS.map(s=>{
     const meta=metasPorSDR[s.key]||0;
@@ -3222,7 +3242,7 @@ function renderComissoesPagePage(){
   const listaMes=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesStr);
   let PESSOAS=getSDRsAtivos().map(s=>({key:s.key,label:s.label,cor:s.cor,bg:corBgSuave(s.cor)}));
   // cada login individual só vê a própria comissão — admin continua vendo de todo mundo
-  if(isSDRUser(currentUser)) PESSOAS=PESSOAS.filter(p=>p.key===currentUser);
+  if(isSDRUser(currentUser)) PESSOAS=PESSOAS.filter(p=>isMinhaChave(p.key));
   const dados=PESSOAS.map(p=>({...p,...calcularComissaoResponsavel(p.key,listaMes)}));
   const totalGeral=dados.reduce((s,d)=>s+(d.comissao||0),0);
   const souSDR=isSDRUser(currentUser);
@@ -3856,7 +3876,7 @@ function renderVendas(){
   document.getElementById('vendas-ranking').innerHTML=rankingComDados.map((v,i)=>{
     const pctBarra=Math.max(Math.round((v.bruto/maxBrutoRank)*100),v.bruto>0?4:0);
     const setaSubindo=i===0&&v.bruto>0;
-    const isPropia=currentUser==='ADMIN'||v.key===currentUser;
+    const isPropia=isMinhaChave(v.key);
     if(v.isChristian){
       const showVal=currentUser==='ADMIN';
       return`<div style="background:${v.bg};border:1px solid ${v.cor}40;border-radius:12px;padding:14px 16px;margin-bottom:10px">
