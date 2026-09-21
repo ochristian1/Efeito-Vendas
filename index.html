@@ -156,6 +156,7 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
 .p3{background:#1a0d2e;color:#c084fc;border:1px solid #3a1a5a}
 .p4{background:#1a1200;color:#fbbf24;border:1px solid #3a2800}
 .p5{background:#1a0a14;color:#f472b6;border:1px solid #3a1428}
+.p6{background:#2a1500;color:#fb923c;border:1px solid #7a4a1f}
 .progress-bar{display:flex;gap:3px;margin-bottom:.875rem}
 .step-dot{flex:1;height:4px;border-radius:3px;background:var(--bg3)}
 .step-dot.done{background:var(--green)}
@@ -481,13 +482,16 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
         <div class="plano-opt" id="pp-opt-E3" onclick="setPagoPlano('E3')"><div class="plano-opt-name">Plano E3</div><div class="plano-opt-desc">Gestão Completa</div></div>
         <div class="plano-opt" id="pp-opt-E4" onclick="setPagoPlano('E4')"><div class="plano-opt-name">Plano E4</div><div class="plano-opt-desc">Gestão Mercado Livre</div></div>
         <div class="plano-opt" id="pp-opt-E5" onclick="setPagoPlano('E5')"><div class="plano-opt-name">Plano E5</div><div class="plano-opt-desc">Gestão TikTok Shop</div></div>
+        <div class="plano-opt" id="pp-opt-OTIMIZACAO_LOJA" onclick="setPagoPlano('OTIMIZACAO_LOJA')" style="border-color:#7a4a1f"><div class="plano-opt-name" style="color:#fb923c">Otimização de loja</div><div class="plano-opt-desc">Serviço avulso</div></div>
       </div>
       <div class="field" style="margin-bottom:10px;margin-top:12px"><label>Origem do lead</label></div>
       <div class="plano-options">
         <div class="plano-opt" id="pp-lead-AVISO_APP" onclick="setPagoLead('AVISO_APP')" style="border-color:#1e3a5a"><div class="plano-opt-name" style="color:#60a5fa">AVISO APP</div><div class="plano-opt-desc">Publicidade Shopee</div></div>
         <div class="plano-opt" id="pp-lead-PN" onclick="setPagoLead('PN')" style="border-color:#3a1a5a"><div class="plano-opt-name" style="color:#c084fc">PN</div><div class="plano-opt-desc">Publicidade Shopee</div></div>
-        <div class="plano-opt" id="pp-lead-ORGANICO" onclick="setPagoLead('ORGANICO')" style="border-color:var(--green-border)"><div class="plano-opt-name" style="color:var(--green)">Orgânico</div><div class="plano-opt-desc">Sem publicidade</div></div>
-        <div class="plano-opt" id="pp-lead-OTIMIZACAO_LOJA" onclick="setPagoLead('OTIMIZACAO_LOJA')" style="border-color:#7a4a1f"><div class="plano-opt-name" style="color:#fb923c">Otimização de loja</div><div class="plano-opt-desc">Serviço avulso</div></div>
+        <div class="plano-opt" id="pp-lead-INDICACAO" onclick="setPagoLead('INDICACAO')" style="border-color:#0f3a2a"><div class="plano-opt-name" style="color:#34d399">Indicação</div><div class="plano-opt-desc">Cliente indicou</div></div>
+        <div class="plano-opt" id="pp-lead-EXPANSAO_CLIENTE" onclick="setPagoLead('EXPANSAO_CLIENTE')" style="border-color:#3a2f0a"><div class="plano-opt-name" style="color:#fbbf24">Expansão de cliente</div><div class="plano-opt-desc">Cliente já ativo</div></div>
+        <div class="plano-opt" id="pp-lead-AULA_AO_VIVO" onclick="setPagoLead('AULA_AO_VIVO')" style="border-color:#3a0f0f"><div class="plano-opt-name" style="color:#f87171">Aula ao vivo</div><div class="plano-opt-desc">Evento/aula</div></div>
+        <div class="plano-opt" id="pp-lead-INSTAGRAM" onclick="setPagoLead('INSTAGRAM')" style="border-color:#3a0f28"><div class="plano-opt-name" style="color:#ec4899">Instagram</div><div class="plano-opt-desc">Orgânico Instagram</div></div>
       </div>
       <div class="field" style="margin-bottom:10px;margin-top:12px"><label>Vendedora que agendou</label></div>
       <div class="plano-options" id="pp-vend-options" style="grid-template-columns:repeat(3,1fr)"></div>
@@ -508,10 +512,13 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
     <button class="pf-btn" onclick="setPagoFiltro('E3',this)">E3 · Completo</button>
     <button class="pf-btn" onclick="setPagoFiltro('E4',this)" style="color:#fbbf24;border-color:#3a2800">E4 · ML</button>
     <button class="pf-btn" onclick="setPagoFiltro('E5',this)" style="color:#f472b6;border-color:#3a1428">E5 · TikTok</button>
+    <button class="pf-btn" onclick="setPagoFiltro('OTIMIZACAO_LOJA',this)" style="color:#fb923c;border-color:#7a4a1f">Otimização de loja</button>
     <button class="pf-btn" onclick="setPagoFiltro('AVISO_APP',this)" style="color:#60a5fa;border-color:#1e3a5a">AVISO APP</button>
     <button class="pf-btn" onclick="setPagoFiltro('PN',this)" style="color:#c084fc;border-color:#3a1a5a">PN</button>
-    <button class="pf-btn" onclick="setPagoFiltro('ORGANICO',this)" style="color:var(--green);border-color:var(--green-border)">Orgânico</button>
-    <button class="pf-btn" onclick="setPagoFiltro('OTIMIZACAO_LOJA',this)" style="color:#fb923c;border-color:#7a4a1f">Otimização de loja</button>
+    <button class="pf-btn" onclick="setPagoFiltro('INDICACAO',this)" style="color:#34d399;border-color:#0f3a2a">Indicação</button>
+    <button class="pf-btn" onclick="setPagoFiltro('EXPANSAO_CLIENTE',this)" style="color:#fbbf24;border-color:#3a2f0a">Expansão de cliente</button>
+    <button class="pf-btn" onclick="setPagoFiltro('AULA_AO_VIVO',this)" style="color:#f87171;border-color:#3a0f0f">Aula ao vivo</button>
+    <button class="pf-btn" onclick="setPagoFiltro('INSTAGRAM',this)" style="color:#ec4899;border-color:#3a0f28">Instagram</button>
   </div>
   <div id="pagos-list"></div>
 </div>
@@ -916,7 +923,7 @@ function aplicarPermissoes(){
 
 const DAYS_PT=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MONTHS_PT=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-const PLANOS={E1:{nome:'E1 · Inteligência Estratégica',short:'E1 · IA',cls:'p1'},E2:{nome:'E2 · Gestão Shopee Ads',short:'E2 · Shopee Ads',cls:'p2'},E3:{nome:'E3 · Gestão Completa',short:'E3 · Completo',cls:'p3'},E4:{nome:'E4 · Gestão Mercado Livre',short:'E4 · ML',cls:'p4'},E5:{nome:'E5 · Gestão TikTok Shop',short:'E5 · TikTok',cls:'p5'}};
+const PLANOS={E1:{nome:'E1 · Inteligência Estratégica',short:'E1 · IA',cls:'p1'},E2:{nome:'E2 · Gestão Shopee Ads',short:'E2 · Shopee Ads',cls:'p2'},E3:{nome:'E3 · Gestão Completa',short:'E3 · Completo',cls:'p3'},E4:{nome:'E4 · Gestão Mercado Livre',short:'E4 · ML',cls:'p4'},E5:{nome:'E5 · Gestão TikTok Shop',short:'E5 · TikTok',cls:'p5'},OTIMIZACAO_LOJA:{nome:'Otimização de loja',short:'Otimização de loja',cls:'p6'}};
 const LEAD_ETAPAS=[
   {key:'lead_novo',label:'Lead Novo'},
   {key:'tentativa_contato',label:'Tentativa de Contato'},
@@ -1120,7 +1127,9 @@ function salvarNovoContatoFunil(){
 function mapOrigemParaLeadCall(origem){
   if(origem==='Anúncio')return'PN';
   if(origem==='Shopee Trends')return'AVISO_APP';
-  return'ORGANICO'; // Instagram, WhatsApp, Indicação, Outro, sem origem
+  if(origem==='Indicação')return'INDICACAO';
+  if(origem==='Instagram')return'INSTAGRAM';
+  return'INDICACAO'; // WhatsApp, Outro, sem origem
 }
 // Abre o formulário de novo agendamento na Agenda, já preenchido com nome/telefone/origem do lead
 function abrirAgendamentoDoFunil(id){
@@ -2120,9 +2129,9 @@ function openForm(dateStr,id){
   const d=ex?ex.data:(dateStr||todayStr());
   const h=ex?ex.hora:(()=>{const n=new Date();n.setHours(n.getHours()+1);n.setMinutes(0);return n.toTimeString().slice(0,5)})();
   const leadAtual=ex?ex.lead||'':'';
-  const leadOpts=['AVISO_APP','PN','ORGANICO','OTIMIZACAO_LOJA'];
-  const leadLabels={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico',OTIMIZACAO_LOJA:'Otimização de loja'};
-  const leadCores={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)',OTIMIZACAO_LOJA:'#fb923c'};
+  const leadOpts=['AVISO_APP','PN','INDICACAO','EXPANSAO_CLIENTE','AULA_AO_VIVO','INSTAGRAM'];
+  const leadLabels={AVISO_APP:'AVISO APP',PN:'PN',INDICACAO:'Indicação',EXPANSAO_CLIENTE:'Expansão de cliente',AULA_AO_VIVO:'Aula ao vivo',INSTAGRAM:'Instagram'};
+  const leadCores={AVISO_APP:'#60a5fa',PN:'#c084fc',INDICACAO:'#34d399',EXPANSAO_CLIENTE:'#fbbf24',AULA_AO_VIVO:'#f87171',INSTAGRAM:'#ec4899'};
   const leadHtml=leadOpts.map(l=>`<div id="fl-${l}" onclick="setFormLead('${l}')" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;background:var(--bg3);transition:all .12s${leadAtual===l?`;border-color:${leadCores[l]};background:var(--bg2)`:''};"><div style="font-size:12px;font-weight:700;color:${leadCores[l]}">${leadLabels[l]}</div></div>`).join('');
   const vendAtual=ex?ex.vendedora||'':'';
   const sdrsAtivos=getSDRsAtivos();
@@ -2169,8 +2178,8 @@ function setFormVend(v){
 function setFormLead(l){
   if(window._formLead===l){window._formLead='';document.getElementById('fl-'+l).style.borderColor='var(--border)';document.getElementById('fl-'+l).style.background='var(--bg3)';return;}
   window._formLead=l;
-  const cores={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)',OTIMIZACAO_LOJA:'#fb923c'};
-  ['AVISO_APP','PN','ORGANICO','OTIMIZACAO_LOJA'].forEach(k=>{
+  const cores={AVISO_APP:'#60a5fa',PN:'#c084fc',INDICACAO:'#34d399',EXPANSAO_CLIENTE:'#fbbf24',AULA_AO_VIVO:'#f87171',INSTAGRAM:'#ec4899'};
+  ['AVISO_APP','PN','INDICACAO','EXPANSAO_CLIENTE','AULA_AO_VIVO','INSTAGRAM'].forEach(k=>{
     const el=document.getElementById('fl-'+k);
     if(el){el.style.borderColor=k===l?cores[k]:'var(--border)';el.style.background=k===l?'var(--bg2)':'var(--bg3)';}
   });
@@ -2208,8 +2217,8 @@ function saveForm(){
 }
 function renderDetail(id){
   const item=calls.find(x=>x.id===String(id));if(!item)return;
-  const LEAD_CORES2={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)',OTIMIZACAO_LOJA:'#fb923c'};
-  const LEAD_LABELS2={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico',OTIMIZACAO_LOJA:'Otimização de loja'};
+  const LEAD_CORES2={AVISO_APP:'#60a5fa',PN:'#c084fc',INDICACAO:'#34d399',EXPANSAO_CLIENTE:'#fbbf24',AULA_AO_VIVO:'#f87171',INSTAGRAM:'#ec4899'};
+  const LEAD_LABELS2={AVISO_APP:'AVISO APP',PN:'PN',INDICACAO:'Indicação',EXPANSAO_CLIENTE:'Expansão de cliente',AULA_AO_VIVO:'Aula ao vivo',INSTAGRAM:'Instagram'};
   const vendBadge2=item.vendedora?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--bg3);color:${corVendedora(item.vendedora)};border:1px solid ${corVendedora(item.vendedora)}50;margin-left:6px">${nomeVendedora(item.vendedora)}</span>`:'';
   const leadBadge2=item.lead&&LEAD_CORES2[item.lead]?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--bg3);color:${LEAD_CORES2[item.lead]};border:1px solid ${LEAD_CORES2[item.lead]}50;margin-left:6px">${LEAD_LABELS2[item.lead]}</span>`:'';
   const statusFech=item.statusFech||'';
@@ -2444,8 +2453,8 @@ function renderList(){
 }
 function listItem(i){
   const isActive=detailId===i.id;
-  const LEAD_CORES={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)',OTIMIZACAO_LOJA:'#fb923c'};
-  const LEAD_LABELS={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico',OTIMIZACAO_LOJA:'Otimização de loja'};
+  const LEAD_CORES={AVISO_APP:'#60a5fa',PN:'#c084fc',INDICACAO:'#34d399',EXPANSAO_CLIENTE:'#fbbf24',AULA_AO_VIVO:'#f87171',INSTAGRAM:'#ec4899'};
+  const LEAD_LABELS={AVISO_APP:'AVISO APP',PN:'PN',INDICACAO:'Indicação',EXPANSAO_CLIENTE:'Expansão de cliente',AULA_AO_VIVO:'Aula ao vivo',INSTAGRAM:'Instagram'};
   const leadBadge=i.lead&&LEAD_CORES[i.lead]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${LEAD_CORES[i.lead]};border:1px solid ${LEAD_CORES[i.lead]}50;margin-left:4px">${LEAD_LABELS[i.lead]}</span>`:'';
   const vendBadge=i.vendedora?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${corVendedora(i.vendedora)};border:1px solid ${corVendedora(i.vendedora)}50;margin-left:4px">${nomeVendedora(i.vendedora)}</span>`:'';
   const fechBadge=i.statusFech==='fechou'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);margin-left:4px">✅ Fechou</span>${!jaTemPagoParaCall(i)?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:#2a1c00;color:#f59e0b;border:1px solid #f59e0b50;margin-left:4px">⚠️ Falta cadastrar em pagos</span>`:''}`:i.statusFech==='nao_fechou'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);margin-left:4px">❌ Follow-up</span>`:i.statusFech==='nao_compareceu'?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:#2a1c00;color:#f59e0b;border:1px solid #f59e0b50;margin-left:4px">🚫 Não compareceu</span>`:'';
@@ -2458,8 +2467,8 @@ function listItem(i){
   // renderizar detalhe inline
   const statusFech=i.statusFech||'';
   const obsFech=i.obsFech||'';
-  const LEAD_CORES2={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)',OTIMIZACAO_LOJA:'#fb923c'};
-  const LEAD_LABELS2={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico',OTIMIZACAO_LOJA:'Otimização de loja'};
+  const LEAD_CORES2={AVISO_APP:'#60a5fa',PN:'#c084fc',INDICACAO:'#34d399',EXPANSAO_CLIENTE:'#fbbf24',AULA_AO_VIVO:'#f87171',INSTAGRAM:'#ec4899'};
+  const LEAD_LABELS2={AVISO_APP:'AVISO APP',PN:'PN',INDICACAO:'Indicação',EXPANSAO_CLIENTE:'Expansão de cliente',AULA_AO_VIVO:'Aula ao vivo',INSTAGRAM:'Instagram'};
   const vendBadge2=i.vendedora?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--bg3);color:${corVendedora(i.vendedora)};border:1px solid ${corVendedora(i.vendedora)}50;margin-left:6px">${nomeVendedora(i.vendedora)}</span>`:'';
   const leadBadge2=i.lead&&LEAD_CORES2[i.lead]?`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--bg3);color:${LEAD_CORES2[i.lead]};border:1px solid ${LEAD_CORES2[i.lead]}50;margin-left:6px">${LEAD_LABELS2[i.lead]}</span>`:'';
   const inline=`<div id="detail-inline-${i.id}" class="detail-panel" style="margin-bottom:8px">
@@ -2668,7 +2677,7 @@ function salvarPago(){
 }
 function editarLead(id){
   const c=pagos.find(x=>x.id===String(id));if(!c)return;
-  const LEADS={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico',OTIMIZACAO_LOJA:'Otimização de loja'};
+  const LEADS={AVISO_APP:'AVISO APP',PN:'PN',INDICACAO:'Indicação',EXPANSAO_CLIENTE:'Expansão de cliente',AULA_AO_VIVO:'Aula ao vivo',INSTAGRAM:'Instagram'};
   const opcoes=Object.entries(LEADS).map(([k,v])=>`<button onclick="salvarLead('${id}','${k}')" style="padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-family:inherit">${v}</button>`).join('');
   const el=document.getElementById('pago-lead-'+id);
   if(el) el.innerHTML=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">${opcoes}</div>`;
@@ -2685,7 +2694,7 @@ function setPagoFiltro(f,el){
   el.classList.add('active');renderPagos();
 }
 function renderLeadStats(listaMes){
-  const LEADS={AVISO_APP:{label:'AVISO APP',cor:'#60a5fa',bg:'#0d1f3a'},PN:{label:'PN',cor:'#c084fc',bg:'#1a0d2e'},ORGANICO:{label:'Orgânico',cor:'var(--green)',bg:'var(--green-bg)'},OTIMIZACAO_LOJA:{label:'Otimização de loja',cor:'#fb923c',bg:'#2a1500'}};
+  const LEADS={AVISO_APP:{label:'AVISO APP',cor:'#60a5fa',bg:'#0d1f3a'},PN:{label:'PN',cor:'#c084fc',bg:'#1a0d2e'},INDICACAO:{label:'Indicação',cor:'#34d399',bg:'#0d2a1f'},EXPANSAO_CLIENTE:{label:'Expansão de cliente',cor:'#fbbf24',bg:'#2a2000'},AULA_AO_VIVO:{label:'Aula ao vivo',cor:'#f87171',bg:'#2a0d0d'},INSTAGRAM:{label:'Instagram',cor:'#ec4899',bg:'#2a0d1e'}};
   const total=listaMes.length||1;
   document.getElementById('lead-stats').innerHTML=Object.entries(LEADS).map(([k,v])=>{
     const count=listaMes.filter(p=>p.lead===k).length;
@@ -2783,14 +2792,14 @@ function renderPagos(){
   if(labelEl) labelEl.textContent=`${MONTHS_PT[mes-1].charAt(0).toUpperCase()+MONTHS_PT[mes-1].slice(1)} ${ano}`;
   let list=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesSelecionado);
   if(isSDRUser(currentUser)) list=list.filter(p=>isMinhaChave(p.vendedora)||isMinhaChave(p.fechamento)||p.fechamento==='RECOMPRA_'+currentUser||isMinhaChave((p.fechamento||'').replace('RECOMPRA_','')));
-  if(['E2','E3','E4','E5'].includes(pagoFiltro)) list=list.filter(p=>p.plano===pagoFiltro);
-  else if(pagoFiltro==='AVISO_APP'||pagoFiltro==='PN'||pagoFiltro==='ORGANICO'||pagoFiltro==='OTIMIZACAO_LOJA') list=list.filter(p=>p.lead===pagoFiltro);
+  if(['E2','E3','E4','E5','OTIMIZACAO_LOJA'].includes(pagoFiltro)) list=list.filter(p=>p.plano===pagoFiltro);
+  else if(['AVISO_APP','PN','INDICACAO','EXPANSAO_CLIENTE','AULA_AO_VIVO','INSTAGRAM'].includes(pagoFiltro)) list=list.filter(p=>p.lead===pagoFiltro);
   list=[...list].sort((a,b)=>Number(b.id)-Number(a.id));
   const el=document.getElementById('pagos-list');
   if(!list.length){el.innerHTML=`<div class="empty-day">${pagos.length?'Nenhum cliente nesse mês.':'Nenhum cliente pago ainda — clique em "+ Adicionar cliente".'}</div>`;return;}
   el.innerHTML=list.map(c=>{
     const planoInfo=c.plano&&PLANOS[c.plano]?`<span class="plano-badge ${PLANOS[c.plano].cls}">${PLANOS[c.plano].short}</span>`:'';
-    const LEAD_BADGE2={AVISO_APP:{label:'AVISO APP',cor:'#60a5fa',bg:'#0d1f3a'},PN:{label:'PN',cor:'#c084fc',bg:'#1a0d2e'},ORGANICO:{label:'Orgânico',cor:'var(--green)',bg:'var(--green-bg)'},OTIMIZACAO_LOJA:{label:'Otimização de loja',cor:'#fb923c',bg:'#2a1500'}};
+    const LEAD_BADGE2={AVISO_APP:{label:'AVISO APP',cor:'#60a5fa',bg:'#0d1f3a'},PN:{label:'PN',cor:'#c084fc',bg:'#1a0d2e'},INDICACAO:{label:'Indicação',cor:'#34d399',bg:'#0d2a1f'},EXPANSAO_CLIENTE:{label:'Expansão de cliente',cor:'#fbbf24',bg:'#2a2000'},AULA_AO_VIVO:{label:'Aula ao vivo',cor:'#f87171',bg:'#2a0d0d'},INSTAGRAM:{label:'Instagram',cor:'#ec4899',bg:'#2a0d1e'}};
     const leadInfo2=c.lead&&LEAD_BADGE2[c.lead]
       ?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:${LEAD_BADGE2[c.lead].bg};color:${LEAD_BADGE2[c.lead].cor};border:1px solid ${LEAD_BADGE2[c.lead].cor}40">${LEAD_BADGE2[c.lead].label}</span>`
       :`<span onclick="editarLead('${c.id}')" style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--bg3);color:var(--text3);border:1px solid var(--border);cursor:pointer">+ lead</span>`;
@@ -2895,7 +2904,7 @@ function renderConversaoPage(listaMes){
   const totalFechados=pagosMes.length;
   const txGeral=totalCalls>0?Math.round((totalFechados/totalCalls)*100):0;
 
-  const LEADS={AVISO_APP:{label:'AVISO APP',cor:'#60a5fa'},PN:{label:'PN',cor:'#c084fc'},ORGANICO:{label:'Orgânico',cor:'var(--green)'},OTIMIZACAO_LOJA:{label:'Otimização de loja',cor:'#fb923c'}};
+  const LEADS={AVISO_APP:{label:'AVISO APP',cor:'#60a5fa'},PN:{label:'PN',cor:'#c084fc'},INDICACAO:{label:'Indicação',cor:'#34d399'},EXPANSAO_CLIENTE:{label:'Expansão de cliente',cor:'#fbbf24'},AULA_AO_VIVO:{label:'Aula ao vivo',cor:'#f87171'},INSTAGRAM:{label:'Instagram',cor:'#ec4899'}};
   const barras=Object.entries(LEADS).map(([k,v])=>{
     const cl=callsConcluidas.filter(c=>c.lead===k).length;
     const fl=pagosMes.filter(p=>p.lead===k).length;
@@ -3536,8 +3545,8 @@ function cardFollowup(c,resolvido){
   const emoji=resolvido?'✅':c.dias>=7?'🔴':c.dias>=3?'🟡':'🟢';
   const cor=resolvido?'var(--green)':c.dias>=7?'var(--red)':c.dias>=3?'#fb923c':'var(--green)';
   const fone=(c.fone||'').replace(/\D/g,'');
-  const LEAD_LABELS={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico',OTIMIZACAO_LOJA:'Otimização de loja'};
-  const LEAD_CORES={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)',OTIMIZACAO_LOJA:'#fb923c'};
+  const LEAD_LABELS={AVISO_APP:'AVISO APP',PN:'PN',INDICACAO:'Indicação',EXPANSAO_CLIENTE:'Expansão de cliente',AULA_AO_VIVO:'Aula ao vivo',INSTAGRAM:'Instagram'};
+  const LEAD_CORES={AVISO_APP:'#60a5fa',PN:'#c084fc',INDICACAO:'#34d399',EXPANSAO_CLIENTE:'#fbbf24',AULA_AO_VIVO:'#f87171',INSTAGRAM:'#ec4899'};
   const leadBadge=c.lead&&LEAD_LABELS[c.lead]?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${LEAD_CORES[c.lead]};border:1px solid ${LEAD_CORES[c.lead]}50">${LEAD_LABELS[c.lead]}</span>`:'';
   const vendBadge=c.vendedora?`<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--bg3);color:${corVendedora(c.vendedora)};border:1px solid ${corVendedora(c.vendedora)}50">${nomeVendedora(c.vendedora)}</span>`:'';
   const aberto=followupAberto===c.id;
@@ -3658,7 +3667,7 @@ function renderConversao(listaMes){
   // clientes pagos no mês
   const fechadosMes=listaMes.length;
   const txGeral=callsMes>0?Math.round((fechadosMes/callsMes)*100):0;
-  const LEADS={AVISO_APP:{label:'AVISO APP',cor:'#60a5fa'},PN:{label:'PN',cor:'#c084fc'},ORGANICO:{label:'Orgânico',cor:'var(--green)'},OTIMIZACAO_LOJA:{label:'Otimização de loja',cor:'#fb923c'}};
+  const LEADS={AVISO_APP:{label:'AVISO APP',cor:'#60a5fa'},PN:{label:'PN',cor:'#c084fc'},INDICACAO:{label:'Indicação',cor:'#34d399'},EXPANSAO_CLIENTE:{label:'Expansão de cliente',cor:'#fbbf24'},AULA_AO_VIVO:{label:'Aula ao vivo',cor:'#f87171'},INSTAGRAM:{label:'Instagram',cor:'#ec4899'}};
   const barras=Object.entries(LEADS).map(([k,v])=>{
     const callsLead=calls.filter(c=>c.done&&c.lead===k&&c.data&&c.data.slice(0,7)===mesStr).length;
     const fechLead=listaMes.filter(p=>p.lead===k).length;
@@ -3830,7 +3839,7 @@ function renderVendas(){
   document.getElementById('vendas-ticket').textContent=`Ticket médio: R$ ${ticket.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
   document.getElementById('vendas-total').textContent=total;
   document.getElementById('vendas-dia').textContent=`Hoje: ${hoje} fechamento${hoje!==1?'s':''}`;
-  const LEADS={AVISO_APP:{label:'AVISO APP',cor:'#60a5fa',bg:'#0d1f3a'},PN:{label:'PN',cor:'#c084fc',bg:'#1a0d2e'},ORGANICO:{label:'Orgânico',cor:'var(--green)',bg:'var(--green-bg)'},OTIMIZACAO_LOJA:{label:'Otimização de loja',cor:'#fb923c',bg:'#2a1500'}};
+  const LEADS={AVISO_APP:{label:'AVISO APP',cor:'#60a5fa',bg:'#0d1f3a'},PN:{label:'PN',cor:'#c084fc',bg:'#1a0d2e'},INDICACAO:{label:'Indicação',cor:'#34d399',bg:'#0d2a1f'},EXPANSAO_CLIENTE:{label:'Expansão de cliente',cor:'#fbbf24',bg:'#2a2000'},AULA_AO_VIVO:{label:'Aula ao vivo',cor:'#f87171',bg:'#2a0d0d'},INSTAGRAM:{label:'Instagram',cor:'#ec4899',bg:'#2a0d1e'}};
   document.getElementById('vendas-leads').innerHTML=Object.entries(LEADS).map(([k,v])=>{
     const count=listaMes.filter(p=>p.lead===k).length;
     const rec=listaMes.filter(p=>p.lead===k).reduce((s,p)=>s+(p.valor||0),0);
@@ -3842,8 +3851,8 @@ function renderVendas(){
     </div>`;
   }).join('');
   const recentes=[...listaMes].sort((a,b)=>a.data>b.data?-1:1).slice(0,8);
-  const LEAD_COR={AVISO_APP:'#60a5fa',PN:'#c084fc',ORGANICO:'var(--green)',OTIMIZACAO_LOJA:'#fb923c'};
-  const LEAD_LABEL={AVISO_APP:'AVISO APP',PN:'PN',ORGANICO:'Orgânico',OTIMIZACAO_LOJA:'Otimização de loja'};
+  const LEAD_COR={AVISO_APP:'#60a5fa',PN:'#c084fc',INDICACAO:'#34d399',EXPANSAO_CLIENTE:'#fbbf24',AULA_AO_VIVO:'#f87171',INSTAGRAM:'#ec4899'};
+  const LEAD_LABEL={AVISO_APP:'AVISO APP',PN:'PN',INDICACAO:'Indicação',EXPANSAO_CLIENTE:'Expansão de cliente',AULA_AO_VIVO:'Aula ao vivo',INSTAGRAM:'Instagram'};
   // RANKING UNIFICADO
   let TODOS=[
     {key:'CHRISTIAN',label:'Christian',cor:'#22c55e',corClara:'#4ade80',bg:'#0d2a1a',avatar:'👑',isChristian:true},
