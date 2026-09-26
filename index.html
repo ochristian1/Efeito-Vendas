@@ -1001,7 +1001,29 @@ let mesSelecionado=`${_hoje.getFullYear()}-${String(_hoje.getMonth()+1).padStart
 const SB_URL='https://dztljrtiishmwxzbxode.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6dGxqcnRpaXNobXd4emJ4b2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3ODA5OTAsImV4cCI6MjA5MTM1Njk5MH0.AUbNR-lXwdZKtFOhLhLZwDVDVuHPdZNsY2nk4C0L5vA';
 const SBH={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
-function sbGet(t){return fetch(`${SB_URL}/rest/v1/${t}?select=*`,{headers:SBH}).then(r=>r.ok?r.json():[]).catch(()=>[]);}
+// Busca TODAS as linhas da tabela, paginando de 1000 em 1000 (o Supabase/PostgREST
+// limita cada resposta a 1000 linhas por padrão — sem paginar, tabelas com mais de
+// 1000 registros (ex: leads do Funil SDR) ficavam "travadas" nesse número).
+async function sbGet(t){
+  const PAGE=1000;
+  let all=[];
+  let from=0;
+  while(true){
+    const to=from+PAGE-1;
+    let res;
+    try{
+      res=await fetch(`${SB_URL}/rest/v1/${t}?select=*`,{headers:{...SBH,'Range-Unit':'items','Range':`${from}-${to}`}});
+    }catch(e){break;}
+    if(!res||!(res.ok||res.status===206))break;
+    let rows=[];
+    try{rows=await res.json();}catch(e){rows=[];}
+    if(!Array.isArray(rows)||!rows.length)break;
+    all=all.concat(rows);
+    if(rows.length<PAGE)break;
+    from+=PAGE;
+  }
+  return all;
+}
 function sbUpsert(t,row){return fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...SBH,'Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(row)}).catch(()=>{});}
 function sbDelete(t,id){return fetch(`${SB_URL}/rest/v1/${t}?id=eq.${id}`,{method:'DELETE',headers:SBH}).catch(()=>{});}
 
@@ -2255,7 +2277,10 @@ function renderDetail(id){
       <div id="fech-obs-area-${item.id}" style="margin-top:4px">
         <div style="font-size:11px;font-weight:600;color:${statusFech==='fechou'?'var(--green)':'var(--text2)'};margin-bottom:4px">${statusFech==='fechou'?'📝 Resumo pra Onboarding':'Motivo / observação'}</div>
         <textarea id="obs-fech-${item.id}" placeholder="${statusFech==='fechou'?'O que foi alinhado na call: pontos combinados, promessas feitas, contexto do cliente pro onboarding...':statusFech==='nao_compareceu'?'Motivo (opcional): não atendeu, remarcou...':'Motivo (opcional): achou caro, vai pensar...'}" onblur="salvarObsFech('${item.id}')" style="width:100%;min-height:${statusFech==='fechou'?'80':'56'}px;font-size:12px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);resize:none;font-family:inherit;outline:none">${obsFech}</textarea>
-        <div style="font-size:10px;color:var(--text3);margin-top:3px">Salva automaticamente ao sair do campo</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;gap:8px">
+          <button onmousedown="event.preventDefault()" onclick="salvarObsFech('${item.id}')" style="padding:7px 16px;background:var(--green);border:none;border-radius:7px;font-size:12px;font-weight:700;color:#000;cursor:pointer">Salvar</button>
+          <div style="font-size:10px;color:var(--text3)">Salva automaticamente ao sair do campo</div>
+        </div>
       </div>
       ${statusFech==='fechou'?(jaTemPagoParaCall(item)?`<div style="margin-top:8px;padding:8px 10px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px;font-size:11px;color:var(--green);display:flex;align-items:center;gap:6px">✅ Já cadastrado em Clientes pagos / Onboarding</div>`:`<button onclick="abrirPagoPreenchido(calls.find(c=>c.id==='${item.id}'))" style="width:100%;margin-top:8px;padding:10px;background:var(--green);border:none;border-radius:8px;font-size:12px;font-weight:700;color:#000;cursor:pointer">💰 Cadastrar em Clientes pagos → enviar pro Onboarding</button>`):''}`:''}
     </div>
@@ -2499,7 +2524,10 @@ function listItem(i){
       ${statusFech==='nao_fechou'||statusFech==='nao_compareceu'||statusFech==='fechou'?`<div id="fech-obs-area-${i.id}" style="margin-top:4px">
         <div style="font-size:11px;font-weight:600;color:${statusFech==='fechou'?'var(--green)':'var(--text2)'};margin-bottom:4px">${statusFech==='fechou'?'📝 Resumo pra Onboarding':'Motivo / observação'}</div>
         <textarea id="obs-fech-${i.id}" placeholder="${statusFech==='fechou'?'O que foi alinhado na call: pontos combinados, promessas feitas, contexto do cliente pro onboarding...':statusFech==='nao_compareceu'?'Motivo (opcional): não atendeu, remarcou...':'Motivo (opcional): achou caro, vai pensar...'}" onblur="salvarObsFech('${i.id}')" style="width:100%;min-height:${statusFech==='fechou'?'80':'56'}px;font-size:12px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);resize:none;font-family:inherit;outline:none">${obsFech}</textarea>
-        <div style="font-size:10px;color:var(--text3);margin-top:3px">Salva automaticamente ao sair do campo</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;gap:8px">
+          <button onmousedown="event.preventDefault()" onclick="salvarObsFech('${i.id}')" style="padding:7px 16px;background:var(--green);border:none;border-radius:7px;font-size:12px;font-weight:700;color:#000;cursor:pointer">Salvar</button>
+          <div style="font-size:10px;color:var(--text3)">Salva automaticamente ao sair do campo</div>
+        </div>
       </div>
       ${statusFech==='fechou'?(jaTemPagoParaCall(i)?`<div style="margin-top:8px;padding:8px 10px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px;font-size:11px;color:var(--green);display:flex;align-items:center;gap:6px">✅ Já cadastrado em Clientes pagos / Onboarding</div>`:`<button onclick="abrirPagoPreenchido(calls.find(c=>c.id==='${i.id}'))" style="width:100%;margin-top:8px;padding:10px;background:var(--green);border:none;border-radius:8px;font-size:12px;font-weight:700;color:#000;cursor:pointer">💰 Cadastrar em Clientes pagos → enviar pro Onboarding</button>`):''}`:''}
     </div>
