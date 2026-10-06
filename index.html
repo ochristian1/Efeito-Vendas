@@ -157,6 +157,7 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
 .p4{background:#1a1200;color:#fbbf24;border:1px solid #3a2800}
 .p5{background:#1a0a14;color:#f472b6;border:1px solid #3a1428}
 .p6{background:#2a1500;color:#fb923c;border:1px solid #7a4a1f}
+.p7{background:#0d2a1f;color:#34d399;border:1px solid #0f3a2a}
 .progress-bar{display:flex;gap:3px;margin-bottom:.875rem}
 .step-dot{flex:1;height:4px;border-radius:3px;background:var(--bg3)}
 .step-dot.done{background:var(--green)}
@@ -483,6 +484,7 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
         <div class="plano-opt" id="pp-opt-E4" onclick="setPagoPlano('E4')"><div class="plano-opt-name">Plano E4</div><div class="plano-opt-desc">Gestão Mercado Livre</div></div>
         <div class="plano-opt" id="pp-opt-E5" onclick="setPagoPlano('E5')"><div class="plano-opt-name">Plano E5</div><div class="plano-opt-desc">Gestão TikTok Shop</div></div>
         <div class="plano-opt" id="pp-opt-OTIMIZACAO_LOJA" onclick="setPagoPlano('OTIMIZACAO_LOJA')" style="border-color:#7a4a1f"><div class="plano-opt-name" style="color:#fb923c">Otimização de loja</div><div class="plano-opt-desc">Serviço avulso</div></div>
+        <div class="plano-opt" id="pp-opt-MANUTENCAO_LOJA" onclick="setPagoPlano('MANUTENCAO_LOJA')" style="border-color:#0f3a2a"><div class="plano-opt-name" style="color:#34d399">Manutenção de loja</div><div class="plano-opt-desc">Serviço avulso</div></div>
       </div>
       <div class="field" style="margin-bottom:10px;margin-top:12px"><label>Origem do lead</label></div>
       <div class="plano-options">
@@ -513,6 +515,7 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
     <button class="pf-btn" onclick="setPagoFiltro('E4',this)" style="color:#fbbf24;border-color:#3a2800">E4 · ML</button>
     <button class="pf-btn" onclick="setPagoFiltro('E5',this)" style="color:#f472b6;border-color:#3a1428">E5 · TikTok</button>
     <button class="pf-btn" onclick="setPagoFiltro('OTIMIZACAO_LOJA',this)" style="color:#fb923c;border-color:#7a4a1f">Otimização de loja</button>
+    <button class="pf-btn" onclick="setPagoFiltro('MANUTENCAO_LOJA',this)" style="color:#34d399;border-color:#0f3a2a">Manutenção de loja</button>
     <button class="pf-btn" onclick="setPagoFiltro('AVISO_APP',this)" style="color:#60a5fa;border-color:#1e3a5a">AVISO APP</button>
     <button class="pf-btn" onclick="setPagoFiltro('PN',this)" style="color:#c084fc;border-color:#3a1a5a">PN</button>
     <button class="pf-btn" onclick="setPagoFiltro('INDICACAO',this)" style="color:#34d399;border-color:#0f3a2a">Indicação</button>
@@ -923,7 +926,7 @@ function aplicarPermissoes(){
 
 const DAYS_PT=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MONTHS_PT=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-const PLANOS={E1:{nome:'E1 · Inteligência Estratégica',short:'E1 · IA',cls:'p1'},E2:{nome:'E2 · Gestão Shopee Ads',short:'E2 · Shopee Ads',cls:'p2'},E3:{nome:'E3 · Gestão Completa',short:'E3 · Completo',cls:'p3'},E4:{nome:'E4 · Gestão Mercado Livre',short:'E4 · ML',cls:'p4'},E5:{nome:'E5 · Gestão TikTok Shop',short:'E5 · TikTok',cls:'p5'},OTIMIZACAO_LOJA:{nome:'Otimização de loja',short:'Otimização de loja',cls:'p6'}};
+const PLANOS={E1:{nome:'E1 · Inteligência Estratégica',short:'E1 · IA',cls:'p1'},E2:{nome:'E2 · Gestão Shopee Ads',short:'E2 · Shopee Ads',cls:'p2'},E3:{nome:'E3 · Gestão Completa',short:'E3 · Completo',cls:'p3'},E4:{nome:'E4 · Gestão Mercado Livre',short:'E4 · ML',cls:'p4'},E5:{nome:'E5 · Gestão TikTok Shop',short:'E5 · TikTok',cls:'p5'},OTIMIZACAO_LOJA:{nome:'Otimização de loja',short:'Otimização de loja',cls:'p6'},MANUTENCAO_LOJA:{nome:'Manutenção de loja',short:'Manutenção de loja',cls:'p7'}};
 const LEAD_ETAPAS=[
   {key:'lead_novo',label:'Lead Novo'},
   {key:'tentativa_contato',label:'Tentativa de Contato'},
@@ -2820,7 +2823,7 @@ function renderPagos(){
   if(labelEl) labelEl.textContent=`${MONTHS_PT[mes-1].charAt(0).toUpperCase()+MONTHS_PT[mes-1].slice(1)} ${ano}`;
   let list=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesSelecionado);
   if(isSDRUser(currentUser)) list=list.filter(p=>isMinhaChave(p.vendedora)||isMinhaChave(p.fechamento)||p.fechamento==='RECOMPRA_'+currentUser||isMinhaChave((p.fechamento||'').replace('RECOMPRA_','')));
-  if(['E2','E3','E4','E5','OTIMIZACAO_LOJA'].includes(pagoFiltro)) list=list.filter(p=>p.plano===pagoFiltro);
+  if(['E2','E3','E4','E5','OTIMIZACAO_LOJA','MANUTENCAO_LOJA'].includes(pagoFiltro)) list=list.filter(p=>p.plano===pagoFiltro);
   else if(['AVISO_APP','PN','INDICACAO','EXPANSAO_CLIENTE','AULA_AO_VIVO','INSTAGRAM'].includes(pagoFiltro)) list=list.filter(p=>p.lead===pagoFiltro);
   list=[...list].sort((a,b)=>Number(b.id)-Number(a.id));
   const el=document.getElementById('pagos-list');
