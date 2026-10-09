@@ -2826,7 +2826,8 @@ function renderPagos(){
   const labelEl=document.getElementById('pagos-mes-label');
   if(labelEl) labelEl.textContent=`${MONTHS_PT[mes-1].charAt(0).toUpperCase()+MONTHS_PT[mes-1].slice(1)} ${ano}`;
   let list=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesSelecionado);
-  if(isSDRUser(currentUser)) list=list.filter(p=>isMinhaChave(p.vendedora)||isMinhaChave(p.fechamento)||p.fechamento==='RECOMPRA_'+currentUser||isMinhaChave((p.fechamento||'').replace('RECOMPRA_','')));
+  // Eduarda vê todos os clientes pagos (visão geral); demais SDRs/closers continuam vendo só os seus
+  if(isSDRUser(currentUser)&&!(minhasChaves()||[]).includes('EDUARDA')) list=list.filter(p=>isMinhaChave(p.vendedora)||isMinhaChave(p.fechamento)||p.fechamento==='RECOMPRA_'+currentUser||isMinhaChave((p.fechamento||'').replace('RECOMPRA_','')));
   if(['E2','E3','E4','E5','OTIMIZACAO_LOJA','MANUTENCAO_LOJA'].includes(pagoFiltro)) list=list.filter(p=>p.plano===pagoFiltro);
   else if(['AVISO_APP','PN','INDICACAO','EXPANSAO_CLIENTE','AULA_AO_VIVO','INSTAGRAM'].includes(pagoFiltro)) list=list.filter(p=>p.lead===pagoFiltro);
   list=[...list].sort((a,b)=>Number(b.id)-Number(a.id));
