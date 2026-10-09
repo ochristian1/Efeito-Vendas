@@ -1085,7 +1085,11 @@ function isSDRUser(u){
 function minhasChaves(){
   if(currentUser==='ADMIN')return null; // null = sem restrição, admin vê tudo
   const chaves=[currentUser];
-  const meuNome=(nomeVendedora(currentUser)||'').trim().toLowerCase();
+  let meuNome=(nomeVendedora(currentUser)||'').trim().toLowerCase();
+  // reserva: se a lista de usuários ainda não chegou, nomeVendedora devolve a própria chave (USR_...) — usa o nome salvo no login
+  if(!meuNome||meuNome===String(currentUser).trim().toLowerCase()){
+    try{meuNome=(sessionStorage.getItem('ev_user_nome')||meuNome||'').trim().toLowerCase();}catch(e){}
+  }
   if(meuNome){
     if(meuNome==='eduarda'&&currentUser!=='EDUARDA') chaves.push('EDUARDA');
     usuariosCustom.forEach(u=>{
@@ -1458,7 +1462,7 @@ function hideLoading(){const e=document.getElementById('loading-bar');if(e)e.sty
 // LOAD ALL
 function loadAll(){
   showLoading('Carregando dados...');
-  return Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos'),sbGet('leads')]).then(([rc,rct,rp,rn,ra,rl])=>{
+  return Promise.all([sbGet('calls'),sbGet('clientes'),sbGet('pagos'),sbGet('notas'),sbGet('avisos'),sbGet('leads'),carregarUsuariosCustom()]).then(([rc,rct,rp,rn,ra,rl])=>{
     
     calls=(rc||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',data:r.data||'',hora:r.hora||'',obs:r.obs||'',done:!!r.done,lead:r.lead||'',vendedora:r.vendedora||'',closer:r.closer||'',statusFech:r.status_fech||'',obsFech:r.obs_fech||''}));
     calls.sort((a,b)=>a.data+a.hora>b.data+b.hora?1:-1);
