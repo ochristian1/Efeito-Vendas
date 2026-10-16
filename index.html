@@ -2797,6 +2797,8 @@ function salvarEditPago(id){
   c.data=document.getElementById('ep-data-'+id).value||c.data;
   c.valor=parseFloat(document.getElementById('ep-valor-'+id).value)||0;
   c.obs=document.getElementById('ep-obs-'+id).value.trim();
+  const selPlano=document.getElementById('ep-plano-'+id);
+  if(selPlano) c.plano=selPlano.value;
   if(c._editVend) c.vendedora=c._editVend==='NENHUMA'?'':c._editVend;
   if(c._editFech) c.fechamento=c._editFech;
   sbUpsert('pagos',{id:c.id,nome:c.nome,fone:c.fone||'',plano:c.plano||'',data:c.data,valor:c.valor,obs:c.obs||'',lead:c.lead||'',vendedora:c.vendedora||'',fechamento:c.fechamento||''});
@@ -2872,6 +2874,13 @@ function renderPagos(){
       </div>
       <div class="form-row form-full">
         <div class="field"><label>Observação</label><input id="ep-obs-${c.id}" type="text" value="${c.obs||''}"></div>
+      </div>
+      <div class="field" style="margin-bottom:8px"><label>Plano</label>
+        <select id="ep-plano-${c.id}" style="width:100%;margin-top:6px">
+          <option value="">Plano não informado</option>
+          ${['MANUTENCAO_LOJA','OTIMIZACAO_LOJA','GESTAO_ADS','CONSULTORIA','GESTAO_CONTAS','GESTAO_CONTABILIDADE'].map(k=>`<option value="${k}"${c.plano===k?' selected':''}>${PLANOS[k].nome}</option>`).join('')}
+          <optgroup label="Planos antigos">${['E1','E2','E3','E4','E5'].map(k=>`<option value="${k}"${c.plano===k?' selected':''}>${PLANOS[k].nome}</option>`).join('')}</optgroup>
+        </select>
       </div>
       <div class="field" style="margin-bottom:8px"><label>Vendedora que agendou</label>
         <div style="display:flex;gap:8px;margin-top:6px">
