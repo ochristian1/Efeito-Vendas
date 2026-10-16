@@ -2839,7 +2839,7 @@ function renderPagos(){
   const el=document.getElementById('pagos-list');
   if(!list.length){el.innerHTML=`<div class="empty-day">${pagos.length?'Nenhum cliente nesse mês.':'Nenhum cliente pago ainda — clique em "+ Adicionar cliente".'}</div>`;return;}
   el.innerHTML=list.map(c=>{
-    const planoInfo=c.plano&&PLANOS[c.plano]?`<span class="plano-badge ${PLANOS[c.plano].cls}">${PLANOS[c.plano].short}</span>`:'';
+    const planoInfo=c.plano&&PLANOS[c.plano]?`<span class="plano-badge ${PLANOS[c.plano].cls}">${PLANOS[c.plano].short}</span>`:`<span class="plano-badge plano-nao-informado">plano não informado</span>`;
     const LEAD_BADGE2={AVISO_APP:{label:'AVISO APP',cor:'#60a5fa',bg:'#0d1f3a'},PN:{label:'PN',cor:'#c084fc',bg:'#1a0d2e'},INDICACAO:{label:'Indicação',cor:'#34d399',bg:'#0d2a1f'},EXPANSAO_CLIENTE:{label:'Expansão de cliente',cor:'#fbbf24',bg:'#2a2000'},AULA_AO_VIVO:{label:'Aula ao vivo',cor:'#f87171',bg:'#2a0d0d'},INSTAGRAM:{label:'Instagram',cor:'#ec4899',bg:'#2a0d1e'}};
     const leadInfo2=c.lead&&LEAD_BADGE2[c.lead]
       ?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:${LEAD_BADGE2[c.lead].bg};color:${LEAD_BADGE2[c.lead].cor};border:1px solid ${LEAD_BADGE2[c.lead].cor}40">${LEAD_BADGE2[c.lead].label}</span>`
