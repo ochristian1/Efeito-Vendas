@@ -755,6 +755,21 @@ function switchTabSB(name,el){
   renderTabByKey(name); // resposta instantânea com dados já em memória
   loadAll().then(()=>{try{renderTabByKey(name);}catch(e){}}); // depois atualiza com dados frescos do banco
   if(name==='funil-sdr') iniciarFunilPolling(); else pararFunilPolling();
+  if(name==='vendas') iniciarVendasPolling(); else pararVendasPolling();
+}
+let vendasPollTimer=null;
+function iniciarVendasPolling(){
+  pararVendasPolling();
+  // Painel ao vivo: enquanto estiver aberto, busca dados novos a cada 10s (faturamento alterado em Clientes pagos por outra pessoa/aba aparece sozinho)
+  vendasPollTimer=setInterval(()=>{
+    loadAll().then(()=>{
+      const ativo=document.getElementById('tab-vendas');
+      if(ativo&&ativo.classList.contains('active')) renderVendas();
+    });
+  },10000);
+}
+function pararVendasPolling(){
+  if(vendasPollTimer){clearInterval(vendasPollTimer);vendasPollTimer=null;}
 }
 let funilPollTimer=null;
 function iniciarFunilPolling(){
@@ -2813,9 +2828,12 @@ function salvarEditPago(id){
   if(selPlano) c.plano=selPlano.dataset.val||'';
   if(c._editVend) c.vendedora=c._editVend==='NENHUMA'?'':c._editVend;
   if(c._editFech) c.fechamento=c._editFech;
-  sbUpsert('pagos',{id:c.id,nome:c.nome,fone:c.fone||'',plano:c.plano||'',data:c.data,valor:c.valor,obs:c.obs||'',lead:c.lead||'',vendedora:c.vendedora||'',fechamento:c.fechamento||''});
   renderPagos();renderVendas();
-  syncAndRefresh();
+  // espera o banco confirmar antes de recarregar; se falhar, avisa (antes o valor "voltava" sem ninguém perceber)
+  sbUpsert('pagos',{id:c.id,nome:c.nome,fone:c.fone||'',plano:c.plano||'',data:c.data,valor:c.valor,obs:c.obs||'',lead:c.lead||'',vendedora:c.vendedora||'',fechamento:c.fechamento||''}).then(r=>{
+    if(!r||!r.ok) alert('Não foi possível salvar essa alteração no banco. Confira a conexão e tente de novo.');
+    syncAndRefresh();
+  });
 }
 function delPago(id){
   const pago=pagos.find(x=>x.id===String(id));
