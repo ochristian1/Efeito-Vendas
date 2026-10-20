@@ -162,6 +162,7 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
 .p9{background:#1a0d2e;color:#c084fc;border:1px solid #3a1a5a}
 .p10{background:#1a1200;color:#fbbf24;border:1px solid #3a2800}
 .p11{background:#1a0a14;color:#f472b6;border:1px solid #3a1428}
+.p13{background:#0d2a26;color:#2dd4bf;border:1px solid #0f3a34}
 .p12{background:#0d2a2a;color:#22d3ee;border:1px solid #0f3a3a}
 .plano-nao-informado{background:var(--bg3);color:var(--text3);border:1px solid var(--border)}
 .progress-bar{display:flex;gap:3px;margin-bottom:.875rem}
@@ -491,6 +492,7 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
         <div class="plano-opt" id="pp-opt-CONSULTORIA" onclick="setPagoPlano('CONSULTORIA')" style="border-color:#1e3a5a"><div class="plano-opt-name" style="color:#60a5fa">CONSULTORIA</div><div class="plano-opt-desc">Serviço</div></div>
         <div class="plano-opt" id="pp-opt-GESTAO_CONTAS" onclick="setPagoPlano('GESTAO_CONTAS')" style="border-color:#3a1a5a"><div class="plano-opt-name" style="color:#c084fc">GESTÃO DE CONTAS</div><div class="plano-opt-desc">Serviço</div></div>
         <div class="plano-opt" id="pp-opt-GESTAO_CONTABILIDADE" onclick="setPagoPlano('GESTAO_CONTABILIDADE')" style="border-color:#3a2800"><div class="plano-opt-name" style="color:#fbbf24">GESTÃO COM CONTABILIDADE</div><div class="plano-opt-desc">Serviço</div></div>
+        <div class="plano-opt" id="pp-opt-ACOMPANHAMENTO_INDIVIDUAL" onclick="setPagoPlano('ACOMPANHAMENTO_INDIVIDUAL')" style="border-color:#0f3a3a"><div class="plano-opt-name" style="color:#2dd4bf">ACOMPANHAMENTO INDIVIDUAL</div><div class="plano-opt-desc">Serviço</div></div>
       </div>
       <div class="field" style="margin-bottom:10px;margin-top:12px"><label>Origem do lead</label></div>
       <div class="plano-options">
@@ -522,6 +524,7 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
     <button class="pf-btn" onclick="setPagoFiltro('CONSULTORIA',this)" style="color:#60a5fa;border-color:#1e3a5a">CONSULTORIA</button>
     <button class="pf-btn" onclick="setPagoFiltro('GESTAO_CONTAS',this)" style="color:#c084fc;border-color:#3a1a5a">GESTÃO DE CONTAS</button>
     <button class="pf-btn" onclick="setPagoFiltro('GESTAO_CONTABILIDADE',this)" style="color:#fbbf24;border-color:#3a2800">GESTÃO COM CONTABILIDADE</button>
+    <button class="pf-btn" onclick="setPagoFiltro('ACOMPANHAMENTO_INDIVIDUAL',this)" style="color:#2dd4bf;border-color:#0f3a3a">ACOMPANHAMENTO INDIVIDUAL</button>
     <button class="pf-btn" onclick="setPagoFiltro('AVISO_APP',this)" style="color:#60a5fa;border-color:#1e3a5a">AVISO APP</button>
     <button class="pf-btn" onclick="setPagoFiltro('PN',this)" style="color:#c084fc;border-color:#3a1a5a">PN</button>
     <button class="pf-btn" onclick="setPagoFiltro('INDICACAO',this)" style="color:#34d399;border-color:#0f3a2a">Indicação</button>
@@ -946,7 +949,7 @@ function aplicarPermissoes(){
 
 const DAYS_PT=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MONTHS_PT=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-const PLANOS={E1:{nome:'E1 · Inteligência Estratégica',short:'E1 · IA',cls:'p1'},E2:{nome:'E2 · Gestão Shopee Ads',short:'E2 · Shopee Ads',cls:'p2'},E3:{nome:'E3 · Gestão Completa',short:'E3 · Completo',cls:'p3'},E4:{nome:'E4 · Gestão Mercado Livre',short:'E4 · ML',cls:'p4'},E5:{nome:'E5 · Gestão TikTok Shop',short:'E5 · TikTok',cls:'p5'},OTIMIZACAO_LOJA:{nome:'OTIMIZAÇÃO DE LOJA',short:'OTIMIZAÇÃO DE LOJA',cls:'p6'},MANUTENCAO_LOJA:{nome:'MANUTENÇÃO SEMANAL',short:'MANUTENÇÃO SEMANAL',cls:'p7'},CONSULTORIA:{nome:'CONSULTORIA',short:'CONSULTORIA',cls:'p8'},GESTAO_CONTAS:{nome:'GESTÃO DE CONTAS',short:'GESTÃO DE CONTAS',cls:'p9'},GESTAO_CONTABILIDADE:{nome:'GESTÃO COM CONTABILIDADE',short:'GESTÃO COM CONTABILIDADE',cls:'p10'},GESTAO_ADS:{nome:'GESTÃO DE ADS',short:'GESTÃO DE ADS',cls:'p12'}};
+const PLANOS={E1:{nome:'E1 · Inteligência Estratégica',short:'E1 · IA',cls:'p1'},E2:{nome:'E2 · Gestão Shopee Ads',short:'E2 · Shopee Ads',cls:'p2'},E3:{nome:'E3 · Gestão Completa',short:'E3 · Completo',cls:'p3'},E4:{nome:'E4 · Gestão Mercado Livre',short:'E4 · ML',cls:'p4'},E5:{nome:'E5 · Gestão TikTok Shop',short:'E5 · TikTok',cls:'p5'},OTIMIZACAO_LOJA:{nome:'OTIMIZAÇÃO DE LOJA',short:'OTIMIZAÇÃO DE LOJA',cls:'p6'},MANUTENCAO_LOJA:{nome:'MANUTENÇÃO SEMANAL',short:'MANUTENÇÃO SEMANAL',cls:'p7'},CONSULTORIA:{nome:'CONSULTORIA',short:'CONSULTORIA',cls:'p8'},GESTAO_CONTAS:{nome:'GESTÃO DE CONTAS',short:'GESTÃO DE CONTAS',cls:'p9'},GESTAO_CONTABILIDADE:{nome:'GESTÃO COM CONTABILIDADE',short:'GESTÃO COM CONTABILIDADE',cls:'p10'},GESTAO_ADS:{nome:'GESTÃO DE ADS',short:'GESTÃO DE ADS',cls:'p12'},ACOMPANHAMENTO_INDIVIDUAL:{nome:'ACOMPANHAMENTO INDIVIDUAL',short:'ACOMPANHAMENTO INDIVIDUAL',cls:'p13'}};
 const LEAD_ETAPAS=[
   {key:'lead_novo',label:'Lead Novo'},
   {key:'tentativa_contato',label:'Tentativa de Contato'},
@@ -2802,7 +2805,7 @@ function setEditFech(id,f){
   });
 }
 // Cards de plano usados nos formulários de edição (Clientes pagos e Onboarding). O valor escolhido fica em data-val do container.
-const PLANOS_CADASTRO=['MANUTENCAO_LOJA','OTIMIZACAO_LOJA','GESTAO_ADS','CONSULTORIA','GESTAO_CONTAS','GESTAO_CONTABILIDADE'];
+const PLANOS_CADASTRO=['MANUTENCAO_LOJA','OTIMIZACAO_LOJA','GESTAO_ADS','CONSULTORIA','GESTAO_CONTAS','GESTAO_CONTABILIDADE','ACOMPANHAMENTO_INDIVIDUAL'];
 function planoCardsEdit(cid,atual){
   const legado=atual&&PLANOS[atual]&&!PLANOS_CADASTRO.includes(atual)?[atual]:[];
   return`<div class="plano-options" id="${cid}" data-val="${atual||''}" style="margin:6px 0 10px">${PLANOS_CADASTRO.concat(legado).map(k=>`<div class="plano-opt${atual===k?' selected':''}" data-k="${k}" onclick="setPlanoEdit('${cid}','${k}')"><div class="plano-opt-name">${PLANOS[k].nome}</div></div>`).join('')}</div>`;
