@@ -28,6 +28,7 @@ Interface em português (pt-BR).
 - `E1` a `E5` continuam no `PLANOS` **só para clientes antigos** continuarem mostrando o plano que compraram. Não remova.
 - O filtro por plano usa `PLANOS[pagoFiltro]`.
 - O plano aparece como selo no card de Clientes pagos e ao lado do nome no Onboarding ("plano não informado" quando vazio), para a operação saber o que foi vendido.
+- O Painel ao vivo tem o card "Planos mais vendidos" (ranking do mês por quantidade, com % e faturamento; vendas sem plano entram como "plano não informado").
 - Editar o plano: botão Editar em Clientes pagos, ou "✏️ editar" no Onboarding. Ambos usam `planoCardsEdit()` / `setPlanoEdit()` e gravam em `pagos.plano`.
 
 ## Como validar uma mudança

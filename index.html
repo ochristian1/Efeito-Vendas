@@ -580,6 +580,10 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
     <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">Origem dos leads</div>
     <div id="vendas-leads" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
   </div>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem">
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">Planos mais vendidos</div>
+    <div id="vendas-planos"></div>
+  </div>
   <div style="background:linear-gradient(180deg,var(--bg2) 0%,var(--bg) 100%);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:1rem;position:relative;overflow:hidden">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
       <span style="font-size:20px">🏆</span>
@@ -3933,6 +3937,29 @@ function renderVendas(){
       <div style="font-size:10px;color:${v.cor};opacity:.8">${pct2}% · R$ ${rec.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
     </div>`;
   }).join('');
+  // Planos mais vendidos no mês (ranking por quantidade; desempate por faturamento)
+  const planosRank=Object.keys(PLANOS).concat(['']).map(k=>{
+    const itens=listaMes.filter(p=>(PLANOS[p.plano]?p.plano:'')===k);
+    return{k,count:itens.length,rec:itens.reduce((s,p)=>s+(p.valor||0),0)};
+  }).filter(x=>x.count>0).sort((a,b)=>b.count-a.count||b.rec-a.rec);
+  const elPlanos=document.getElementById('vendas-planos');
+  if(elPlanos){
+    const maxCount=planosRank.length?planosRank[0].count:1;
+    elPlanos.innerHTML=planosRank.length?planosRank.map((x,i)=>{
+      const info=x.k?PLANOS[x.k]:null;
+      const pctP=total>0?Math.round((x.count/total)*100):0;
+      return`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;${i?'border-top:1px solid var(--border)':''}">
+        <div style="width:22px;font-size:12px;font-weight:700;color:var(--text3);text-align:center">${i+1}º</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:5px">
+            ${info?`<span class="plano-badge ${info.cls}">${info.short}</span>`:`<span class="plano-badge plano-nao-informado">plano não informado</span>`}
+            <span style="font-size:12px;color:var(--text2)"><b style="color:var(--text)">${x.count}</b> venda${x.count!==1?'s':''} · ${pctP}% · R$ ${x.rec.toLocaleString('pt-BR',{minimumFractionDigits:2})}</span>
+          </div>
+          <div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="height:100%;width:${Math.round((x.count/maxCount)*100)}%;background:var(--green);border-radius:3px"></div></div>
+        </div>
+      </div>`;
+    }).join(''):'<div style="text-align:center;padding:14px;color:var(--text3);font-size:12px">Nenhuma venda nesse mês ainda.</div>';
+  }
   const recentes=[...listaMes].sort((a,b)=>a.data>b.data?-1:1).slice(0,8);
   const LEAD_COR={AVISO_APP:'#60a5fa',PN:'#c084fc',INDICACAO:'#34d399',EXPANSAO_CLIENTE:'#fbbf24',AULA_AO_VIVO:'#f87171',INSTAGRAM:'#ec4899'};
   const LEAD_LABEL={AVISO_APP:'AVISO APP',PN:'PN',INDICACAO:'Indicação',EXPANSAO_CLIENTE:'Expansão de cliente',AULA_AO_VIVO:'Aula ao vivo',INSTAGRAM:'Instagram'};
