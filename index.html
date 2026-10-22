@@ -3938,8 +3938,11 @@ function renderVendas(){
     </div>`;
   }).join('');
   // Planos mais vendidos no mês (ranking por quantidade; desempate por faturamento)
-  const planosRank=Object.keys(PLANOS).concat(['']).map(k=>{
-    const itens=listaMes.filter(p=>(PLANOS[p.plano]?p.plano:'')===k);
+  // No ranking, planos antigos equivalentes contam junto com o plano atual (E3 = Gestão de contas)
+  const PLANO_EQUIV={E3:'GESTAO_CONTAS'};
+  const planoDoRanking=p=>{const k=PLANOS[p.plano]?p.plano:'';return PLANO_EQUIV[k]||k;};
+  const planosRank=Object.keys(PLANOS).filter(k=>!PLANO_EQUIV[k]).concat(['']).map(k=>{
+    const itens=listaMes.filter(p=>planoDoRanking(p)===k);
     return{k,count:itens.length,rec:itens.reduce((s,p)=>s+(p.valor||0),0)};
   }).filter(x=>x.count>0).sort((a,b)=>b.count-a.count||b.rec-a.rec);
   const elPlanos=document.getElementById('vendas-planos');
