@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Controle de contas · Acompanhamento 30 dias</title>
+<style>
+:root{--bg:#0f1115;--card:#181b22;--line:#272b35;--text:#e8eaed;--mute:#8b909c;--green:#22c55e;--amber:#f59e0b;--red:#ef4444}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif;padding:16px}
+.wrap{max-width:860px;margin:0 auto}
+h1{font-size:20px;margin:4px 0 16px}
+.form,.card,.stat{background:var(--card);border:1px solid var(--line);border-radius:10px}
+.form{padding:14px;margin-bottom:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end}
+label{display:block;font-size:11px;color:var(--mute);margin-bottom:4px}
+input{width:100%;padding:9px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit}
+button{padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--text);font:inherit;cursor:pointer}
+button.pri{background:var(--green);border-color:var(--green);color:#000;font-weight:700}
+button.del{color:var(--red)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:16px}
+.stat{padding:10px 12px}.stat b{font-size:22px;display:block}.stat span{font-size:11px;color:var(--mute)}
+.card{padding:14px;margin-bottom:8px;border-left:4px solid var(--c)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.info{flex:1;min-width:180px}.info small{color:var(--mute);display:block;margin-top:2px}
+.badge{font-weight:700;font-size:13px;color:var(--c)}
+.bar{height:5px;background:var(--line);border-radius:3px;margin-top:10px;overflow:hidden}.bar i{display:block;height:100%;background:var(--c)}
+.empty{text-align:center;color:var(--mute);padding:30px}
+.foot{margin-top:18px;font-size:11px;color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⏳ Controle de contas · acompanhamento de 30 dias</h1>
+
+  <div class="form">
+    <div><label>Nome do cliente</label><input id="cliente" placeholder="Ex.: João Silva"></div>
+    <div><label>Nome da loja</label><input id="loja" placeholder="Ex.: Loja do João"></div>
+    <div><label>Data de entrada</label><input id="inicio" type="date"></div>
+    <div><label>Vence em (automático)</label><input id="fim" readonly placeholder="—"></div>
+    <button class="pri" onclick="adicionar()">Adicionar</button>
+  </div>
+
+  <div class="stats" id="stats"></div>
+  <div id="lista"></div>
+
+  <div class="foot">Os dados ficam salvos neste navegador. <a href="#" onclick="exportar();return false" style="color:var(--mute)">Baixar backup</a></div>
+</div>
+
+<script>
+const DIAS=30, KEY='ctrl_contas_v1';
+let contas=[];
+try{contas=JSON.parse(localStorage.getItem(KEY)||'[]');}catch(e){}
+const salvar=()=>{try{localStorage.setItem(KEY,JSON.stringify(contas));}catch(e){}};
+const $=id=>document.getElementById(id);
+const hoje=()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
+const soma=(iso,n)=>{const[y,m,d]=iso.split('-').map(Number);const t=new Date(y,m-1,d+n);return`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;};
+const br=iso=>iso.split('-').reverse().join('/');
+const dias=iso=>{const[y,m,d]=iso.split('-').map(Number),[a,b,c]=hoje().split('-').map(Number);return Math.round((new Date(y,m-1,d)-new Date(a,b-1,c))/864e5);};
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function previa(){$('fim').value=$('inicio').value?br(soma($('inicio').value,DIAS)):'';}
+$('inicio').addEventListener('input',previa);
+$('inicio').value=hoje();previa();
+
+function adicionar(){
+  const cliente=$('cliente').value.trim(),loja=$('loja').value.trim(),inicio=$('inicio').value;
+  if(!cliente||!loja||!inicio){alert('Preencha cliente, loja e data de entrada.');return;}
+  contas.push({id:String(Date.now()),cliente,loja,inicio});
+  salvar();$('cliente').value='';$('loja').value='';$('inicio').value=hoje();previa();render();
+}
+function renovar(id){const c=contas.find(x=>x.id===id);if(c&&confirm('Renovar "'+c.loja+'" por mais 30 dias a partir de hoje?')){c.inicio=hoje();salvar();render();}}
+function excluir(id){const c=contas.find(x=>x.id===id);if(c&&confirm('Remover "'+c.loja+'"?')){contas=contas.filter(x=>x.id!==id);salvar();render();}}
+function exportar(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(contas,null,2)],{type:'application/json'}));a.download='contas-backup.json';a.click();}
+
+function render(){
+  const l=contas.map(c=>{const fim=soma(c.inicio,DIAS);return{...c,fim,d:dias(fim)};}).sort((a,b)=>a.d-b.d);
+  const venc=l.filter(c=>c.d<0).length,prox=l.filter(c=>c.d>=0&&c.d<=7).length;
+  const st=(n,t)=>`<div class="stat"><b>${n}</b><span>${t}</span></div>`;
+  $('stats').innerHTML=st(l.length,'Contas ativas')+st(l.length-venc-prox,'No prazo')+st(prox,'Vencem em até 7 dias')+st(venc,'Vencidas');
+  if(!l.length){$('lista').innerHTML='<div class="empty">Nenhuma conta cadastrada ainda.</div>';return;}
+  $('lista').innerHTML=l.map(c=>{
+    const cor=c.d<0?'var(--red)':c.d<=7?'var(--amber)':'var(--green)';
+    const txt=c.d<0?`Venceu há ${-c.d} dia${c.d===-1?'':'s'}`:c.d===0?'Vence hoje':`Faltam ${c.d} dia${c.d===1?'':'s'}`;
+    const pct=Math.max(0,Math.min(100,Math.round((DIAS-c.d)/DIAS*100)));
+    return`<div class="card" style="--c:${cor}"><div class="row">
+      <div class="info"><b>${esc(c.loja)}</b><small>${esc(c.cliente)} · entrou em ${br(c.inicio)} · vence em ${br(c.fim)}</small></div>
+      <span class="badge">${txt}</span>
+      <button onclick="renovar('${c.id}')">Renovar</button><button class="del" onclick="excluir('${c.id}')">Excluir</button>
+    </div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
+  }).join('');
+}
+render();
+</script>
+</body>
+</html>
