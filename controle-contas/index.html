@@ -4,12 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Controle de Conta</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%238b5cf6%22/%3E%3Cstop offset=%221%22 stop-color=%22%2322d3ee%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%230b1020%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%2219%22 fill=%22none%22 stroke=%22%23262f5a%22 stroke-width=%226%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%2219%22 fill=%22none%22 stroke=%22url%28%23g%29%22 stroke-width=%226%22 stroke-linecap=%22round%22 stroke-dasharray=%2288 120%22 transform=%22rotate%28-90 32 32%29%22/%3E%3Cpath d=%22M32 21v11l7 5%22 fill=%22none%22 stroke=%22%23eef1ff%22 stroke-width=%224%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E">
 <style>
 :root{--bg:#0b1020;--bg2:#121935;--card:#151c3a;--line:#262f5a;--text:#eef1ff;--mute:#9aa5d1;--ok:#34d399;--warn:#fbbf24;--bad:#fb7185;--accent:#8b5cf6;--accent2:#22d3ee}
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:20px 16px;background:radial-gradient(900px 400px at 10% -10%,#2a1f6b55,transparent),radial-gradient(800px 400px at 100% 0,#0e7490440,transparent),var(--bg)}
 .wrap{max-width:880px;margin:0 auto;display:grid;gap:16px}
 h1{font-size:24px;margin:0;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent;width:fit-content}
+.brand{display:flex;align-items:center;gap:12px}.logo{width:52px;height:52px;flex:none;border-radius:14px;box-shadow:0 0 0 1px var(--line)}.logo svg{width:100%;height:100%;display:block}
 .sub{color:var(--mute);font-size:13px;margin-top:4px}
 .form,.card,.stat{background:var(--card);border:1px solid var(--line);border-radius:12px}
 .form{padding:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end}
@@ -33,7 +35,7 @@ button.del{color:var(--bad)}
 </head>
 <body>
 <div class="wrap">
-  <div><h1>Controle de Conta</h1><div class="sub">Acompanhamento individual de 30 dias. Cadastre a entrada e veja quando cada conta expira.</div></div>
+  <div class="brand"><span class="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="gl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b5cf6"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="#0b1020"/><circle cx="32" cy="32" r="19" fill="none" stroke="#262f5a" stroke-width="6"/><circle cx="32" cy="32" r="19" fill="none" stroke="url(#gl)" stroke-width="6" stroke-linecap="round" stroke-dasharray="88 120" transform="rotate(-90 32 32)"/><path d="M32 21v11l7 5" fill="none" stroke="#eef1ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><h1>Controle de Conta</h1><div class="sub">Acompanhamento individual de 30 dias. Cadastre a entrada e veja quando cada conta expira.</div></div></div>
   <form class="form" id="form">
     <div><label for="cliente">Nome do cliente</label><input id="cliente" placeholder="Ex.: João Silva" autocomplete="off"></div>
     <div><label for="loja">Nome da loja</label><input id="loja" placeholder="Ex.: Loja do João" autocomplete="off"></div>
