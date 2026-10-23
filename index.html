@@ -357,11 +357,6 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
         <span style="color:#60a5fa">Onboarding</span>
         <span class="sb-badge" id="sb-badge-onb"></span>
       </div>
-      <div class="sb-nav-item" id="nav-acompanhamento" onclick="switchTabSB('acompanhamento',this)">
-        <i class="ti ti-hourglass" style="font-size:16px;color:#2dd4bf" aria-hidden="true"></i>
-        <span style="color:#2dd4bf">Contas (30 dias)</span>
-        <span class="sb-badge" id="sb-badge-acomp"></span>
-      </div>
       <div class="sb-nav-item" id="nav-desempenho" onclick="switchTabSB('desempenho',this)">
         <i class="ti ti-calendar-stats" style="font-size:16px;color:#c084fc" aria-hidden="true"></i>
         <span style="color:#c084fc">Desempenho</span>
@@ -640,33 +635,6 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
   <div id="pg-onboarding"></div>
 </div>
 
-<!-- ACOMPANHAMENTO INDIVIDUAL (CONTROLE DE VALIDADE 30 DIAS) -->
-<div id="tab-acompanhamento" class="tab-pane">
-  <div class="fluxo-top">
-    <span class="fluxo-title">⏳ Controle de contas · acompanhamento de 30 dias</span>
-    <button class="btn-novo-cliente" onclick="toggleNovaAcomp()">+ Nova conta</button>
-  </div>
-  <div id="acomp-form" style="display:none">
-    <div class="novo-form">
-      <div class="panel-title">Nova conta em acompanhamento</div>
-      <div class="form-row">
-        <div class="field"><label>Nome da loja</label><input id="ac-loja" type="text" placeholder="Ex.: Loja do João"></div>
-        <div class="field"><label>Data de entrada</label><input id="ac-inicio" type="date" oninput="previaAcompFim()"></div>
-        <div class="field"><label>Vence em (30 dias)</label><input id="ac-fim" type="text" readonly placeholder="—"></div>
-      </div>
-      <div class="form-row form-full">
-        <div class="field"><label>Observação (opcional)</label><input id="ac-obs" type="text" placeholder="Ex.: contato, link da loja..."></div>
-      </div>
-      <div class="btn-row">
-        <button class="btn-save" onclick="salvarAcomp()">Salvar</button>
-        <button class="btn-cancel" onclick="toggleNovaAcomp()">Cancelar</button>
-      </div>
-    </div>
-  </div>
-  <div id="acomp-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:1.25rem"></div>
-  <div id="pg-acompanhamento"></div>
-</div>
-
 <!-- DESEMPENHO POR PERÍODO -->
 <div id="tab-desempenho" class="tab-pane">
   <div class="fluxo-top"><span class="fluxo-title">📊 Desempenho por período</span></div>
@@ -775,7 +743,6 @@ function renderTabByKey(name){
   else if(name==='motivos'){renderMotivosPage();renderMotivosLeadsPage();}
   else if(name==='followups') renderFollowupsPage();
   else if(name==='onboarding') renderOnboardingPage();
-  else if(name==='acompanhamento') renderAcompPage();
   else if(name==='desempenho') renderDesempenhoPage();
   else if(name==='usuarios') renderUsuariosPage();
   else if(name==='dashboard') renderDashboardPage();
@@ -937,7 +904,6 @@ const PERMS=[
   {key:'vendas',navId:'nav-vendas',label:'Painel ao vivo'},
   {key:'aviso',navId:'nav-aviso-item',label:'Enviar aviso'},
   {key:'onboarding',navId:'nav-onboarding',label:'Onboarding'},
-  {key:'acompanhamento',navId:'nav-acompanhamento',label:'Contas (30 dias)'},
   {key:'desempenho',navId:'nav-desempenho',label:'Desempenho'},
   {key:'conversao',navId:'nav-conversao',label:'Conversão'},
   {key:'meta-ind',navId:'nav-meta-ind',label:'Meta individual'},
@@ -960,7 +926,7 @@ function aplicarPermissoes(){
   }
   // Usuário customizado (criado na tela de Usuários): aplica permissões individuais
   if(!SENHAS_VALUES.includes(currentUser)){
-    const temAlgumaDoBloco=['aviso','onboarding','acompanhamento','desempenho'].some(k=>currentUserPerms.includes(k));
+    const temAlgumaDoBloco=['aviso','onboarding','desempenho'].some(k=>currentUserPerms.includes(k));
     const btn=document.getElementById('sb-aviso-btn');
     if(btn) btn.style.display=temAlgumaDoBloco?'block':'none';
     const lbl=document.getElementById('sb-time-label');
@@ -1571,21 +1537,13 @@ function loadAll(){
       const m=String(r.titulo).match(/^__onbhide_(.+)__$/);
       if(m) onboardingOcultos[m[1]]=true;
     });
-    // contas em acompanhamento individual (30 dias): uma nota por conta, chave __acomp_<id>__
-    acompanhamentos=[];
-    (rn||[]).filter(r=>String(r.titulo).startsWith('__acomp_')).forEach(r=>{
-      const m=String(r.titulo).match(/^__acomp_(.+)__$/);
-      if(!m)return;
-      try{const d=JSON.parse(r.texto);if(d&&d.loja&&d.inicio)acompanhamentos.push({id:m[1],loja:d.loja,inicio:d.inicio,obs:d.obs||''});}catch(e){}
-    });
-    notas=(rn||[]).filter(r=>r.titulo!=='__meta_mes__'&&!String(r.titulo).startsWith('__acomp_')&&!String(r.titulo).startsWith('__meta_mes_')&&!String(r.titulo).startsWith('__meta_sdr_')&&!String(r.titulo).startsWith('__onb_')&&!String(r.titulo).startsWith('__onbhide_')).map(r=>({id:String(r.id),titulo:r.titulo||'',texto:r.texto||'',data:r.data||'',feita:!!r.feita}));
+    notas=(rn||[]).filter(r=>r.titulo!=='__meta_mes__'&&!String(r.titulo).startsWith('__meta_mes_')&&!String(r.titulo).startsWith('__meta_sdr_')&&!String(r.titulo).startsWith('__onb_')&&!String(r.titulo).startsWith('__onbhide_')).map(r=>({id:String(r.id),titulo:r.titulo||'',texto:r.texto||'',data:r.data||'',feita:!!r.feita}));
     hideLoading();
     try{renderAgenda();}catch(e){console.error('renderAgenda:',e);}
     try{renderPagos();}catch(e){console.error('renderPagos:',e);}
     try{renderNotas();}catch(e){console.error('renderNotas:',e);}
     try{renderVendas();}catch(e){console.error('renderVendas:',e);}
     try{atualizarSBBadges();}catch(e){console.error('badges:',e);}
-    try{renderAcompPage();}catch(e){console.error('acomp:',e);}
     if(podeReceberAvisos()){try{verificarAvisos(ra||[]);}catch(e){}}
     if(abaInicialPendente){try{renderTabByKey(abaInicialPendente);}catch(e){}abaInicialPendente=null;}
   }).catch(e=>{
@@ -3159,79 +3117,6 @@ function salvarOnbObs(pagoId){
   onbObsAberto=null;
   renderOnboardingPage();
   syncAndRefresh();
-}
-// ACOMPANHAMENTO INDIVIDUAL — controle de validade (30 dias a partir da entrada)
-let acompanhamentos=[];
-const ACOMP_DIAS=30;
-function acompSomaDias(iso,n){const [y,m,d]=iso.split('-').map(Number);const dt=new Date(y,m-1,d+n);return`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;}
-function acompDiasRestantes(fim){const [y,m,d]=fim.split('-').map(Number);const [ty,tm,td]=todayStr().split('-').map(Number);return Math.round((new Date(y,m-1,d)-new Date(ty,tm-1,td))/86400000);}
-function acompEsc(t){return String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function toggleNovaAcomp(){
-  const f=document.getElementById('acomp-form');if(!f)return;
-  const abrir=f.style.display==='none';
-  f.style.display=abrir?'block':'none';
-  if(abrir){document.getElementById('ac-loja').value='';document.getElementById('ac-obs').value='';document.getElementById('ac-inicio').value=todayStr();previaAcompFim();}
-}
-function previaAcompFim(){
-  const i=document.getElementById('ac-inicio').value;
-  document.getElementById('ac-fim').value=i?fmtDateBR(acompSomaDias(i,ACOMP_DIAS)):'';
-}
-function gravarAcomp(a){
-  return sbUpsert('notas',{id:'acomp_'+a.id,titulo:'__acomp_'+a.id+'__',texto:JSON.stringify({loja:a.loja,inicio:a.inicio,obs:a.obs||''}),data:'',feita:false});
-}
-function salvarAcomp(){
-  const loja=document.getElementById('ac-loja').value.trim();
-  const inicio=document.getElementById('ac-inicio').value;
-  const obs=document.getElementById('ac-obs').value.trim();
-  if(!loja||!inicio){alert('Preencha o nome da loja e a data de entrada.');return;}
-  const a={id:String(Date.now()),loja,inicio,obs};
-  acompanhamentos.push(a);
-  gravarAcomp(a);
-  toggleNovaAcomp();
-  renderAcompPage();
-}
-function renovarAcomp(id){
-  const a=acompanhamentos.find(x=>x.id===id);if(!a)return;
-  if(!confirm('Renovar "'+a.loja+'" por mais 30 dias a partir de hoje?'))return;
-  a.inicio=todayStr();
-  gravarAcomp(a);
-  renderAcompPage();
-}
-function excluirAcomp(id){
-  const a=acompanhamentos.find(x=>x.id===id);if(!a)return;
-  if(!confirm('Remover "'+a.loja+'" do controle?'))return;
-  acompanhamentos=acompanhamentos.filter(x=>x.id!==id);
-  sbDelete('notas','acomp_'+id);
-  renderAcompPage();
-}
-function renderAcompPage(){
-  const el=document.getElementById('pg-acompanhamento');
-  const lista=acompanhamentos.map(a=>{const fim=acompSomaDias(a.inicio,ACOMP_DIAS);return{...a,fim,dias:acompDiasRestantes(fim)};}).sort((a,b)=>a.dias-b.dias);
-  const venc=lista.filter(a=>a.dias<0).length, prox=lista.filter(a=>a.dias>=0&&a.dias<=7).length, ok=lista.length-venc-prox;
-  const badge=document.getElementById('sb-badge-acomp');
-  if(badge) badge.textContent=(venc+prox)>0?(venc+prox):'';
-  if(!el)return;
-  const st=document.getElementById('acomp-stats');
-  const card=(n,l,c)=>`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px"><div style="font-size:20px;font-weight:700;color:${c}">${n}</div><div style="font-size:11px;color:var(--text3)">${l}</div></div>`;
-  if(st) st.innerHTML=card(lista.length,'Contas ativas','var(--text)')+card(ok,'No prazo','var(--green)')+card(prox,'Vencem em até 7 dias','#f59e0b')+card(venc,'Vencidas','var(--red)');
-  if(!lista.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--text3)">Nenhuma conta cadastrada. Clique em "+ Nova conta".</div>';return;}
-  el.innerHTML=lista.map(a=>{
-    const cor=a.dias<0?'var(--red)':a.dias<=7?'#f59e0b':'var(--green)';
-    const txt=a.dias<0?`Venceu há ${-a.dias} dia${a.dias===-1?'':'s'}`:a.dias===0?'Vence hoje':`Faltam ${a.dias} dia${a.dias===1?'':'s'}`;
-    const pct=Math.max(0,Math.min(100,Math.round(((ACOMP_DIAS-a.dias)/ACOMP_DIAS)*100)));
-    return`<div style="background:var(--bg2);border:1px solid var(--border);border-left:3px solid ${cor};border-radius:10px;padding:14px;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <div style="flex:1;min-width:160px">
-          <div style="font-size:13px;font-weight:600;color:var(--text)">${acompEsc(a.loja)}</div>
-          <div style="font-size:11px;color:var(--text3)">Entrou em ${fmtDateBR(a.inicio)} · vence em ${fmtDateBR(a.fim)}${a.obs?' · '+acompEsc(a.obs):''}</div>
-        </div>
-        <span style="font-size:12px;font-weight:700;color:${cor}">${txt}</span>
-        <button class="btn-cancel" onclick="renovarAcomp('${a.id}')">Renovar</button>
-        <button class="btn-del" onclick="excluirAcomp('${a.id}')">Excluir</button>
-      </div>
-      <div style="height:5px;background:var(--bg3);border-radius:3px;margin-top:10px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${cor}"></div></div>
-    </div>`;
-  }).join('');
 }
 function renderOnboardingPage(){
   const el=document.getElementById('pg-onboarding');if(!el)return;
