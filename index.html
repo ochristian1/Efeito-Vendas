@@ -840,9 +840,8 @@ function iniciarApp(){
   if(podeReceberAvisos()) iniciarPollingAvisos();
 }
 function podeReceberAvisos(){
-  if(isSDRUser(currentUser))return true;
-  if(!SENHAS_VALUES.includes(currentUser))return currentUserPerms.includes('aviso');
-  return false;
+  // todo mundo recebe o aviso, menos quem envia (ADMIN). A permissão 'aviso' é só para ENVIAR.
+  return !!currentUser&&currentUser!=='ADMIN';
 }
 let abaInicialPendente=null;
 function abrirPrimeiraAbaPermitida(){
@@ -886,11 +885,47 @@ function verificarAvisos(avisos){
 let avisoPollTimer=null;
 function iniciarPollingAvisos(){
   if(avisoPollTimer) clearInterval(avisoPollTimer);
-  // checa a cada 5 segundos se há aviso novo
-  avisoPollTimer=setInterval(()=>{
-    if(currentUser==='ADMIN')return;
-    sbGet('avisos').then(ra=>verificarAvisos(ra||[])).catch(()=>{});
-  },5000);
+  // a cada 4s: confere aviso novo e se o cadastro/permissões do usuário logado mudaram (sem precisar sair e entrar)
+  avisoPollTimer=setInterval(sincronizarSessao,4000);
+  // aba que estava em segundo plano (navegador atrasa timers): confere assim que a pessoa volta
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)sincronizarSessao();});
+  window.addEventListener('focus',sincronizarSessao);
+}
+let sincSessaoRodando=false;
+function sincronizarSessao(){
+  if(!currentUser||sincSessaoRodando)return;
+  sincSessaoRodando=true;
+  const tarefas=[];
+  if(podeReceberAvisos()) tarefas.push(sbGet('avisos').then(ra=>verificarAvisos(ra||[])).catch(()=>{}));
+  if(!SENHAS_VALUES.includes(currentUser)&&currentUser!=='ADMIN') tarefas.push(carregarUsuariosCustom().then(aplicarMudancasDoMeuUsuario).catch(()=>{}));
+  Promise.all(tarefas).finally(()=>{sincSessaoRodando=false;});
+}
+// Reflete na hora o que foi alterado na tela de Usuários (permissões, nome, cargo, desativação) para quem já está logado
+function aplicarMudancasDoMeuUsuario(){
+  const me=usuariosCustom.find(u=>u.id===currentUser);
+  if(!me||!me.ativo){alert('Seu acesso foi desativado. Você será desconectado.');logout();return;}
+  const permsNovas=me.permissoes||[];
+  const mudouPerms=JSON.stringify([...permsNovas].sort())!==JSON.stringify([...currentUserPerms].sort());
+  const mudouNome=me.nome!==(USER_INFO[currentUser]||{}).nome||(me.cargo||'Usuário')!==(USER_INFO[currentUser]||{}).role;
+  if(!mudouPerms&&!mudouNome)return;
+  currentUserPerms=permsNovas;
+  USER_INFO[currentUser]={nome:me.nome,role:me.cargo||'Usuário',av:(me.nome[0]||'?').toUpperCase()};
+  sessionStorage.setItem('ev_user_perms',JSON.stringify(currentUserPerms));
+  sessionStorage.setItem('ev_user_nome',me.nome);
+  sessionStorage.setItem('ev_user_cargo',me.cargo||'Usuário');
+  const info=USER_INFO[currentUser];
+  const av=document.getElementById('sb-av'),nome=document.getElementById('sb-nome'),role=document.getElementById('sb-role');
+  if(av) av.textContent=info.av; if(nome) nome.textContent=info.nome; if(role) role.textContent=info.role;
+  aplicarPermissoes();
+  // se a aba aberta deixou de ser permitida, leva para a primeira permitida
+  const ativo=document.querySelector('.tab-pane.active');
+  const paneKey=ativo?ativo.id.replace('tab-',''):'';
+  const key=paneKey==='funil-sdr'?'leads':paneKey;
+  if(PERMS.some(p=>p.key===key)&&!currentUserPerms.includes(key)){
+    const primeira=PERMS.find(p=>p.key!=='aviso'&&currentUserPerms.includes(p.key));
+    const nav=primeira&&document.getElementById(primeira.navId);
+    if(nav) nav.click();
+  }
 }
 const PERMS=[
   {key:'agenda',navId:'nav-agenda',label:'Agenda'},
