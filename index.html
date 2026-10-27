@@ -295,6 +295,7 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
 </div>
   <div id="aviso-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center;padding:20px">
   <div style="background:var(--bg2);border:1px solid var(--green-border);border-radius:20px;padding:2.5rem 2rem;max-width:400px;width:100%;text-align:center;position:relative">
+    <button onclick="fecharAviso()" title="Fechar" aria-label="Fechar aviso" style="position:absolute;top:10px;right:12px;width:30px;height:30px;border:none;border-radius:50%;background:var(--bg3);color:var(--text2);font-size:16px;line-height:1;cursor:pointer;font-family:inherit">✕</button>
     <div style="width:60px;height:60px;border-radius:50%;background:var(--green-bg);border:2px solid var(--green-border);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px">🚀</div>
     <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Mensagem do Christian</div>
     <div id="aviso-texto" style="font-size:16px;font-weight:600;color:var(--text);line-height:1.6;margin-bottom:24px"></div>
@@ -866,9 +867,24 @@ function abrirEnviarAviso(){
   sbUpsert('avisos',{id:'aviso_atual',mensagem:msgComVersao,ativo:true});
   alert('✅ Aviso enviado! Vai aparecer na tela deles em alguns segundos.');
 }
+// Aviso aparece uma única vez por mensagem: a versão vista fica em memória (vale mesmo se o navegador bloquear o localStorage) e também em localStorage/sessionStorage.
+let avisoVistoMem=null;
+function avisoVistoVersao(){
+  if(avisoVistoMem) return avisoVistoMem;
+  try{const v=localStorage.getItem('aviso_visto_versao');if(v) return v;}catch(e){}
+  try{return sessionStorage.getItem('aviso_visto_versao');}catch(e){}
+  return null;
+}
+function marcarAvisoVisto(versao){
+  avisoVistoMem=versao;
+  try{localStorage.setItem('aviso_visto_versao',versao);}catch(e){}
+  try{sessionStorage.setItem('aviso_visto_versao',versao);}catch(e){}
+}
 function fecharAviso(){
   document.getElementById('aviso-overlay').style.display='none';
+  if(avisoAtualVersao) marcarAvisoVisto(avisoAtualVersao);
 }
+let avisoAtualVersao=null;
 function verificarAvisos(avisos){
   const aviso=(avisos||[]).find(a=>a.id==='aviso_atual'&&a.ativo&&a.mensagem);
   if(!aviso)return;
@@ -876,9 +892,9 @@ function verificarAvisos(avisos){
   const partes=String(aviso.mensagem).split('|||');
   const texto=partes[0];
   const versao=partes[1]||texto;
-  const ultimaVista=localStorage.getItem('aviso_visto_versao');
-  if(ultimaVista===versao)return;
-  localStorage.setItem('aviso_visto_versao',versao);
+  if(avisoVistoVersao()===versao)return;
+  avisoAtualVersao=versao;
+  marcarAvisoVisto(versao);
   document.getElementById('aviso-texto').textContent=texto;
   document.getElementById('aviso-overlay').style.display='flex';
 }
