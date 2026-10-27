@@ -18,7 +18,7 @@ Interface em português (pt-BR).
 - `minhasChaves()` junta todas as chaves da mesma pessoa (ex.: a conta antiga fixa `EDUARDA` e a conta nova `USR_...` da Eduarda). `isMinhaChave()` usa essa lista para decidir o que cada pessoa vê. Se `usuariosCustom` ainda não carregou, o nome vem de `ev_user_nome`.
 - `loadAll()` carrega `usuariosCustom` dentro do mesmo `Promise.all` dos demais dados. Mantenha assim: se a lista de usuários chegar depois, a comissão da Eduarda some do Painel ao vivo.
 - `sincronizarSessao()` roda a cada 4s (e ao voltar para a aba): busca avisos novos e, para usuários da tabela `usuarios`, aplica na hora mudanças de permissões/nome/cargo e desconecta se o acesso foi desativado. Todos recebem avisos, menos o ADMIN (a permissão `aviso` é só para enviar).
-- A Eduarda vê **todos** os clientes pagos. Outras SDRs/closers veem só os deles (filtro em `renderPagos()`).
+- Clientes pagos: **todos** os usuários com acesso à aba veem **todas** as vendas (`renderPagos()` não filtra por vendedora).
 
 ## Comissões (quem fechou a venda)
 - `<SDR> fechou` = 8%, `<SDR> - Recompra` = 4%, `DONO` ("Você fechou") = 2%.

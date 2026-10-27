@@ -2921,8 +2921,7 @@ function renderPagos(){
   const labelEl=document.getElementById('pagos-mes-label');
   if(labelEl) labelEl.textContent=`${MONTHS_PT[mes-1].charAt(0).toUpperCase()+MONTHS_PT[mes-1].slice(1)} ${ano}`;
   let list=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesSelecionado);
-  // Eduarda vê todos os clientes pagos (visão geral); demais SDRs/closers continuam vendo só os seus
-  if(isSDRUser(currentUser)&&!(minhasChaves()||[]).includes('EDUARDA')) list=list.filter(p=>isMinhaChave(p.vendedora)||isMinhaChave(p.fechamento)||p.fechamento==='RECOMPRA_'+currentUser||isMinhaChave((p.fechamento||'').replace('RECOMPRA_','')));
+  // Todos os usuários com acesso a Clientes pagos veem todas as vendas registradas (sem filtro por vendedora)
   if(PLANOS[pagoFiltro]) list=list.filter(p=>p.plano===pagoFiltro);
   else if(['AVISO_APP','PN','INDICACAO','EXPANSAO_CLIENTE','AULA_AO_VIVO','INSTAGRAM'].includes(pagoFiltro)) list=list.filter(p=>p.lead===pagoFiltro);
   list=[...list].sort((a,b)=>Number(b.id)-Number(a.id));
