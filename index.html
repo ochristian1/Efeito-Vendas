@@ -900,8 +900,8 @@ function verificarAvisos(avisos){
   if(avisoVistoVersao()===versao)return;
   avisoAtualVersao=versao;
   marcarAvisoVisto(versao);
-  // quem enviou não precisa ver o próprio aviso; avisos antigos (sem id) eram do Christian, então o ADMIN também não os vê
-  if((remetenteId&&remetenteId===currentUser)||(!remetenteId&&currentUser==='ADMIN'))return;
+  // quem enviou não precisa ver o próprio aviso (exceto o ADMIN, que quer ver tudo); avisos antigos (sem id) eram do Christian, então o ADMIN não os vê de novo
+  if((remetenteId&&remetenteId===currentUser&&currentUser!=='ADMIN')||(!remetenteId&&currentUser==='ADMIN'))return;
   const elRem=document.getElementById('aviso-remetente');
   if(elRem) elRem.textContent='Mensagem de '+remetente;
   document.getElementById('aviso-texto').textContent=texto;
