@@ -842,8 +842,8 @@ function iniciarApp(){
   if(podeReceberAvisos()) iniciarPollingAvisos();
 }
 function podeReceberAvisos(){
-  // todo mundo recebe o aviso, menos quem envia (ADMIN). A permissão 'aviso' é só para ENVIAR.
-  return !!currentUser&&currentUser!=='ADMIN';
+  // todo mundo recebe os avisos, inclusive o ADMIN; quem envia não vê o próprio (ver verificarAvisos). A permissão 'aviso' é só para ENVIAR.
+  return !!currentUser;
 }
 let abaInicialPendente=null;
 function abrirPrimeiraAbaPermitida(){
@@ -900,7 +900,8 @@ function verificarAvisos(avisos){
   if(avisoVistoVersao()===versao)return;
   avisoAtualVersao=versao;
   marcarAvisoVisto(versao);
-  if(remetenteId&&remetenteId===currentUser)return; // quem enviou não precisa ver o próprio aviso
+  // quem enviou não precisa ver o próprio aviso; avisos antigos (sem id) eram do Christian, então o ADMIN também não os vê
+  if((remetenteId&&remetenteId===currentUser)||(!remetenteId&&currentUser==='ADMIN'))return;
   const elRem=document.getElementById('aviso-remetente');
   if(elRem) elRem.textContent='Mensagem de '+remetente;
   document.getElementById('aviso-texto').textContent=texto;
