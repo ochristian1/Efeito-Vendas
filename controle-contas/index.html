@@ -61,6 +61,7 @@ const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const hoje=()=>iso(new Date());
 const soma=(s,n)=>{const[y,m,d]=s.split('-').map(Number);return iso(new Date(y,m-1,d+n));};
 const br=s=>s.split('-').reverse().join('/');
+const fimDe=c=>c.fim||soma(c.inicio,DIAS); // data de saída: a escolhida, ou entrada + 30 dias
 const dias=s=>{const[y,m,d]=s.split('-').map(Number),[a,b,c]=hoje().split('-').map(Number);return Math.round((new Date(y,m-1,d)-new Date(a,b-1,c))/864e5);};
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -88,13 +89,15 @@ $('form').addEventListener('submit',async e=>{
     contas.push(row);$('cliente').value='';$('loja').value='';$('inicio').value=hoje();previa();render();
   }catch(err){$('msg').textContent='Não foi possível salvar. Tente de novo.';}
 });
+function atualizaFimEdicao(){const i=$('e-inicio').value;if(i)$('e-fim').value=soma(i,DIAS);}
 function editar(id){editando=id;pendente=null;render();}
 function cancelarEdicao(){editando=null;render();}
 async function salvarEdicao(id){
-  const cliente=$('e-cliente').value.trim(),loja=$('e-loja').value.trim(),inicio=$('e-inicio').value;
-  if(!cliente||!loja||!inicio){$('msg').textContent='Preencha cliente, loja e data de entrada.';return;}
+  const cliente=$('e-cliente').value.trim(),loja=$('e-loja').value.trim(),inicio=$('e-inicio').value,fim=$('e-fim').value;
+  if(!cliente||!loja||!inicio||!fim){$('msg').textContent='Preencha cliente, loja, data de entrada e data de saída.';return;}
+  if(fim<inicio){$('msg').textContent='A data de saída não pode ser antes da entrada.';return;}
   try{
-    const r=await fetch(T+'?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{...H,Prefer:'return=minimal'},body:JSON.stringify({cliente,loja,inicio})});
+    const r=await fetch(T+'?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{...H,Prefer:'return=minimal'},body:JSON.stringify({cliente,loja,inicio,fim})});
     if(!r.ok)throw new Error(r.status);
     editando=null;$('msg').textContent='';await carregar();
   }catch(err){$('msg').textContent='Não foi possível salvar a edição. Tente de novo.';}
@@ -105,17 +108,17 @@ async function agir(id,acao){
   try{
     const url=T+'?id=eq.'+encodeURIComponent(id);
     const c=contas.find(x=>x.id===id);
-    const fimAtual=soma(c.inicio,DIAS);
-    const novoInicio=fimAtual>hoje()?fimAtual:hoje(); // soma 30 dias ao vencimento; se já venceu, conta de hoje
+    const fimAtual=fimDe(c);
+    const novoFim=soma(fimAtual>hoje()?fimAtual:hoje(),DIAS); // soma 30 dias à saída; se já venceu, conta de hoje
     const r=acao==='renovar'
-      ?await fetch(url,{method:'PATCH',headers:{...H,Prefer:'return=minimal'},body:JSON.stringify({inicio:novoInicio})})
+      ?await fetch(url,{method:'PATCH',headers:{...H,Prefer:'return=minimal'},body:JSON.stringify({fim:novoFim})})
       :await fetch(url,{method:'DELETE',headers:H});
     if(!r.ok)throw new Error(r.status);
     await carregar();
   }catch(err){$('msg').textContent='Não foi possível concluir a ação. Tente de novo.';render();}
 }
 function render(){
-  const l=contas.map(c=>{const fim=soma(c.inicio,DIAS);return{...c,fim,d:dias(fim)};}).sort((a,b)=>a.d-b.d);
+  const l=contas.map(c=>{const fim=fimDe(c);return{...c,fim,d:dias(fim)};}).sort((a,b)=>a.d-b.d);
   const venc=l.filter(c=>c.d<0).length,prox=l.filter(c=>c.d>=0&&c.d<=7).length;
   const st=(n,t,k)=>`<div class="stat ${k||''}"><b>${n}</b><span>${t}</span></div>`;
   $('stats').innerHTML=st(l.length,'Contas ativas')+st(l.length-venc-prox,'No prazo','ok')+st(prox,'Expiram em até 7 dias','warn')+st(venc,'Expiradas','bad');
@@ -124,13 +127,15 @@ function render(){
   $('lista').innerHTML=l.map(c=>{
     const cor=c.d<0?'var(--bad)':c.d<=7?'var(--warn)':'var(--ok)';
     const txt=c.d<0?`Expirou há ${-c.d} dia${c.d===-1?'':'s'}`:c.d===0?'Expira hoje':`Faltam ${c.d} dia${c.d===1?'':'s'}`;
-    const pct=Math.max(0,Math.min(100,Math.round((DIAS-c.d)/DIAS*100)));
+    const total=Math.max(1,dias(c.fim)-dias(c.inicio));
+    const pct=Math.max(0,Math.min(100,Math.round((total-c.d)/total*100)));
     const p=a=>pendente&&pendente.id===c.id&&pendente.acao===a;
     if(editando===c.id)return`<div class="card" style="--c:var(--accent)">
       <div class="form" style="border:0;padding:0;background:none">
         <div><label for="e-cliente">Nome do cliente</label><input id="e-cliente" value="${esc(c.cliente)}" autocomplete="off"></div>
         <div><label for="e-loja">Nome da loja</label><input id="e-loja" value="${esc(c.loja)}" autocomplete="off"></div>
-        <div><label for="e-inicio">Data de entrada</label><input id="e-inicio" type="date" value="${esc(c.inicio)}"></div>
+        <div><label for="e-inicio">Data de entrada</label><input id="e-inicio" type="date" value="${esc(c.inicio)}" oninput="atualizaFimEdicao()"></div>
+        <div><label for="e-fim">Data de saída</label><input id="e-fim" type="date" value="${esc(c.fim)}"></div>
         <button class="pri" onclick="salvarEdicao('${esc(c.id)}')">Salvar</button>
         <button onclick="cancelarEdicao()">Cancelar</button>
       </div></div>`;
