@@ -143,7 +143,6 @@ function render(){
       <div class="info"><b>${esc(c.loja)}</b><small>${esc(c.cliente)} · entrou em ${br(c.inicio)} · expira em ${br(c.fim)}</small></div>
       <span class="badge">${txt}</span>
       <button onclick="editar('${esc(c.id)}')">Editar</button>
-      <button onclick="agir('${esc(c.id)}','renovar')">${p('renovar')?'Confirmar +30 dias':'Renovar +30 dias'}</button>
       <button class="del" onclick="agir('${esc(c.id)}','excluir')">${p('excluir')?'Confirmar exclusão':'Excluir'}</button>
     </div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
   }).join('');
