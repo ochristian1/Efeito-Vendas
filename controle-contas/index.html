@@ -54,7 +54,7 @@ const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const T=SB_URL+'/rest/v1/controle_conta';
 const H={apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'};
 const DIAS=30;
-let contas=[],pendente=null,carregado=false;
+let contas=[],pendente=null,carregado=false,editando=null;
 const $=id=>document.getElementById(id);
 const pad=n=>String(n).padStart(2,'0');
 const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
@@ -68,7 +68,7 @@ async function carregar(){
   try{
     const r=await fetch(T+'?select=*&order=inicio.asc',{headers:H});
     if(!r.ok)throw new Error(r.status);
-    contas=await r.json();carregado=true;$('msg').textContent='';
+    contas=await r.json();carregado=true;$('msg').textContent='';if(editando)return;
   }catch(e){$('msg').textContent='Não consegui carregar as contas. Verifique a internet e recarregue.';}
   render();
 }
@@ -88,13 +88,27 @@ $('form').addEventListener('submit',async e=>{
     contas.push(row);$('cliente').value='';$('loja').value='';$('inicio').value=hoje();previa();render();
   }catch(err){$('msg').textContent='Não foi possível salvar. Tente de novo.';}
 });
+function editar(id){editando=id;pendente=null;render();}
+function cancelarEdicao(){editando=null;render();}
+async function salvarEdicao(id){
+  const cliente=$('e-cliente').value.trim(),loja=$('e-loja').value.trim(),inicio=$('e-inicio').value;
+  if(!cliente||!loja||!inicio){$('msg').textContent='Preencha cliente, loja e data de entrada.';return;}
+  try{
+    const r=await fetch(T+'?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{...H,Prefer:'return=minimal'},body:JSON.stringify({cliente,loja,inicio})});
+    if(!r.ok)throw new Error(r.status);
+    editando=null;$('msg').textContent='';await carregar();
+  }catch(err){$('msg').textContent='Não foi possível salvar a edição. Tente de novo.';}
+}
 async function agir(id,acao){
   if(!pendente||pendente.id!==id||pendente.acao!==acao){pendente={id,acao};render();return;}
   pendente=null;
   try{
     const url=T+'?id=eq.'+encodeURIComponent(id);
+    const c=contas.find(x=>x.id===id);
+    const fimAtual=soma(c.inicio,DIAS);
+    const novoInicio=fimAtual>hoje()?fimAtual:hoje(); // soma 30 dias ao vencimento; se já venceu, conta de hoje
     const r=acao==='renovar'
-      ?await fetch(url,{method:'PATCH',headers:{...H,Prefer:'return=minimal'},body:JSON.stringify({inicio:hoje()})})
+      ?await fetch(url,{method:'PATCH',headers:{...H,Prefer:'return=minimal'},body:JSON.stringify({inicio:novoInicio})})
       :await fetch(url,{method:'DELETE',headers:H});
     if(!r.ok)throw new Error(r.status);
     await carregar();
@@ -112,10 +126,19 @@ function render(){
     const txt=c.d<0?`Expirou há ${-c.d} dia${c.d===-1?'':'s'}`:c.d===0?'Expira hoje':`Faltam ${c.d} dia${c.d===1?'':'s'}`;
     const pct=Math.max(0,Math.min(100,Math.round((DIAS-c.d)/DIAS*100)));
     const p=a=>pendente&&pendente.id===c.id&&pendente.acao===a;
+    if(editando===c.id)return`<div class="card" style="--c:var(--accent)">
+      <div class="form" style="border:0;padding:0;background:none">
+        <div><label for="e-cliente">Nome do cliente</label><input id="e-cliente" value="${esc(c.cliente)}" autocomplete="off"></div>
+        <div><label for="e-loja">Nome da loja</label><input id="e-loja" value="${esc(c.loja)}" autocomplete="off"></div>
+        <div><label for="e-inicio">Data de entrada</label><input id="e-inicio" type="date" value="${esc(c.inicio)}"></div>
+        <button class="pri" onclick="salvarEdicao('${esc(c.id)}')">Salvar</button>
+        <button onclick="cancelarEdicao()">Cancelar</button>
+      </div></div>`;
     return`<div class="card" style="--c:${cor}"><div class="row">
       <div class="info"><b>${esc(c.loja)}</b><small>${esc(c.cliente)} · entrou em ${br(c.inicio)} · expira em ${br(c.fim)}</small></div>
       <span class="badge">${txt}</span>
-      <button onclick="agir('${esc(c.id)}','renovar')">${p('renovar')?'Confirmar renovação':'Renovar 30 dias'}</button>
+      <button onclick="editar('${esc(c.id)}')">Editar</button>
+      <button onclick="agir('${esc(c.id)}','renovar')">${p('renovar')?'Confirmar +30 dias':'Renovar +30 dias'}</button>
       <button class="del" onclick="agir('${esc(c.id)}','excluir')">${p('excluir')?'Confirmar exclusão':'Excluir'}</button>
     </div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
   }).join('');
