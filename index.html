@@ -769,13 +769,17 @@ function switchTabSB(name,el){
 let vendasPollTimer=null;
 function iniciarVendasPolling(){
   pararVendasPolling();
-  // Painel ao vivo: enquanto estiver aberto, busca dados novos a cada 10s (faturamento alterado em Clientes pagos por outra pessoa/aba aparece sozinho)
+  // Painel ao vivo: enquanto estiver aberto e visível, busca só os clientes pagos a cada 30s (faturamento alterado por outra pessoa/aba aparece sozinho).
+  // Busca enxuta de propósito: o plano gratuito do Supabase tem limite de tráfego (egress).
   vendasPollTimer=setInterval(()=>{
-    loadAll().then(()=>{
+    if(document.hidden)return;
+    sbGet('pagos').then(rp=>{
+      if(!rp||!rp.length)return; // falha de rede/banco volta vazio: não apaga os dados na tela
+      pagos=rp.map(mapPago);
       const ativo=document.getElementById('tab-vendas');
       if(ativo&&ativo.classList.contains('active')) renderVendas();
-    });
-  },10000);
+    }).catch(()=>{});
+  },30000);
 }
 function pararVendasPolling(){
   if(vendasPollTimer){clearInterval(vendasPollTimer);vendasPollTimer=null;}
@@ -783,9 +787,10 @@ function pararVendasPolling(){
 let funilPollTimer=null;
 function iniciarFunilPolling(){
   pararFunilPolling();
-  // enquanto a aba Funil SDR estiver aberta, busca dados novos no banco a cada 8s
+  // enquanto a aba Funil SDR estiver aberta, busca dados novos no banco a cada 20s
   // (assim números atualizados por outra pessoa da equipe aparecem sem precisar trocar de aba)
   funilPollTimer=setInterval(()=>{
+    if(document.hidden)return; // aba em segundo plano não consome tráfego do banco
     loadAll().then(()=>{
       const ativo=document.getElementById('tab-funil-sdr');
       if(!ativo||!ativo.classList.contains('active'))return;
@@ -794,7 +799,7 @@ function iniciarFunilPolling(){
       const digitandoAlgo=(formAberto&&formAberto.style.display==='block')||funilEditando!==null||buscaFocada;
       if(!digitandoAlgo) renderFunilSDRPage(); // não atualiza a tela se alguém estiver digitando, pra não perder o que já foi escrito
     });
-  },8000);
+  },20000);
 }
 function pararFunilPolling(){
   if(funilPollTimer){clearInterval(funilPollTimer);funilPollTimer=null;}
@@ -921,8 +926,16 @@ function sincronizarSessao(){
   if(!currentUser||sincSessaoRodando)return;
   sincSessaoRodando=true;
   const tarefas=[];
-  if(podeReceberAvisos()) tarefas.push(sbGet('avisos').then(ra=>verificarAvisos(ra||[])).catch(()=>{}));
-  if(!SENHAS_VALUES.includes(currentUser)&&currentUser!=='ADMIN') tarefas.push(carregarUsuariosCustom().then(aplicarMudancasDoMeuUsuario).catch(()=>{}));
+  if(document.hidden){sincSessaoRodando=false;return;} // aba em segundo plano: confere quando a pessoa voltar (visibilitychange)
+  // buscas enxutas (só a linha do aviso e só o meu usuário): roda a cada 4s e o Supabase gratuito limita o tráfego
+  if(podeReceberAvisos()) tarefas.push(sbGet('avisos','id=eq.aviso_atual').then(ra=>verificarAvisos(ra||[])).catch(()=>{}));
+  if(!SENHAS_VALUES.includes(currentUser)&&currentUser!=='ADMIN') tarefas.push(sbGet('usuarios','id=eq.'+encodeURIComponent(currentUser)).then(rows=>{
+    if(!Array.isArray(rows)||!rows.length)return; // resposta vazia pode ser falha do banco: não desconecta por isso
+    const meu=mapUsuario(rows[0]);
+    const i=usuariosCustom.findIndex(u=>u.id===meu.id);
+    if(i>=0) usuariosCustom[i]=meu; else usuariosCustom.push(meu);
+    aplicarMudancasDoMeuUsuario();
+  }).catch(()=>{}));
   Promise.all(tarefas).finally(()=>{sincSessaoRodando=false;});
 }
 // Reflete na hora o que foi alterado na tela de Usuários (permissões, nome, cargo, desativação) para quem já está logado
@@ -1094,7 +1107,7 @@ const SBH={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'appl
 // Busca TODAS as linhas da tabela, paginando de 1000 em 1000 (o Supabase/PostgREST
 // limita cada resposta a 1000 linhas por padrão — sem paginar, tabelas com mais de
 // 1000 registros (ex: leads do Funil SDR) ficavam "travadas" nesse número).
-async function sbGet(t){
+async function sbGet(t,filtro){
   const PAGE=1000;
   let all=[];
   let from=0;
@@ -1102,7 +1115,7 @@ async function sbGet(t){
     const to=from+PAGE-1;
     let res;
     try{
-      res=await fetch(`${SB_URL}/rest/v1/${t}?select=*`,{headers:{...SBH,'Range-Unit':'items','Range':`${from}-${to}`}});
+      res=await fetch(`${SB_URL}/rest/v1/${t}?select=*${filtro?'&'+filtro:''}`,{headers:{...SBH,'Range-Unit':'items','Range':`${from}-${to}`}});
     }catch(e){break;}
     if(!res||!(res.ok||res.status===206))break;
     let rows=[];
@@ -1120,9 +1133,10 @@ function sbDelete(t,id){return fetch(`${SB_URL}/rest/v1/${t}?id=eq.${id}`,{metho
 // USUÁRIOS CUSTOMIZADOS (carrega já na tela de login para permitir login deles)
 let usuariosCustom=[];
 let currentUserPerms=[];
+function mapUsuario(r){return {id:r.id,nome:r.nome||'',senha:r.senha||'',cargo:r.cargo||'',permissoes:(()=>{try{return JSON.parse(r.permissoes||'[]');}catch(e){return[];}})(),ativo:r.ativo!==false};}
 function carregarUsuariosCustom(){
   return sbGet('usuarios').then(rows=>{
-    usuariosCustom=(rows||[]).map(r=>({id:r.id,nome:r.nome||'',senha:r.senha||'',cargo:r.cargo||'',permissoes:(()=>{try{return JSON.parse(r.permissoes||'[]');}catch(e){return[];}})(),ativo:r.ativo!==false}));
+    usuariosCustom=(rows||[]).map(mapUsuario);
   });
 }
 carregarUsuariosCustom();
@@ -1546,6 +1560,7 @@ function resolveFechCorSimples(key){
 function showLoading(m){const e=document.getElementById('loading-bar');if(e){e.textContent=m;e.style.display='block';}}
 function hideLoading(){const e=document.getElementById('loading-bar');if(e)e.style.display='none';}
 
+function mapPago(r){return ({id:String(r.id||''),nome:r.nome||'',fone:r.fone||'',plano:r.plano||'',data:r.data||'',valor:parseFloat(r.valor)||0,obs:r.obs||'',lead:r.lead||'',vendedora:r.vendedora||'',fechamento:r.fechamento||''});}
 // LOAD ALL
 function loadAll(){
   showLoading('Carregando dados...');
@@ -1554,7 +1569,7 @@ function loadAll(){
     calls=(rc||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',data:r.data||'',hora:r.hora||'',obs:r.obs||'',done:!!r.done,lead:r.lead||'',vendedora:r.vendedora||'',closer:r.closer||'',statusFech:r.status_fech||'',obsFech:r.obs_fech||''}));
     calls.sort((a,b)=>a.data+a.hora>b.data+b.hora?1:-1);
     clientes=(rct||[]).map(r=>({id:String(r.id),nome:r.nome||'',fone:r.fone||'',plano:r.plano||'',steps:r.steps||{},createdAt:r.created_at_custom||''}));
-    pagos=(rp||[]).map(r=>({id:String(r.id||''),nome:r.nome||'',fone:r.fone||'',plano:r.plano||'',data:r.data||'',valor:parseFloat(r.valor)||0,obs:r.obs||'',lead:r.lead||'',vendedora:r.vendedora||'',fechamento:r.fechamento||''}));
+    pagos=(rp||[]).map(mapPago);
     leads=(rl||[]).map(r=>({id:String(r.id),nome:r.nome||'',telefone:r.telefone||'',origem:r.origem||'',responsavel:r.responsavel||'',etapa:r.etapa||'lead_novo',respondeu:!!r.respondeu,createdAt:r.created_at||'',observacoes:r.observacoes||'',tentativas:parseInt(r.tentativas)||1}));
     // metas mensais: uma por mês (chave __meta_mes_<AAAA-MM>__), pra editar um mês não mudar os outros
     metasPorMes={};
