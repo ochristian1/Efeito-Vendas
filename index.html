@@ -2440,9 +2440,34 @@ function abrirPagoPreenchido(call){
     if(nomeEl) nomeEl.value=call.nome||'';
     if(foneEl) foneEl.value=call.fone||'';
     if(obsEl&&call.obsFech) obsEl.value=call.obsFech;
-    if(call.lead){novoPagoLead=null;setPagoLead(call.lead);}
-    if(call.vendedora){novoPagoVendedora=null;setPagoVendedora(call.vendedora);novoPagoFechamento=null;setPagoFechamento(call.vendedora);}
+    if(call.lead&&document.getElementById('pp-lead-'+call.lead)){novoPagoLead=null;setPagoLead(call.lead);}
+    // quem agendou: se a call foi agendada pelo próprio Christian (DONO) não existe card de SDR pra isso, então vai como "Nenhuma"
+    const vend=call.vendedora&&document.getElementById('pp-vend-'+call.vendedora)?call.vendedora:(call.vendedora==='DONO'?'NENHUMA':'');
+    if(vend){novoPagoVendedora=null;setPagoVendedora(vend);}
+    // quem fechou: o closer da call (Christian = DONO); sem closer, mantém o padrão antigo (quem agendou)
+    const fech=call.closer==='CHRISTIAN'?'DONO':(call.closer&&document.getElementById('pp-fech-'+call.closer)?call.closer:(call.vendedora||''));
+    if(fech&&document.getElementById('pp-fech-'+fech)){novoPagoFechamento=null;setPagoFechamento(fech);}
+    // plano: sugere pelo que foi escrito no "Resumo pra Onboarding" (pode trocar clicando em outro card)
+    const plano=sugerirPlanoPeloTexto(call.obsFech||'');
+    if(plano&&document.getElementById('pp-opt-'+plano)){novoPagoPlano=null;setPagoPlano(plano);}
+    const form=document.getElementById('novo-pago-form');
+    if(form&&form.scrollIntoView) form.scrollIntoView({behavior:'smooth',block:'start'});
   },150);
+}
+// Procura no texto o nome de um dos planos atuais. Retorna a chave do plano só se achar exatamente um (senão deixa em branco pra escolher).
+function sugerirPlanoPeloTexto(txt){
+  const t=String(txt||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const REGRAS=[
+    ['ACOMPANHAMENTO_INDIVIDUAL',/acompanhamento/],
+    ['GESTAO_CONTABILIDADE',/contabilidade/],
+    ['GESTAO_ADS',/gestao de ads|gestao ads|\bads\b/],
+    ['GESTAO_CONTAS',/gestao de conta/],
+    ['CONSULTORIA',/consultoria/],
+    ['OTIMIZACAO_LOJA',/otimizacao/],
+    ['MANUTENCAO_LOJA',/manutencao/]
+  ];
+  const achados=REGRAS.filter(([k,re])=>re.test(t)).map(([k])=>k);
+  return achados.length===1?achados[0]:'';
 }
 function salvarObsFech(id){
   const idx=calls.findIndex(x=>x.id===String(id));
