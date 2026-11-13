@@ -1156,10 +1156,9 @@ function corBgSuave(hex){
 function getSDRsAtivos(){
   const fixos=[{key:'EDUARDA',label:'Eduarda',cor:'#fb923c'}];
   const nomesFixos=fixos.map(f=>f.label.trim().toLowerCase());
-  // cargo "SDR" continua sendo o critério pra aparecer como card novo no ranking/comissões —
-  // "Closer" é reconhecido em isSDRUser() (pra restringir a visão dela aos próprios dados),
-  // mas não cria um card duplicado aqui quando já existe um fixo com o mesmo nome (ex: Eduarda)
-  const custom=usuariosCustom.filter(u=>u.ativo&&u.cargo&&/sdr/i.test(u.cargo)&&!nomesFixos.includes(u.nome.trim().toLowerCase())).map(u=>({key:u.id,label:u.nome,cor:corParaUsuario(u.id)}));
+  // cargos "SDR" e "Closer" entram no ranking/comissões/formulários. Closer com o mesmo nome de um card fixo (ex: a conta nova da Eduarda)
+  // não cria card duplicado: as chaves dela são unidas em minhasChaves()
+  const custom=usuariosCustom.filter(u=>u.ativo&&u.cargo&&/sdr|closer/i.test(u.cargo)&&!nomesFixos.includes(u.nome.trim().toLowerCase())).map(u=>({key:u.id,label:u.nome,cor:corParaUsuario(u.id)}));
   return fixos.concat(custom);
 }
 function nomeVendedora(key){
@@ -4088,7 +4087,7 @@ function renderVendas(){
     const isLider=idx===0;
     const valorLabel=`R$ ${v.bruto>=1000?(v.bruto/1000).toFixed(1)+'k':v.bruto.toFixed(0)}`;
     return`<div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;max-width:110px">
-      <div style="font-size:${isLider?'26px':'20px'}">${medals[idx]}</div>
+      <div style="font-size:${isLider?'26px':'20px'};min-height:24px">${medals[idx]||''}</div>
       <div style="width:${isLider?'52px':'44px'};height:${isLider?'52px':'44px'};border-radius:50%;background:${v.bg};border:2px solid ${v.cor};display:flex;align-items:center;justify-content:center;font-size:${isLider?'22px':'18px'};font-weight:800;color:${v.cor};box-shadow:0 0 ${isLider?'20px':'10px'} ${v.cor}50">${v.avatar}</div>
       <div style="font-size:12px;font-weight:700;color:${v.cor};text-align:center;line-height:1.2">${v.label}</div>
       <div style="font-size:11px;font-weight:800;color:${v.cor};opacity:.9">${valorLabel}</div>
