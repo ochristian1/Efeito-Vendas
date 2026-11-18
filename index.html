@@ -163,6 +163,9 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
 .p9{background:#1a0d2e;color:#c084fc;border:1px solid #3a1a5a}
 .p10{background:#1a1200;color:#fbbf24;border:1px solid #3a2800}
 .p11{background:#1a0a14;color:#f472b6;border:1px solid #3a1428}
+.p15{background:#0d1f2a;color:#38bdf8;border:1px solid #1e3a4a}
+.p16{background:#1f1a0d;color:#fb7185;border:1px solid #4a2a30}
+.p17{background:#1a1a1a;color:#e5e7eb;border:1px dashed #6b7280}
 .p14{background:#2a0d2a;color:#e879f9;border:1px solid #3a1a2e}
 .p13{background:#0d2a26;color:#2dd4bf;border:1px solid #0f3a34}
 .p12{background:#0d2a2a;color:#22d3ee;border:1px solid #0f3a3a}
@@ -497,7 +500,10 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
         <div class="plano-opt" id="pp-opt-GESTAO_CONTABILIDADE" onclick="setPagoPlano('GESTAO_CONTABILIDADE')" style="border-color:#3a2800"><div class="plano-opt-name" style="color:#fbbf24">GESTÃO COM CONTABILIDADE</div><div class="plano-opt-desc">Serviço</div></div>
         <div class="plano-opt" id="pp-opt-ACOMPANHAMENTO_INDIVIDUAL" onclick="setPagoPlano('ACOMPANHAMENTO_INDIVIDUAL')" style="border-color:#0f3a3a"><div class="plano-opt-name" style="color:#2dd4bf">ACOMPANHAMENTO INDIVIDUAL</div><div class="plano-opt-desc">Serviço</div></div>
         <div class="plano-opt" id="pp-opt-PACOTE_CADASTRO_PRODUTO" onclick="setPagoPlano('PACOTE_CADASTRO_PRODUTO')" style="border-color:#3a1a2e"><div class="plano-opt-name" style="color:#e879f9">PACOTE DE CADASTRO DE PRODUTO</div><div class="plano-opt-desc">Serviço</div></div>
+        <div class="plano-opt" id="pp-opt-IMERSAO_PRESENCIAL" onclick="setPagoPlano('IMERSAO_PRESENCIAL')" style="border-color:#1e3a4a"><div class="plano-opt-name" style="color:#38bdf8">IMERSÃO PRESENCIAL</div><div class="plano-opt-desc">Serviço</div></div>
+        <div class="plano-opt" id="pp-opt-FORMACAO_CONSULTOR" onclick="setPagoPlano('FORMACAO_CONSULTOR')" style="border-color:#4a2a30"><div class="plano-opt-name" style="color:#fb7185">FORMAÇÃO DE CONSULTOR</div><div class="plano-opt-desc">Serviço</div></div>
       </div>
+      <div class="field" style="margin-bottom:10px"><label>Personalizado (opcional) — descreva o que foi vendido</label><input id="pp-plano-custom" type="text" placeholder="Ex: Gestão de ADS + 2 meses de consultoria, pacote sob medida..." maxlength="120"></div>
       <div class="field" style="margin-bottom:10px;margin-top:12px"><label>Origem do lead</label></div>
       <div class="plano-options">
         <div class="plano-opt" id="pp-lead-AVISO_APP" onclick="setPagoLead('AVISO_APP')" style="border-color:#1e3a5a"><div class="plano-opt-name" style="color:#60a5fa">AVISO APP</div><div class="plano-opt-desc">Publicidade Shopee</div></div>
@@ -530,6 +536,9 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
     <button class="pf-btn" onclick="setPagoFiltro('GESTAO_CONTABILIDADE',this)" style="color:#fbbf24;border-color:#3a2800">GESTÃO COM CONTABILIDADE</button>
     <button class="pf-btn" onclick="setPagoFiltro('ACOMPANHAMENTO_INDIVIDUAL',this)" style="color:#2dd4bf;border-color:#0f3a3a">ACOMPANHAMENTO INDIVIDUAL</button>
     <button class="pf-btn" onclick="setPagoFiltro('PACOTE_CADASTRO_PRODUTO',this)" style="color:#e879f9;border-color:#3a1a2e">PACOTE DE CADASTRO DE PRODUTO</button>
+    <button class="pf-btn" onclick="setPagoFiltro('IMERSAO_PRESENCIAL',this)" style="color:#38bdf8;border-color:#1e3a4a">IMERSÃO PRESENCIAL</button>
+    <button class="pf-btn" onclick="setPagoFiltro('FORMACAO_CONSULTOR',this)" style="color:#fb7185;border-color:#4a2a30">FORMAÇÃO DE CONSULTOR</button>
+    <button class="pf-btn" onclick="setPagoFiltro('PERSONALIZADO',this)" style="color:#e5e7eb;border-color:#6b7280">PERSONALIZADO</button>
     <button class="pf-btn" onclick="setPagoFiltro('AVISO_APP',this)" style="color:#60a5fa;border-color:#1e3a5a">AVISO APP</button>
     <button class="pf-btn" onclick="setPagoFiltro('PN',this)" style="color:#c084fc;border-color:#3a1a5a">PN</button>
     <button class="pf-btn" onclick="setPagoFiltro('INDICACAO',this)" style="color:#34d399;border-color:#0f3a2a">Indicação</button>
@@ -1029,7 +1038,23 @@ function aplicarPermissoes(){
 
 const DAYS_PT=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MONTHS_PT=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-const PLANOS={E1:{nome:'E1 · Inteligência Estratégica',short:'E1 · IA',cls:'p1'},E2:{nome:'E2 · Gestão Shopee Ads',short:'E2 · Shopee Ads',cls:'p2'},E3:{nome:'E3 · Gestão Completa',short:'E3 · Completo',cls:'p3'},E4:{nome:'E4 · Gestão Mercado Livre',short:'E4 · ML',cls:'p4'},E5:{nome:'E5 · Gestão TikTok Shop',short:'E5 · TikTok',cls:'p5'},OTIMIZACAO_LOJA:{nome:'OTIMIZAÇÃO DE LOJA',short:'OTIMIZAÇÃO DE LOJA',cls:'p6'},MANUTENCAO_LOJA:{nome:'MANUTENÇÃO SEMANAL',short:'MANUTENÇÃO SEMANAL',cls:'p7'},CONSULTORIA:{nome:'CONSULTORIA',short:'CONSULTORIA',cls:'p8'},GESTAO_CONTAS:{nome:'GESTÃO DE CONTAS',short:'GESTÃO DE CONTAS',cls:'p9'},GESTAO_CONTABILIDADE:{nome:'GESTÃO COM CONTABILIDADE',short:'GESTÃO COM CONTABILIDADE',cls:'p10'},GESTAO_ADS:{nome:'GESTÃO DE ADS',short:'GESTÃO DE ADS',cls:'p12'},ACOMPANHAMENTO_INDIVIDUAL:{nome:'ACOMPANHAMENTO INDIVIDUAL',short:'ACOMPANHAMENTO INDIVIDUAL',cls:'p13'},PACOTE_CADASTRO_PRODUTO:{nome:'PACOTE DE CADASTRO DE PRODUTO',short:'PACOTE DE CADASTRO DE PRODUTO',cls:'p14'}};
+const PLANOS={E1:{nome:'E1 · Inteligência Estratégica',short:'E1 · IA',cls:'p1'},E2:{nome:'E2 · Gestão Shopee Ads',short:'E2 · Shopee Ads',cls:'p2'},E3:{nome:'E3 · Gestão Completa',short:'E3 · Completo',cls:'p3'},E4:{nome:'E4 · Gestão Mercado Livre',short:'E4 · ML',cls:'p4'},E5:{nome:'E5 · Gestão TikTok Shop',short:'E5 · TikTok',cls:'p5'},OTIMIZACAO_LOJA:{nome:'OTIMIZAÇÃO DE LOJA',short:'OTIMIZAÇÃO DE LOJA',cls:'p6'},MANUTENCAO_LOJA:{nome:'MANUTENÇÃO SEMANAL',short:'MANUTENÇÃO SEMANAL',cls:'p7'},CONSULTORIA:{nome:'CONSULTORIA',short:'CONSULTORIA',cls:'p8'},GESTAO_CONTAS:{nome:'GESTÃO DE CONTAS',short:'GESTÃO DE CONTAS',cls:'p9'},GESTAO_CONTABILIDADE:{nome:'GESTÃO COM CONTABILIDADE',short:'GESTÃO COM CONTABILIDADE',cls:'p10'},GESTAO_ADS:{nome:'GESTÃO DE ADS',short:'GESTÃO DE ADS',cls:'p12'},ACOMPANHAMENTO_INDIVIDUAL:{nome:'ACOMPANHAMENTO INDIVIDUAL',short:'ACOMPANHAMENTO INDIVIDUAL',cls:'p13'},PACOTE_CADASTRO_PRODUTO:{nome:'PACOTE DE CADASTRO DE PRODUTO',short:'PACOTE DE CADASTRO DE PRODUTO',cls:'p14'},IMERSAO_PRESENCIAL:{nome:'IMERSÃO PRESENCIAL',short:'IMERSÃO PRESENCIAL',cls:'p15'},FORMACAO_CONSULTOR:{nome:'FORMAÇÃO DE CONSULTOR',short:'FORMAÇÃO DE CONSULTOR',cls:'p16'},PERSONALIZADO:{nome:'PERSONALIZADO',short:'PERSONALIZADO',cls:'p17'}};
+// O campo pagos.plano guarda a chave do plano; opcionalmente 'CHAVE::texto livre' (personalização). Sem cartão escolhido + texto = 'PERSONALIZADO::texto'.
+function planoKey(v){return String(v||'').split('::')[0];}
+function planoTexto(v){const s=String(v||'');const i=s.indexOf('::');return i<0?'':s.slice(i+2).trim();}
+function planoMontar(key,texto){const t=String(texto||'').trim().replace(/::/g,':');return t?(key||'PERSONALIZADO')+'::'+t:(key||'');}
+function planoRotulo(v){
+  const k=planoKey(v),inf=PLANOS[k];if(!inf)return'';
+  const t=planoTexto(v);
+  return k==='PERSONALIZADO'?(t||inf.short):(t?inf.short+' · '+t:inf.short);
+}
+function planoBadgeHtml(v,estilo){
+  const k=planoKey(v),inf=PLANOS[k];
+  if(!inf) return `<span class="plano-badge plano-nao-informado"${estilo?` style="${estilo}"`:''}>plano não informado</span>`;
+  const t=planoTexto(v);
+  const rotulo=k==='PERSONALIZADO'?(t||inf.short):(t?inf.short+' · '+t:inf.short);
+  return `<span class="plano-badge ${inf.cls}"${estilo?` style="${estilo}"`:''}>${String(rotulo).replace(/</g,'&lt;')}</span>`;
+}
 const LEAD_ETAPAS=[
   {key:'lead_novo',label:'Lead Novo'},
   {key:'tentativa_contato',label:'Tentativa de Contato'},
@@ -2462,6 +2487,8 @@ function sugerirPlanoPeloTexto(txt){
   const REGRAS=[
     ['ACOMPANHAMENTO_INDIVIDUAL',/acompanhamento/],
     ['PACOTE_CADASTRO_PRODUTO',/pacote de cadastro|cadastros? de produto/],
+    ['IMERSAO_PRESENCIAL',/imersao/],
+    ['FORMACAO_CONSULTOR',/formacao de consultor|formacao consultor/],
     ['GESTAO_CONTABILIDADE',/contabilidade/],
     ['GESTAO_ADS',/gestao de ads|gestao ads|\bads\b/],
     ['GESTAO_CONTAS',/gestao de conta/],
@@ -2788,6 +2815,7 @@ function toggleNovoPago(){
     document.getElementById('pp-data').value=todayStr();
     document.getElementById('pp-valor').value='';
     document.getElementById('pp-obs').value='';
+    const _pc2=document.getElementById('pp-plano-custom');if(_pc2)_pc2.value='';
     document.querySelectorAll('[id^="pp-opt-"],[id^="pp-lead-"],[id^="pp-vend-"],[id^="pp-fech-"]').forEach(o=>o.classList.remove('selected'));
     // Se for SDR, pré-seleciona ela mesma como vendedora e quem fechou
     if(isSDRUser(currentUser)){
@@ -2832,10 +2860,12 @@ function salvarPago(){
   const valor=parseFloat(document.getElementById('pp-valor').value)||0;
   const obs=document.getElementById('pp-obs').value.trim();
   if(!nome){alert('Preencha o nome.');return;}
-  const novo={id:String(Date.now()),nome,fone,plano:novoPagoPlano||'',data,valor,obs,lead:novoPagoLead||'',vendedora:novoPagoVendedora||'',fechamento:novoPagoFechamento||''};
+  const planoTxt=(document.getElementById('pp-plano-custom')||{}).value||'';
+  const novo={id:String(Date.now()),nome,fone,plano:planoMontar(novoPagoPlano||(planoTxt.trim()?'PERSONALIZADO':''),planoTxt),data,valor,obs,lead:novoPagoLead||'',vendedora:novoPagoVendedora||'',fechamento:novoPagoFechamento||''};
   pagos.push(novo);
   sbUpsert('pagos',{id:novo.id,nome:novo.nome,fone:novo.fone||'',plano:novo.plano,data:novo.data,valor:novo.valor,obs:novo.obs||'',lead:novo.lead||'',vendedora:novo.vendedora||'',fechamento:novo.fechamento||''});
   novoPagoOpen=false;novoPagoPlano=null;novoPagoLead=null;novoPagoVendedora=null;novoPagoFechamento=null;
+  const _pc=document.getElementById('pp-plano-custom');if(_pc)_pc.value='';
   document.getElementById('novo-pago-form').style.display='none';
   renderPagos();renderVendas();
   syncAndRefresh();
@@ -2912,10 +2942,21 @@ function setEditFech(id,f){
   });
 }
 // Cards de plano usados nos formulários de edição (Clientes pagos e Onboarding). O valor escolhido fica em data-val do container.
-const PLANOS_CADASTRO=['MANUTENCAO_LOJA','OTIMIZACAO_LOJA','GESTAO_ADS','CONSULTORIA','GESTAO_CONTAS','GESTAO_CONTABILIDADE','ACOMPANHAMENTO_INDIVIDUAL','PACOTE_CADASTRO_PRODUTO'];
-function planoCardsEdit(cid,atual){
+const PLANOS_CADASTRO=['MANUTENCAO_LOJA','OTIMIZACAO_LOJA','GESTAO_ADS','CONSULTORIA','GESTAO_CONTAS','GESTAO_CONTABILIDADE','ACOMPANHAMENTO_INDIVIDUAL','PACOTE_CADASTRO_PRODUTO','IMERSAO_PRESENCIAL','FORMACAO_CONSULTOR'];
+function planoCardsEdit(cid,atualCompleto){
+  const key=planoKey(atualCompleto),txt=planoTexto(atualCompleto);
+  const atual=key==='PERSONALIZADO'?'':key; // personalizado puro não seleciona cartão, só preenche o campo de texto
   const legado=atual&&PLANOS[atual]&&!PLANOS_CADASTRO.includes(atual)?[atual]:[];
-  return`<div class="plano-options" id="${cid}" data-val="${atual||''}" style="margin:6px 0 10px">${PLANOS_CADASTRO.concat(legado).map(k=>`<div class="plano-opt${atual===k?' selected':''}" data-k="${k}" onclick="setPlanoEdit('${cid}','${k}')"><div class="plano-opt-name">${PLANOS[k].nome}</div></div>`).join('')}</div>`;
+  const cards=PLANOS_CADASTRO.concat(legado).map(k=>`<div class="plano-opt${atual===k?' selected':''}" data-k="${k}" onclick="setPlanoEdit('${cid}','${k}')"><div class="plano-opt-name">${PLANOS[k].nome}</div></div>`).join('');
+  return`<div class="plano-options" id="${cid}" data-val="${atual}" style="margin:6px 0 6px">${cards}</div>
+    <input id="${cid}-txt" type="text" maxlength="120" value="${txt.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="Personalizado: descreva o que foi vendido (opcional)" style="width:100%;margin-bottom:10px">`;
+}
+// lê o plano escolhido nos cartões de edição (+ texto personalizado)
+function lerPlanoEdit(cid){
+  const box=document.getElementById(cid);if(!box)return null;
+  const txt=(document.getElementById(cid+'-txt')||{}).value||'';
+  const key=box.dataset.val||'';
+  return planoMontar(key||(txt.trim()?'PERSONALIZADO':''),txt);
 }
 function setPlanoEdit(cid,k){
   const box=document.getElementById(cid);if(!box)return;
@@ -2935,7 +2976,7 @@ function salvarEditPago(id){
   c.valor=parseFloat(document.getElementById('ep-valor-'+id).value)||0;
   c.obs=document.getElementById('ep-obs-'+id).value.trim();
   const selPlano=document.getElementById('ep-plano-'+id);
-  if(selPlano) c.plano=selPlano.dataset.val||'';
+  if(selPlano) c.plano=lerPlanoEdit('ep-plano-'+id);
   if(c._editVend) c.vendedora=c._editVend==='NENHUMA'?'':c._editVend;
   if(c._editFech) c.fechamento=c._editFech;
   renderPagos();renderVendas();
@@ -2974,13 +3015,13 @@ function renderPagos(){
   if(labelEl) labelEl.textContent=`${MONTHS_PT[mes-1].charAt(0).toUpperCase()+MONTHS_PT[mes-1].slice(1)} ${ano}`;
   let list=pagos.filter(p=>p.data&&p.data.slice(0,7)===mesSelecionado);
   // Todos os usuários com acesso a Clientes pagos veem todas as vendas registradas (sem filtro por vendedora)
-  if(PLANOS[pagoFiltro]) list=list.filter(p=>p.plano===pagoFiltro);
+  if(PLANOS[pagoFiltro]) list=list.filter(p=>planoKey(p.plano)===pagoFiltro);
   else if(['AVISO_APP','PN','INDICACAO','EXPANSAO_CLIENTE','AULA_AO_VIVO','INSTAGRAM'].includes(pagoFiltro)) list=list.filter(p=>p.lead===pagoFiltro);
   list=[...list].sort((a,b)=>Number(b.id)-Number(a.id));
   const el=document.getElementById('pagos-list');
   if(!list.length){el.innerHTML=`<div class="empty-day">${pagos.length?'Nenhum cliente nesse mês.':'Nenhum cliente pago ainda — clique em "+ Adicionar cliente".'}</div>`;return;}
   el.innerHTML=list.map(c=>{
-    const planoInfo=c.plano&&PLANOS[c.plano]?`<span class="plano-badge ${PLANOS[c.plano].cls}">${PLANOS[c.plano].short}</span>`:`<span class="plano-badge plano-nao-informado">plano não informado</span>`;
+    const planoInfo=planoBadgeHtml(c.plano);
     const LEAD_BADGE2={AVISO_APP:{label:'AVISO APP',cor:'#60a5fa',bg:'#0d1f3a'},PN:{label:'PN',cor:'#c084fc',bg:'#1a0d2e'},INDICACAO:{label:'Indicação',cor:'#34d399',bg:'#0d2a1f'},EXPANSAO_CLIENTE:{label:'Expansão de cliente',cor:'#fbbf24',bg:'#2a2000'},AULA_AO_VIVO:{label:'Aula ao vivo',cor:'#f87171',bg:'#2a0d0d'},INSTAGRAM:{label:'Instagram',cor:'#ec4899',bg:'#2a0d1e'}};
     const leadInfo2=c.lead&&LEAD_BADGE2[c.lead]
       ?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:${LEAD_BADGE2[c.lead].bg};color:${LEAD_BADGE2[c.lead].cor};border:1px solid ${LEAD_BADGE2[c.lead].cor}40">${LEAD_BADGE2[c.lead].label}</span>`
@@ -3214,7 +3255,7 @@ function salvarOnbObs(pagoId){
   const texto=document.getElementById('onb-obs-'+pagoId)?.value.trim()||'';
   pagos[idx].obs=texto;
   const selPlano=document.getElementById('onb-plano-'+pagoId);
-  if(selPlano) pagos[idx].plano=selPlano.dataset.val||'';
+  if(selPlano) pagos[idx].plano=lerPlanoEdit('onb-plano-'+pagoId);
   sbUpsert('pagos',{id:pagos[idx].id,nome:pagos[idx].nome,fone:pagos[idx].fone||'',plano:pagos[idx].plano||'',data:pagos[idx].data,valor:pagos[idx].valor,obs:texto,lead:pagos[idx].lead||'',vendedora:pagos[idx].vendedora||'',fechamento:pagos[idx].fechamento||''});
   onbObsAberto=null;
   renderOnboardingPage();
@@ -3244,7 +3285,7 @@ function renderOnboardingPage(){
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
         <div style="width:32px;height:32px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text2);flex-shrink:0">${initials(p.nome)}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;color:var(--text)">${p.nome} ${p.plano&&PLANOS[p.plano]?`<span class="plano-badge ${PLANOS[p.plano].cls}" style="font-size:10px;padding:2px 7px;margin-left:4px">${PLANOS[p.plano].short}</span>`:`<span class="plano-badge plano-nao-informado" style="font-size:10px;padding:2px 7px;margin-left:4px">plano não informado</span>`}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${p.nome} ${planoBadgeHtml(p.plano,'font-size:10px;padding:2px 7px;margin-left:4px')}</div>
           <div style="font-size:11px;color:var(--text3)">Fechou em ${fmtDateBR(p.data)}${vend?' · '+vend:''}${p.fone?' · '+p.fone:''}</div>
         </div>
         <span style="font-size:12px;font-weight:700;color:${cor}">${p.pct}%</span>
@@ -3976,7 +4017,7 @@ function renderHistoricoCall(item){
     <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">📋 Histórico do cliente (${historico.length+pagosHist.length} contatos)</div>
     ${pagosHist.map(p=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border)">
       <span style="font-size:12px">✅</span>
-      <div style="flex:1;font-size:11px;color:var(--text2)">Cliente pago · ${p.plano||''} · R$ ${(p.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+      <div style="flex:1;font-size:11px;color:var(--text2)">Cliente pago · ${planoRotulo(p.plano)||'plano não informado'} · R$ ${(p.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
       <span style="font-size:10px;color:var(--text3)">${fmtDateBR(p.data)}</span>
     </div>`).join('')}
     ${historico.map(c=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border)">
@@ -4042,7 +4083,7 @@ function renderVendas(){
   // Planos mais vendidos no mês (ranking por quantidade; desempate por faturamento)
   // No ranking, planos antigos equivalentes contam junto com o plano atual (E3 = Gestão de contas)
   const PLANO_EQUIV={E3:'GESTAO_CONTAS'};
-  const planoDoRanking=p=>{const k=PLANOS[p.plano]?p.plano:'';return PLANO_EQUIV[k]||k;};
+  const planoDoRanking=p=>{const k=PLANOS[planoKey(p.plano)]?planoKey(p.plano):'';return PLANO_EQUIV[k]||k;};
   const planosRank=Object.keys(PLANOS).filter(k=>!PLANO_EQUIV[k]).concat(['']).map(k=>{
     const itens=listaMes.filter(p=>planoDoRanking(p)===k);
     return{k,count:itens.length,rec:itens.reduce((s,p)=>s+(p.valor||0),0)};

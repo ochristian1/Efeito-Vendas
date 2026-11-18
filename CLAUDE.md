@@ -24,9 +24,10 @@ Interface em português (pt-BR).
 - `<SDR> fechou` = 8%, `<SDR> - Recompra` = 4%, `DONO` ("Você fechou") = 2%.
 
 ## Planos (Clientes pagos)
-- O objeto `PLANOS` guarda todos os planos. O cadastro e a edição usam só os oito atuais, nesta ordem:
-  `MANUTENCAO_LOJA` (Manutenção semanal), `OTIMIZACAO_LOJA`, `GESTAO_ADS`, `CONSULTORIA`, `GESTAO_CONTAS`, `GESTAO_CONTABILIDADE`, `ACOMPANHAMENTO_INDIVIDUAL`, `PACOTE_CADASTRO_PRODUTO`.
+- O objeto `PLANOS` guarda todos os planos. O cadastro e a edição usam só os dez atuais, nesta ordem:
+  `MANUTENCAO_LOJA` (Manutenção semanal), `OTIMIZACAO_LOJA`, `GESTAO_ADS`, `CONSULTORIA`, `GESTAO_CONTAS`, `GESTAO_CONTABILIDADE`, `ACOMPANHAMENTO_INDIVIDUAL`, `PACOTE_CADASTRO_PRODUTO`, `IMERSAO_PRESENCIAL`, `FORMACAO_CONSULTOR`.
 - `E1` a `E5` continuam no `PLANOS` **só para clientes antigos** continuarem mostrando o plano que compraram. Não remova.
+- Personalização: o campo "Personalizado" (cadastro e edição) guarda texto livre em `pagos.plano` no formato `CHAVE::texto` (ou `PERSONALIZADO::texto` sem cartão escolhido). Sempre use `planoKey()`, `planoTexto()` e `planoBadgeHtml()` ao ler o plano — nunca `PLANOS[p.plano]` direto.
 - O filtro por plano usa `PLANOS[pagoFiltro]`.
 - O plano aparece como selo no card de Clientes pagos e ao lado do nome no Onboarding ("plano não informado" quando vazio), para a operação saber o que foi vendido.
 - O Painel ao vivo tem o card "Planos mais vendidos" (ranking do mês por quantidade, com % e faturamento; vendas sem plano entram como "plano não informado"; `PLANO_EQUIV` soma planos antigos equivalentes, hoje E3 → Gestão de contas).
