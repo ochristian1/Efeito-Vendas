@@ -24,8 +24,8 @@ Interface em português (pt-BR).
 - `<SDR> fechou` = 8%, `<SDR> - Recompra` = 4%, `DONO` ("Você fechou") = 2%.
 
 ## Planos (Clientes pagos)
-- O objeto `PLANOS` guarda todos os planos. O cadastro e a edição usam só os dez atuais, nesta ordem:
-  `MANUTENCAO_LOJA` (Manutenção semanal), `OTIMIZACAO_LOJA`, `GESTAO_ADS`, `CONSULTORIA`, `GESTAO_CONTAS`, `GESTAO_CONTABILIDADE`, `START_SHOPEE`, `PACOTE_CADASTRO_PRODUTO`, `IMERSAO_PRESENCIAL`, `FORMACAO_CONSULTOR`.
+- O objeto `PLANOS` guarda todos os planos. O cadastro e a edição usam só os onze atuais, nesta ordem:
+  `MANUTENCAO_LOJA` (Manutenção semanal), `OTIMIZACAO_LOJA`, `GESTAO_ADS`, `CONSULTORIA`, `GESTAO_CONTAS`, `GESTAO_CONTABILIDADE`, `START_SHOPEE`, `PACOTE_CADASTRO_PRODUTO`, `IMERSAO_PRESENCIAL`, `FORMACAO_CONSULTOR`, `GESTAO_TIKTOK_SHOP`.
 - `E1` a `E5` e `ACOMPANHAMENTO_INDIVIDUAL` (removido do cadastro; trocado por `START_SHOPEE`) continuam no `PLANOS` **só para clientes antigos** continuarem mostrando o plano que compraram. Não remova.
 - Personalização: o campo "Personalizado" (cadastro e edição) guarda texto livre em `pagos.plano` no formato `CHAVE::texto` (ou `PERSONALIZADO::texto` sem cartão escolhido). Sempre use `planoKey()`, `planoTexto()` e `planoBadgeHtml()` ao ler o plano — nunca `PLANOS[p.plano]` direto.
 - O filtro por plano usa `PLANOS[pagoFiltro]`.

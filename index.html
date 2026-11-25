@@ -165,6 +165,7 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
 .p11{background:#1a0a14;color:#f472b6;border:1px solid #3a1428}
 .p15{background:#0d1f2a;color:#38bdf8;border:1px solid #1e3a4a}
 .p16{background:#1f1a0d;color:#fb7185;border:1px solid #4a2a30}
+.p19{background:#0d2a2c;color:#2dd4bf;border:1px solid #0f3a3f}
 .p18{background:#2a1208;color:#ff7a45;border:1px solid #4a2210}
 .p17{background:#1a1a1a;color:#e5e7eb;border:1px dashed #6b7280}
 .p14{background:#2a0d2a;color:#e879f9;border:1px solid #3a1a2e}
@@ -503,6 +504,7 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
         <div class="plano-opt" id="pp-opt-PACOTE_CADASTRO_PRODUTO" onclick="setPagoPlano('PACOTE_CADASTRO_PRODUTO')" style="border-color:#3a1a2e"><div class="plano-opt-name" style="color:#e879f9">PACOTE DE CADASTRO DE PRODUTO</div><div class="plano-opt-desc">Serviço</div></div>
         <div class="plano-opt" id="pp-opt-IMERSAO_PRESENCIAL" onclick="setPagoPlano('IMERSAO_PRESENCIAL')" style="border-color:#1e3a4a"><div class="plano-opt-name" style="color:#38bdf8">IMERSÃO PRESENCIAL</div><div class="plano-opt-desc">Serviço</div></div>
         <div class="plano-opt" id="pp-opt-FORMACAO_CONSULTOR" onclick="setPagoPlano('FORMACAO_CONSULTOR')" style="border-color:#4a2a30"><div class="plano-opt-name" style="color:#fb7185">FORMAÇÃO DE CONSULTOR</div><div class="plano-opt-desc">Serviço</div></div>
+        <div class="plano-opt" id="pp-opt-GESTAO_TIKTOK_SHOP" onclick="setPagoPlano('GESTAO_TIKTOK_SHOP')" style="border-color:#0f3a3f"><div class="plano-opt-name" style="color:#2dd4bf">GESTÃO DE TIKTOK SHOP</div><div class="plano-opt-desc">Serviço</div></div>
       </div>
       <div class="field" style="margin-bottom:10px"><label>Personalizado (opcional) — descreva o que foi vendido</label><input id="pp-plano-custom" type="text" placeholder="Ex: Gestão de ADS + 2 meses de consultoria, pacote sob medida..." maxlength="120"></div>
       <div class="field" style="margin-bottom:10px;margin-top:12px"><label>Origem do lead</label></div>
@@ -539,6 +541,7 @@ html,body{margin:0;padding:0;min-height:100%;background:var(--bg)}
     <button class="pf-btn" onclick="setPagoFiltro('PACOTE_CADASTRO_PRODUTO',this)" style="color:#e879f9;border-color:#3a1a2e">PACOTE DE CADASTRO DE PRODUTO</button>
     <button class="pf-btn" onclick="setPagoFiltro('IMERSAO_PRESENCIAL',this)" style="color:#38bdf8;border-color:#1e3a4a">IMERSÃO PRESENCIAL</button>
     <button class="pf-btn" onclick="setPagoFiltro('FORMACAO_CONSULTOR',this)" style="color:#fb7185;border-color:#4a2a30">FORMAÇÃO DE CONSULTOR</button>
+    <button class="pf-btn" onclick="setPagoFiltro('GESTAO_TIKTOK_SHOP',this)" style="color:#2dd4bf;border-color:#0f3a3f">GESTÃO DE TIKTOK SHOP</button>
     <button class="pf-btn" onclick="setPagoFiltro('PERSONALIZADO',this)" style="color:#e5e7eb;border-color:#6b7280">PERSONALIZADO</button>
     <button class="pf-btn" onclick="setPagoFiltro('AVISO_APP',this)" style="color:#60a5fa;border-color:#1e3a5a">AVISO APP</button>
     <button class="pf-btn" onclick="setPagoFiltro('PN',this)" style="color:#c084fc;border-color:#3a1a5a">PN</button>
@@ -1039,7 +1042,7 @@ function aplicarPermissoes(){
 
 const DAYS_PT=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const MONTHS_PT=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-const PLANOS={E1:{nome:'E1 · Inteligência Estratégica',short:'E1 · IA',cls:'p1'},E2:{nome:'E2 · Gestão Shopee Ads',short:'E2 · Shopee Ads',cls:'p2'},E3:{nome:'E3 · Gestão Completa',short:'E3 · Completo',cls:'p3'},E4:{nome:'E4 · Gestão Mercado Livre',short:'E4 · ML',cls:'p4'},E5:{nome:'E5 · Gestão TikTok Shop',short:'E5 · TikTok',cls:'p5'},OTIMIZACAO_LOJA:{nome:'OTIMIZAÇÃO DE LOJA',short:'OTIMIZAÇÃO DE LOJA',cls:'p6'},MANUTENCAO_LOJA:{nome:'MANUTENÇÃO SEMANAL',short:'MANUTENÇÃO SEMANAL',cls:'p7'},CONSULTORIA:{nome:'CONSULTORIA',short:'CONSULTORIA',cls:'p8'},GESTAO_CONTAS:{nome:'GESTÃO DE CONTAS',short:'GESTÃO DE CONTAS',cls:'p9'},GESTAO_CONTABILIDADE:{nome:'GESTÃO COM CONTABILIDADE',short:'GESTÃO COM CONTABILIDADE',cls:'p10'},GESTAO_ADS:{nome:'GESTÃO DE ADS',short:'GESTÃO DE ADS',cls:'p12'},ACOMPANHAMENTO_INDIVIDUAL:{nome:'ACOMPANHAMENTO INDIVIDUAL',short:'ACOMPANHAMENTO INDIVIDUAL',cls:'p13'},PACOTE_CADASTRO_PRODUTO:{nome:'PACOTE DE CADASTRO DE PRODUTO',short:'PACOTE DE CADASTRO DE PRODUTO',cls:'p14'},IMERSAO_PRESENCIAL:{nome:'IMERSÃO PRESENCIAL',short:'IMERSÃO PRESENCIAL',cls:'p15'},FORMACAO_CONSULTOR:{nome:'FORMAÇÃO DE CONSULTOR',short:'FORMAÇÃO DE CONSULTOR',cls:'p16'},PERSONALIZADO:{nome:'PERSONALIZADO',short:'PERSONALIZADO',cls:'p17'},START_SHOPEE:{nome:'START SHOPEE',short:'START SHOPEE',cls:'p18'}};
+const PLANOS={E1:{nome:'E1 · Inteligência Estratégica',short:'E1 · IA',cls:'p1'},E2:{nome:'E2 · Gestão Shopee Ads',short:'E2 · Shopee Ads',cls:'p2'},E3:{nome:'E3 · Gestão Completa',short:'E3 · Completo',cls:'p3'},E4:{nome:'E4 · Gestão Mercado Livre',short:'E4 · ML',cls:'p4'},E5:{nome:'E5 · Gestão TikTok Shop',short:'E5 · TikTok',cls:'p5'},OTIMIZACAO_LOJA:{nome:'OTIMIZAÇÃO DE LOJA',short:'OTIMIZAÇÃO DE LOJA',cls:'p6'},MANUTENCAO_LOJA:{nome:'MANUTENÇÃO SEMANAL',short:'MANUTENÇÃO SEMANAL',cls:'p7'},CONSULTORIA:{nome:'CONSULTORIA',short:'CONSULTORIA',cls:'p8'},GESTAO_CONTAS:{nome:'GESTÃO DE CONTAS',short:'GESTÃO DE CONTAS',cls:'p9'},GESTAO_CONTABILIDADE:{nome:'GESTÃO COM CONTABILIDADE',short:'GESTÃO COM CONTABILIDADE',cls:'p10'},GESTAO_ADS:{nome:'GESTÃO DE ADS',short:'GESTÃO DE ADS',cls:'p12'},ACOMPANHAMENTO_INDIVIDUAL:{nome:'ACOMPANHAMENTO INDIVIDUAL',short:'ACOMPANHAMENTO INDIVIDUAL',cls:'p13'},PACOTE_CADASTRO_PRODUTO:{nome:'PACOTE DE CADASTRO DE PRODUTO',short:'PACOTE DE CADASTRO DE PRODUTO',cls:'p14'},IMERSAO_PRESENCIAL:{nome:'IMERSÃO PRESENCIAL',short:'IMERSÃO PRESENCIAL',cls:'p15'},FORMACAO_CONSULTOR:{nome:'FORMAÇÃO DE CONSULTOR',short:'FORMAÇÃO DE CONSULTOR',cls:'p16'},PERSONALIZADO:{nome:'PERSONALIZADO',short:'PERSONALIZADO',cls:'p17'},START_SHOPEE:{nome:'START SHOPEE',short:'START SHOPEE',cls:'p18'},GESTAO_TIKTOK_SHOP:{nome:'GESTÃO DE TIKTOK SHOP',short:'GESTÃO DE TIKTOK SHOP',cls:'p19'}};
 // O campo pagos.plano guarda a chave do plano; opcionalmente 'CHAVE::texto livre' (personalização). Sem cartão escolhido + texto = 'PERSONALIZADO::texto'.
 function planoKey(v){return String(v||'').split('::')[0];}
 function planoTexto(v){const s=String(v||'');const i=s.indexOf('::');return i<0?'':s.slice(i+2).trim();}
@@ -2487,6 +2490,7 @@ function sugerirPlanoPeloTexto(txt){
   const t=String(txt||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   const REGRAS=[
     ['START_SHOPEE',/start shopee/],
+    ['GESTAO_TIKTOK_SHOP',/tiktok/],
     ['PACOTE_CADASTRO_PRODUTO',/pacote de cadastro|cadastros? de produto/],
     ['IMERSAO_PRESENCIAL',/imersao/],
     ['FORMACAO_CONSULTOR',/formacao de consultor|formacao consultor/],
@@ -2943,7 +2947,7 @@ function setEditFech(id,f){
   });
 }
 // Cards de plano usados nos formulários de edição (Clientes pagos e Onboarding). O valor escolhido fica em data-val do container.
-const PLANOS_CADASTRO=['MANUTENCAO_LOJA','OTIMIZACAO_LOJA','GESTAO_ADS','CONSULTORIA','GESTAO_CONTAS','GESTAO_CONTABILIDADE','START_SHOPEE','PACOTE_CADASTRO_PRODUTO','IMERSAO_PRESENCIAL','FORMACAO_CONSULTOR'];
+const PLANOS_CADASTRO=['MANUTENCAO_LOJA','OTIMIZACAO_LOJA','GESTAO_ADS','CONSULTORIA','GESTAO_CONTAS','GESTAO_CONTABILIDADE','START_SHOPEE','PACOTE_CADASTRO_PRODUTO','IMERSAO_PRESENCIAL','FORMACAO_CONSULTOR','GESTAO_TIKTOK_SHOP'];
 function planoCardsEdit(cid,atualCompleto){
   const key=planoKey(atualCompleto),txt=planoTexto(atualCompleto);
   const atual=key==='PERSONALIZADO'?'':key; // personalizado puro não seleciona cartão, só preenche o campo de texto
